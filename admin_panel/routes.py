@@ -1,15 +1,18 @@
 import os
 from flask import Blueprint, render_template
 
-# تحديد المسار الفعلي لمجلد القوالب التابع لهذه البوابة
-current_dir = os.path.dirname(os.path.abspath(__file__))
-template_dir = os.path.join(current_dir, 'templates')
+# الحصول على المسار الكامل لمجلد templates الموجود بجانب هذا الملف (routes.py)
+# المسار المتوقع: admin_panel/templates
+base_dir = os.path.abspath(os.path.dirname(__file__))
+template_dir = os.path.join(base_dir, 'templates')
 
+# تعريف البلوبرنت مع تحديد مسار القوالب بشكل مطلق
 admin_bp = Blueprint('admin', __name__, template_folder=template_dir)
 
 @admin_bp.route('/admin/login')
 def login():
-    # حذفنا 'admin/' لأن الملف login.html موجود مباشرة داخل مجلد templates
+    # Flask سيبحث الآن مباشرة داخل admin_panel/templates/
+    # وبما أن login.html هناك، سيعمل فوراً.
     return render_template('login.html')
 
 @admin_bp.route('/admin/dashboard')
