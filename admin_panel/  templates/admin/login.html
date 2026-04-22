@@ -3,93 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة محجوب أونلاين - دخول</title>
+    <title>تسجيل الدخول | محجوب أونلاين</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #4B0082; /* بنفسجي ملكي */
-            --gold-color: #D4AF37;    /* ذهبي */
-            --white-color: #ffffff;
-        }
+        :root { --p-color: #4B0082; --g-color: #D4AF37; }
         body {
-            background: linear-gradient(135deg, #4B0082 0%, #2e004f 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #4B0082 100%);
             height: 100vh;
-            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Cairo', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
         }
-        .admin-login-box {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            padding: 40px;
             width: 100%;
             max-width: 400px;
-            border: 2px solid var(--gold-color);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             text-align: center;
         }
-        .admin-login-box h2 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-        .gold-line {
-            height: 3px;
-            width: 50px;
-            background: var(--gold-color);
-            margin: 0 auto 25px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-            text-align: right;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: var(--primary-color);
+        .logo-area i { font-size: 3rem; color: var(--g-color); margin-bottom: 15px; }
+        .login-card h2 { color: white; font-weight: bold; margin-bottom: 5px; }
+        .login-card p { color: rgba(255,255,255,0.6); margin-bottom: 30px; }
+        .form-control {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
             color: white;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .form-control:focus {
+            background: rgba(255,255,255,0.15);
+            border-color: var(--g-color);
+            color: white;
+            box-shadow: none;
+        }
+        .btn-login {
+            background: var(--g-color);
+            color: #1a1a2e;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
             border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
             transition: 0.3s;
         }
-        button:hover {
-            background: var(--gold-color);
+        .btn-login:hover {
+            background: #f1c40f;
             transform: translateY(-2px);
         }
+        .footer-text { color: rgba(255,255,255,0.4); font-size: 0.8rem; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="admin-login-box">
-        <h2>لوحة الإدارة</h2>
-        <div class="gold-line"></div>
-        <p style="color: #666; font-size: 14px;">مرحباً بك في مركز تحكم محجوب أونلاين</p>
-        
-        <form action="/admin/login" method="POST">
-            <div class="form-group">
-                <label>اسم المسؤول</label>
-                <input type="text" name="admin_user" placeholder="أدخل اليوزر" required>
-            </div>
-            <div class="form-group">
-                <label>كلمة المرور</label>
-                <input type="password" name="admin_pass" placeholder="********" required>
-            </div>
-            <button type="submit">دخول آمن</button>
-        </form>
+
+<div class="login-card">
+    <div class="logo-area">
+        <i class="fas fa-shield-halved"></i>
     </div>
+    <h2>محجوب أونلاين</h2>
+    <p>سوقك الذكي - لوحة الإدارة</p>
+
+    <form action="/admin/login" method="POST">
+        <div class="text-start">
+            <label class="text-white-50 mb-2 ms-2">اسم المستخدم</label>
+            <input type="text" name="admin_user" class="form-control" placeholder="أدخل اسمك" required>
+        </div>
+        <div class="text-start">
+            <label class="text-white-50 mb-2 ms-2">كلمة المرور</label>
+            <input type="password" name="admin_pass" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-login mt-2">دخول النظام</button>
+    </form>
+
+    <div class="footer-text">
+        &copy; 2026 Mahjoub Online - جميع الحقوق محفوظة
+    </div>
+</div>
+
 </body>
 </html>
