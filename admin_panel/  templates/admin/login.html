@@ -2,39 +2,77 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>محجوب أونلاين | دخول السيادة</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دخول - محجوب أونلاين</title>
     <style>
         body {
-            background-color: #0a0a0a; color: #d4af37;
-            font-family: Arial, sans-serif;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; margin: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .login-card {
-            background: #141414; padding: 40px;
-            border: 1px solid #d4af37; border-radius: 15px;
-            text-align: center; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            background: #fff;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            border-top: 5px solid #4B0082; /* بنفسجي غامق */
+            text-align: center;
+        }
+        .logo {
+            color: #D4AF37; /* ذهبي */
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
         }
         input {
-            width: 100%; padding: 10px; margin: 10px 0;
-            background: #1a1a1a; border: 1px solid #333; color: white;
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #4B0082;
         }
         button {
-            background: #d4af37; color: black; border: none;
-            padding: 10px 25px; cursor: pointer; font-weight: bold;
+            width: 96%;
+            padding: 12px;
+            background-color: #4B0082;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #D4AF37;
+            color: #000;
+        }
+        .footer-text {
+            margin-top: 1rem;
+            font-size: 12px;
+            color: #888;
         }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <div style="font-size: 40px; margin-bottom: 10px;">👁️</div>
-        <h2>محجوب أونلاين</h2>
-        <p>سوقك الذكي | Smart Market</p>
-        <form>
-            <input type="text" placeholder="اسم المستخدم">
-            <input type="password" placeholder="كلمة المرور">
-            <button type="submit">دخول</button>
+        <div class="logo">محجوب أونلاين</div>
+        <h3 style="color: #333;">تسجيل الدخول</h3>
+        <form action="/login" method="POST">
+            <input type="text" name="username" placeholder="اسم المستخدم" required>
+            <input type="password" name="password" placeholder="كلمة المرور" required>
+            <button type="submit">دخول النظام</button>
         </form>
+        <div class="footer-text">سوقك الذكي - Smart Market</div>
     </div>
 </body>
 </html>
