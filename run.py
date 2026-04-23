@@ -1,37 +1,27 @@
 import os
-from flask import Flask
-from flask_login import LoginManager
-from admin_panel.models import db, User
-from admin_panel.admin_routes import admin_bp
+from core import create_app
 
-app = Flask(__name__) # تعريف app مباشرة في الأعلى لسهولة وصول Gunicorn
+# 1. تهيئة التطبيق باستخدام المحرك المركزي
+app = create_app()
 
-# إعدادات الأمان
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'mahjoub_2026_key')
-
-# استخدم الرابط الخارجي (External) من ريندر هنا
-app.config['SQLALCHEMY_DATABASE_URI'] = "ضع_الرابط_الخارجي_هنا"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db.init_app(app)
-
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'admin.login'
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-app.register_blueprint(admin_bp, url_prefix='/admin')
-
-with app.app_context():
-    try:
-        db.create_all()
-        print("✅ Database Connected")
-    except Exception as e:
-        print(f"⚠️ Database connection failed but app is running: {e}")
+def prepare_environment():
+    """تجهيز بيئة العمل (إنشاء المجلدات المؤقتة إذا لم توجد)"""
+    temp_path = os.path.join('static', 'img', 'temp_uploads')
+    if not os.path.exists(temp_path):
+        os.makedirs(temp_path)
+        print(f"[*] Created temporary directory: {temp_path}")
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    # 2. التأكد من جاهزية المجلدات قبل التشغيل
+    prepare_environment()
+    
+    # 3. تشغيل السيرفر
+    # host='0.0.0.0' تسمح لك بالوصول للنظام من لابتوب آخر أو عبر الشبكة
+    # port=5000 المنفذ الافتراضي للفلاسك
+    # debug=True مفيد جداً في مرحلة التطوير لإظهار الأخطاء وتحديث الكود تلقائياً
+    print("--- 🚀 Mahjoub Online Engine is Starting ---")
+    app.run(
+        host='0.0.0.0', 
+        port=5000, 
+        debug=True
+    )
