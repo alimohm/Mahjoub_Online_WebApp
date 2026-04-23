@@ -1,27 +1,26 @@
 import os
 from core import create_app
 
-# 1. تهيئة التطبيق باستخدام المحرك المركزي
+# 1. تهيئة التطبيق
 app = create_app()
 
 def prepare_environment():
-    """تجهيز بيئة العمل (إنشاء المجلدات المؤقتة إذا لم توجد)"""
+    """تأمين وجود المجلدات الضرورية في بيئة السيرفر"""
     temp_path = os.path.join('static', 'img', 'temp_uploads')
     if not os.path.exists(temp_path):
         os.makedirs(temp_path)
-        print(f"[*] Created temporary directory: {temp_path}")
 
 if __name__ == '__main__':
-    # 2. التأكد من جاهزية المجلدات قبل التشغيل
     prepare_environment()
     
-    # 3. تشغيل السيرفر
-    # host='0.0.0.0' تسمح لك بالوصول للنظام من لابتوب آخر أو عبر الشبكة
-    # port=5000 المنفذ الافتراضي للفلاسك
-    # debug=True مفيد جداً في مرحلة التطوير لإظهار الأخطاء وتحديث الكود تلقائياً
-    print("--- 🚀 Mahjoub Online Engine is Starting ---")
+    # 2. الحصول على المنفذ من نظام التشغيل (ضروري لـ Railway)
+    # Railway يمرر رقم المنفذ عبر متغير بيئي اسمه PORT
+    port = int(os.environ.get("PORT", 5000))
+    
+    # 3. تشغيل السيرفر بإعدادات الإنتاج
+    # نوقف debug=True عند الرفع النهائي لزيادة الأمان والأداء
     app.run(
         host='0.0.0.0', 
-        port=5000, 
-        debug=True
+        port=port, 
+        debug=False
     )
