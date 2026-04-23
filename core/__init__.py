@@ -9,14 +9,15 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     with app.app_context():
-        # تسجيل الصفحات (Blueprints)
+        # استدعاء المسارات
         from admin_panel.routes import admin_bp
-        from supplier_panel.routes import supplier_bp
         app.register_blueprint(admin_bp, url_prefix='/admin')
-        app.register_blueprint(supplier_bp, url_prefix='/supplier')
 
-        # إنشاء الجداول فوراً عند تشغيل السيرفر
-        db.create_all()
-        print("--- ✅ Database Connected & Tables Created ---")
+        # إنشاء الجداول في قاعدة بيانات Render
+        try:
+            db.create_all()
+            print("--- ✅ Database Tables Created ---")
+        except Exception as e:
+            print(f"--- ❌ DB Error: {str(e)} ---")
 
     return app
