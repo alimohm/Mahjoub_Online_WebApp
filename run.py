@@ -1,11 +1,14 @@
-from flask_sqlalchemy import SQLAlchemy
+import os
+from core import create_app
 
-db = SQLAlchemy()
-# 1. تهيئة التطبيق
+# 1. إنشاء نسخة التطبيق من المحرك المركزي
+# ملاحظة: تعريف db موجود داخل core/__init__.py أو core/models.py 
+# ولا يجب تعريفه هنا مرة أخرى
 app = create_app()
 
 def prepare_environment():
     """تأمين وجود المجلدات الضرورية في بيئة السيرفر"""
+    # Railway يستخدم نظام ملفات مؤقت، لذا نتأكد من وجود المجلد
     temp_path = os.path.join('static', 'img', 'temp_uploads')
     if not os.path.exists(temp_path):
         os.makedirs(temp_path)
@@ -14,11 +17,10 @@ if __name__ == '__main__':
     prepare_environment()
     
     # 2. الحصول على المنفذ من نظام التشغيل (ضروري لـ Railway)
-    # Railway يمرر رقم المنفذ عبر متغير بيئي اسمه PORT
     port = int(os.environ.get("PORT", 5000))
     
-    # 3. تشغيل السيرفر بإعدادات الإنتاج
-    # نوقف debug=True عند الرفع النهائي لزيادة الأمان والأداء
+    # 3. تشغيل السيرفر
+    # تم إيقاف debug لضمان استقرار العمل على Railway
     app.run(
         host='0.0.0.0', 
         port=port, 
