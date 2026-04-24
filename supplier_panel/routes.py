@@ -1,68 +1,71 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from core.models import db, Supplier, User, Wallet, Product
-from werkzeug.utils import secure_filename
-import os
+from flask import render_template, request, redirect, url_for, flash
+from flask_login import login_user, logout_user, login_required, current_user
+from core import db
+from core.models import Supplier, Product
+from . import supplier_bp # استيراد البلوبرنت من ملف __init__.py الخاص بالمجلد
 
-supplier_bp = Blueprint('supplier', __name__)
+# --- مسار تسجيل الدخول للمورد ---
+@supplier_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('supplier_panel.dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        supplier = Supplier.query.filter_by(email=email).first()
+        
+        # ملاحظة: يفضل استخدام check_password_hash للأمان
+        if supplier and supplier.password == password:
+            login_user(supplier)
+            flash(f'مرحباً بك يا {supplier.name} في بوابة شركاء النجاح', 'success')
+            return redirect(url_for('supplier_panel.dashboard'))
+        else:
+            flash('بيانات الدخول غير صحيحة، يرجى التحقق من البريد وكلمة المرور', 'danger')
+            
+    return render_template('login.html')
 
-@supplier_bp.route('/join', methods=['GET', 'POST'])
-def join_request():
-    """صفحة طلب انضمام مورد جديد"""
+# --- لوحة تحكم المورد ---
+@supplier_bp.route('/')
+@supplier_bp.route('/dashboard')
+@login_required
+def dashboard():
+    # التحقق من أن المستخدم المشرع هو مورد وليس أدمن (أمان إضافي)
+    if not isinstance(current_user, Supplier):
+        logout_user()
+        return redirect(url_for('supplier_panel.login'))
+        
+    # جلب منتجات المورد الحالي فقط
+    my_products = Product.query.filter_by(supplier_id=current_user.id).all()
+    return render_template('dashboard.html', products=my_products)
+
+# --- نافذة رفع منتج جديد (سعر التكلفة) ---
+@supplier_bp.route('/add_product', methods=['GET', 'POST'])
+@login_required
+def add_product():
     if request.method == 'POST':
         name = request.form.get('name')
-        phone = request.form.get('phone')
+        description = request.form.get('description')
+        cost_price = request.form.get('cost_price') # سعر التكلفة من المورد
+        image_url = request.form.get('image_url')
         
-        # معالجة صورة الهوية (الترانزيت المؤقت)
-        file = request.files['identity_card']
-        if file:
-            filename = secure_filename(f"{phone}_{file.filename}")
-            filepath = os.path.join('static/img/temp_uploads', filename)
-            file.save(filepath)
-            
-            # إنشاء سجل المورد بحالة "قيد الانتظار"
-            new_supplier = Supplier(
-                name=name,
-                phone_whatsapp=phone,
-                identity_url=filepath, # مسار مؤقت حتى التعميد
-                status='pending'
-            )
-            db.session.add(new_supplier)
+        new_product = Product(
+            name=name,
+            description=description,
+            original_price=float(cost_price), # تخزين التكلفة
+            sale_price=0.0, # يتركه للمورد صفراً، وتحدده الإدارة لاحقاً
+            image_url=image_url,
+            supplier_id=current_user.id, # ربط المنتج بآيدي المورد الحالي
+            status='pending', # المنتج يظل معلقاً حتى تراجعه الإدارة
+            is_synced=False   # لا يظهر في قمرة حتى توافق أنت
+        )
+        
+        try:
+            db.session.add(new_product)
             db.session.commit()
-            
-            flash("تم استلام طلبك بنجاح، سيتم التواصل معك عبر الواتساب بعد مراجعة الهوية.")
-            return redirect(url_for('supplier.join_request'))
-            
-    return render_template('supplier/join.html')
-
-@supplier_bp.route('/dashboard')
-def dashboard():
-    """لوحة تحكم المورد - تختلف حسب الصلاحية"""
-    if 'user_id' not in session:
-        return redirect(url_for('supplier.login'))
-        
-    user = User.query.get(session['user_id'])
-    supplier = user.supplier
-    
-    # جلب المنتجات الخاصة بهذا المورد فقط
-    my_products = Product.query.filter_by(supplier_id=supplier.id).all()
-    
-    return render_template('supplier/dashboard.html', 
-                           user=user, 
-                           supplier=supplier, 
-                           products=my_products)
-
-@supplier_bp.route('/wallet')
-def wallet():
-    """المحفظة المالية - للملاك فقط"""
-    if 'user_id' not in session:
-        return redirect(url_for('supplier.login'))
-        
-    user = User.query.get(session['user_id'])
-    
-    # قيد أمني: إذا كان موظفاً، امنعه من رؤية المحفظة
-    if user.role != 'owner':
-        flash("عذراً، صلاحية الوصول للمحفظة متاحة للمالك فقط.")
-        return redirect(url_for('supplier.dashboard'))
-    
-    wallet = Wallet.query.filter_by(supplier_id=user.supplier_id).first()
-    return render_template('supplier/wallet.html', wallet=wallet)
+            flash('✅ تم إرسال المنتج لغرفة العمليات المركزية للمراجعة', 'success')
+            return redirect(url_for('supplier_panel.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'⚠️ فشل في إ
