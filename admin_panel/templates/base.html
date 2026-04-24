@@ -124,7 +124,7 @@
         
         <nav class="nav-links">
             <div class="nav-label">الرقابة السيادية</div>
-            <a href="{{ url_for('admin.dashboard') }}" class="nav-item">
+            <a href="{{ url_for('admin_panel.dashboard') }}" class="nav-item">
                 <i class="fas fa-th-large"></i> <span>لوحة الإحصائيات</span>
             </a>
 
@@ -138,7 +138,7 @@
                     <a href="#" class="sub-nav-item">
                         <i class="fas fa-plus-circle"></i> <span>رفع منتج</span>
                     </a>
-                    <a href="{{ url_for('admin.product_review') }}" class="sub-nav-item">
+                    <a href="{{ url_for('admin_panel.sync_now') }}" class="sub-nav-item">
                         <i class="fas fa-clipboard-check"></i> <span>مراجعة المنتجات</span>
                         {% if pending_products_count and pending_products_count > 0 %}
                             <span class="badge">{{ pending_products_count }}</span>
@@ -154,12 +154,12 @@
                     <i class="fas fa-chevron-down chevron" style="margin-right: auto; font-size: 0.7rem;"></i>
                 </div>
                 <div class="dropdown-container">
-                    <a href="{{ url_for('admin.dashboard') }}" class="sub-nav-item"><i class="fas fa-list-ul"></i> <span>سجل الموردين</span></a>
+                    <a href="{{ url_for('admin_panel.dashboard') }}" class="sub-nav-item"><i class="fas fa-list-ul"></i> <span>سجل الموردين</span></a>
                 </div>
             </div>
             
             <div class="nav-label" style="margin-top: 20px;">النظام</div>
-            <a href="{{ url_for('admin.logout') }}" class="nav-item" style="color: #ef4444;">
+            <a href="{{ url_for('admin_panel.logout') }}" class="nav-item" style="color: #ef4444;">
                 <i class="fas fa-power-off"></i> <span>إنهاء الجلسة</span>
             </a>
         </nav>
@@ -177,7 +177,7 @@
             
             <div style="display: flex; align-items: center; gap: 15px;">
                 <div style="text-align: left;">
-                    <div style="font-size: 0.8rem; font-weight: 700; color: white;">{{ session.get('username', 'القائد') }}</div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: white;">{{ current_user.username if current_user.is_authenticated else 'القائد' }}</div>
                     <div style="font-size: 0.6rem; color: #10b981; font-weight: 800; text-align: right;">نشط</div>
                 </div>
                 <div style="width: 35px; height: 35px; background: var(--mahjoub-purple); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid var(--mahjoub-gold);">
