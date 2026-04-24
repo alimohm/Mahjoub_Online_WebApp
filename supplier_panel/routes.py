@@ -4,20 +4,18 @@ from core import db
 from core.models import Supplier, Product
 from . import supplier_bp 
 
-# --- 1. مسار تسجيل الدخول (بالاسم العربي والواجهة الملكية) ---
+# --- 1. مسار تسجيل الدخول ---
 @supplier_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # منع الدخول المتكرر إذا كان المستخدم مسجلاً بالفعل كمورد
     if current_user.is_authenticated:
         if isinstance(current_user, Supplier):
             return redirect(url_for('supplier_panel.dashboard'))
     
     if request.method == 'POST':
-        # استقبال 'username' من الواجهة البيضاء والبنفسجية
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # البحث عن المورد باسمه العربي المسجل
+        # البحث بالاسم العربي كما في الواجهة الملكية
         supplier = Supplier.query.filter_by(name=username).first()
         
         if supplier and supplier.password == password:
@@ -27,25 +25,22 @@ def login():
         else:
             flash('خطأ في اسم المورد أو كلمة المرور، يرجى المحاولة مرة أخرى.', 'danger')
             
-    # استخدمنا اسم ملف فريد لمنع التداخل مع لوحة الإدارة
     return render_template('supplier_login.html')
 
-# --- 2. لوحة تحكم المورد (المحفظة والمنتجات) ---
+# --- 2. لوحة تحكم المورد ---
 @supplier_bp.route('/')
 @supplier_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # حماية المسار: التأكد أن الداخل هو "مورد" وليس "أدمن"
     if not isinstance(current_user, Supplier):
         logout_user()
         flash('عذراً، هذه المنطقة مخصصة للموردين فقط.', 'warning')
         return redirect(url_for('supplier_panel.login'))
         
-    # جلب منتجات المورد الحالي فقط
     my_products = Product.query.filter_by(supplier_id=current_user.id).all()
     return render_template('supplier_dashboard.html', products=my_products)
 
-# --- 3. نافذة رفع منتج جديد (سعر التكلفة) ---
+# --- 3. رفع منتج جديد ---
 @supplier_bp.route('/add_product', methods=['GET', 'POST'])
 @login_required
 def add_product():
@@ -58,12 +53,11 @@ def add_product():
         cost_price = request.form.get('cost_price')
         image_url = request.form.get('image_url')
         
-        # إنشاء المنتج وربطه بالمورد مع حالة "قيد المراجعة"
         new_product = Product(
             name=name,
             description=description,
             original_price=float(cost_price) if cost_price else 0.0,
-            sale_price=0.0, # يتم تحديده لاحقاً من قبل علي محجوب
+            sale_price=0.0,
             image_url=image_url,
             supplier_id=current_user.id,
             status='pending',
