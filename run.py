@@ -20,4 +20,4 @@ if __name__ == "__main__":
     
     # 4. تشغيل التطبيق
     # host='0.0.0.0' تسمح باستقبال الاتصالات الخارجية من الويب
-    app.run(host='0.0.0.0', port=port, debug=False)س
+    app.run(host='0.0.0.0', port=port, debug=False)
