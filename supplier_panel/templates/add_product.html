@@ -1,1 +1,27 @@
-
+{% extends "base.html" %}
+{% block content %}
+<div class="col-md-8 mx-auto">
+    <div class="stat-card">
+        <h3 class="mb-4 text-center">رفع <span style="color: var(--m-gold);">منتج جديد</span> للترسانة</h3>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label text-muted">اسم المنتج</label>
+                <input type="text" name="name" class="form-control bg-dark text-white border-secondary" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-warning">سعر التكلفة الأساسي ($)</label>
+                <input type="number" step="0.01" name="cost_price" class="form-control bg-dark text-warning border-warning" placeholder="أدخل السعر الذي ستبيعه للإدارة" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted">رابط صورة المنتج</label>
+                <input type="url" name="image_url" class="form-control bg-dark text-white border-secondary" placeholder="https://...">
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted">وصف مختصر</label>
+                <textarea name="description" class="form-control bg-dark text-white border-secondary" rows="4"></textarea>
+            </div>
+            <button type="submit" class="btn w-100 fw-bold py-3" style="background: var(--p-purple); color: white;">إرسال للمراجعة السيادية</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
