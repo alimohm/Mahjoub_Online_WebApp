@@ -62,3 +62,25 @@ def logout():
     logout_user()
     flash('تم تأمين النظام وتسجيل الخروج بنجاح', 'info')
     return redirect(url_for('admin_panel.login'))
+@admin_bp.route('/product/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_product(id):
+    product = Product.query.get_or_404(id)
+    # جلب بيانات المورد لعرض المحفظة
+    supplier = Supplier.query.get(product.supplier_id)
+    
+    if request.method == 'POST':
+        # صلاحيات الإدارة المطلقة في التعديل
+        product.name = request.form.get('name')
+        product.description = request.form.get('description')
+        product.original_price = float(request.form.get('original_price')) # تعديل التكلفة
+        product.sale_price = float(request.form.get('sale_price'))         # تعديل سعر البيع
+        product.category = request.form.get('category')
+        product.image_url = request.form.get('image_url')
+        product.is_synced = 'is_synced' in request.form # تفعيل المزامنة مع قمرة
+        
+        db.session.commit()
+        flash(f'✅ تم تحديث بيانات المنتج {product.name} بنجاح!', 'success')
+        return redirect(url_for('admin_panel.dashboard'))
+
+    return render_template('product_detail.html', product=product, supplier=supplier)
