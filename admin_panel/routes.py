@@ -1,35 +1,28 @@
-from flask import Blueprint, render_template, request
-from core.qumra_sync import qumra_manager  # استيراد المحرك اللحظي
-from core.models import Supplier, Product
+from core import create_app, db
+import os
 
-# تعريف البلوبرنت
-admin_bp = Blueprint('admin_panel', __name__, template_folder='templates')
+# 1. إنشاء نسخة التطبيق عبر دالة المصنع
+# هذه الدالة تقوم بتسجيل Blueprints الإدارة والموردين تلقائياً
+app = create_app()
 
-# 1. لوحة التحكم (الرئيسية)
-@admin_bp.route('/', strict_slashes=False)
-def dashboard():
+# 2. تهيئة قاعدة البيانات والتأكد من الجداول
+with app.app_context():
     try:
-        # جلب إحصائيات سريعة من القاعدة المحلية (رندر)
-        suppliers_count = Supplier.query.count()
-        products_count = Product.query.count()
-        
-        # عرض واجهة الإدارة البسيطة
-        return render_template('dashboard.html', s_count=suppliers_count, p_count=products_count)
-    except Exception:
-        # إذا لم تكن الجداول موجودة بعد، نعرض أرقام صفرية
-        return render_template('dashboard.html', s_count=0, p_count=0)
+        # إنشاء الجداول الناقصة في قاعدة بيانات Render
+        db.create_all()
+        print("✅ [Database] Connection verified and tables are ready.")
+    except Exception as e:
+        # طباعة الخطأ في السجلات السوداء للتشخيص إذا فشل الربط
+        print(f"⚠️ [Database] Startup Note: Could not connect or create tables: {e}")
 
-# 2. عرض المنتجات اللحظي من قمرة (بدون تخزين)
-@admin_bp.route('/sync_now', strict_slashes=False)
-def sync_now():
-    # استدعاء الوظيفة اللحظية التي تجلب البيانات والصور
-    live_products = qumra_manager.fetch_live_products(limit=15)
+if __name__ == "__main__":
+    # 3. جلب المنفذ (Port) المخصص من Railway
+    # نستخدم 8080 كقيمة افتراضية إذا لم يتوفر المتغير البيئي
+    port = int(os.environ.get("PORT", 8080))
     
-    # إرسال البيانات لملف الـ HTML الذي صممناه (product_review.html)
-    return render_template('product_review.html', products=live_products)
-
-# 3. عرض قائمة الموردين من قاعدة رندر
-@admin_bp.route('/suppliers', strict_slashes=False)
-def list_suppliers():
-    suppliers = Supplier.query.all()
-    return render_template('suppliers_list.html', suppliers=suppliers)
+    # 4. تشغيل السيرفر
+    # host='0.0.0.0' ضروري جداً لاستقبال الطلبات الخارجية من الإنترنت
+    print(f"🚀 Mahjoub Online is launching on port {port}...")
+    
+    # debug=False هو الخيار الصحيح للرفع الفعلي (Production) لضمان الأداء
+    app.run(host='0.0.0.0', port=port, debug=False)
