@@ -2,47 +2,48 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from core import db
 from core.models import Supplier, Product
-from . import supplier_bp  # استيراد البلوبرنت المُعرّف في __init__.py
+from . import supplier_bp 
 
-# --- 1. مسار تسجيل الدخول للمورد (بالاسم العربي) ---
+# --- 1. مسار تسجيل الدخول (بالاسم العربي والواجهة الملكية) ---
 @supplier_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # إذا كان المستخدم مسجل دخوله مسبقاً، يوجهه للوحة التحكم
+    # منع الدخول المتكرر إذا كان المستخدم مسجلاً بالفعل كمورد
     if current_user.is_authenticated:
         if isinstance(current_user, Supplier):
             return redirect(url_for('supplier_panel.dashboard'))
     
     if request.method == 'POST':
-        # استقبال 'username' العربي من الفورم الجديد
+        # استقبال 'username' من الواجهة البيضاء والبنفسجية
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # البحث في قاعدة البيانات عن المورد باسمه العربي
+        # البحث عن المورد باسمه العربي المسجل
         supplier = Supplier.query.filter_by(name=username).first()
         
         if supplier and supplier.password == password:
             login_user(supplier)
-            flash(f'مرحباً بك يا {supplier.name} في بوابة شركاء النجاح', 'success')
+            flash(f'أهلاً بك يا {supplier.name} في منصة محجوب أونلاين', 'success')
             return redirect(url_for('supplier_panel.dashboard'))
         else:
-            flash('اسم المورد أو كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.', 'danger')
+            flash('خطأ في اسم المورد أو كلمة المرور، يرجى المحاولة مرة أخرى.', 'danger')
             
-    return render_template('login.html')
+    # استخدمنا اسم ملف فريد لمنع التداخل مع لوحة الإدارة
+    return render_template('supplier_login.html')
 
-# --- 2. لوحة تحكم المورد (الإحصائيات والمحفظة) ---
+# --- 2. لوحة تحكم المورد (المحفظة والمنتجات) ---
 @supplier_bp.route('/')
 @supplier_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # التحقق الأمني: التأكد أن المستخدم هو مورد وليس مسؤول (Admin)
+    # حماية المسار: التأكد أن الداخل هو "مورد" وليس "أدمن"
     if not isinstance(current_user, Supplier):
         logout_user()
-        flash('هذه البوابة مخصصة لشركاء النجاح فقط.', 'warning')
+        flash('عذراً، هذه المنطقة مخصصة للموردين فقط.', 'warning')
         return redirect(url_for('supplier_panel.login'))
         
-    # جلب منتجات هذا المورد فقط
+    # جلب منتجات المورد الحالي فقط
     my_products = Product.query.filter_by(supplier_id=current_user.id).all()
-    return render_template('dashboard.html', products=my_products)
+    return render_template('supplier_dashboard.html', products=my_products)
 
 # --- 3. نافذة رفع منتج جديد (سعر التكلفة) ---
 @supplier_bp.route('/add_product', methods=['GET', 'POST'])
@@ -57,33 +58,33 @@ def add_product():
         cost_price = request.form.get('cost_price')
         image_url = request.form.get('image_url')
         
-        # إنشاء كائن المنتج وربطه بصاحب الحساب الحالي
+        # إنشاء المنتج وربطه بالمورد مع حالة "قيد المراجعة"
         new_product = Product(
             name=name,
             description=description,
             original_price=float(cost_price) if cost_price else 0.0,
-            sale_price=0.0,  # يحدده الأدمن لاحقاً
+            sale_price=0.0, # يتم تحديده لاحقاً من قبل علي محجوب
             image_url=image_url,
             supplier_id=current_user.id,
-            status='pending', # قيد المراجعة السيادية
-            is_synced=False   # لم يظهر في المتجر العام بعد
+            status='pending',
+            is_synced=False
         )
         
         try:
             db.session.add(new_product)
             db.session.commit()
-            flash('✅ تم إرسال المنتج للمراجعة بنجاح.', 'success')
+            flash('✅ تم إرسال المنتج للمراجعة السيادية بنجاح.', 'success')
             return redirect(url_for('supplier_panel.dashboard'))
         except Exception as e:
             db.session.rollback()
-            flash(f'⚠️ حدث خطأ فني أثناء الحفظ: {str(e)}', 'danger')
+            flash(f'⚠️ فشل الحفظ: {str(e)}', 'danger')
 
-    return render_template('add_product.html')
+    return render_template('supplier_add_product.html')
 
 # --- 4. تسجيل الخروج ---
 @supplier_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash('تم تسجيل الخروج من بوابة الموردين بنجاح.', 'info')
+    flash('تم تسجيل الخروج من بوابة الشركاء بنجاح.', 'info')
     return redirect(url_for('supplier_panel.login'))
