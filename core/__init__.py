@@ -1,50 +1,58 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from config import Config
 import os
 
-# تهيئة قاعدة البيانات
+# تهيئة الكائنات الأساسية
 db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__, template_folder='../templates') # المجلد العام للقوالب
+    # 1. إنشاء نسخة التطبيق وتحديد مسار الملفات الثابتة
+    app = Flask(__name__, static_folder='../static')
+    app.config.from_object(Config)
     
-    # إعدادات السيرفر السيادية
-    app.config['SECRET_KEY'] = 'mahjoub_online_secret_key_2026'
-    # استخدام SQLite كبداية، ويمكن تغييره لـ PostgreSQL عند الرفع الفعلي
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mahjoub_online.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # ربط الإضافات بالتطبيق
+    # 2. ربط المكتبات بالتطبيق
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'admin_panel.login' # الصفحة الافتراضية عند محاولة الدخول غير المصرح
-    login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى قمرة القيادة"
-
-    # تسجيل الـ Blueprints (ربط الأقسام ببعضها)
     
-    # 1. ربط لوحة الإدارة المركزية
-    from admin_panel import admin_panel as admin_blueprint
-    app.register_blueprint(admin_blueprint, url_prefix='/admin')
+    # 3. إعدادات نظام تسجيل الدخول
+    login_manager.login_view = 'admin_panel.login' # المسار الافتراضي عند محاولة دخول غير مصرح
+    login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى النظام."
+    login_manager.login_message_category = "info"
 
-    # 2. ربط بوابة شركاء النجاح (الموردين)
-    from supplier_panel import supplier_panel as supplier_blueprint
-    app.register_blueprint(supplier_blueprint, url_prefix='/supplier')
-
-    # تهيئة جداول قاعدة البيانات عند التشغيل الأول
     with app.app_context():
+        # استيراد الموديلات لضمان تسجيلها في قاعدة البيانات
         from core import models
+        
+        # --- نظام التعرف على المستخدم (أدمن أو مورد) ---
+        @login_manager.user_loader
+        def load_user(user_id):
+            # يحاول النظام أولاً البحث في جدول "القادة"
+            admin = models.User.query.get(int(user_id))
+            if admin:
+                return admin
+            # إذا لم يجد، يبحث في جدول "شركاء النجاح" (الموردين)
+            return models.Supplier.query.get(int(user_id))
+
+        # --- تسجيل بوابات النظام (Blueprints) ---
+        
+        # أ- لوحة الإدارة المركزية
+        from admin_panel.routes import admin_bp
+        app.register_blueprint(admin_bp, url_prefix='/admin')
+        
+        # ب- بوابة الموردين (شركاء النجاح)
+        try:
+            from supplier_panel.routes import supplier_bp
+            app.register_blueprint(supplier_bp, url_prefix='/supplier')
+            print("✅ [System] تم تسجيل بوابة الموردين بنجاح.")
+        except Exception as e:
+            print(f"⚠️ [Error] فشل في تسجيل بوابة الموردين: {e}")
+
+        # 4. مزامنة الجداول مع قاعدة البيانات
         db.create_all()
+        
+        print("🚀 [System] محجوب أونلاين جاهز للإقلاع.")
 
     return app
-
-# تعريف كيفية جلب المستخدم (سواء كان أدمن أو مورد)
-@login_manager.user_loader
-def load_user(user_id):
-    from core.models import User, Supplier
-    # يحاول النظام البحث في جدول الأدمن أولاً، ثم الموردين
-    user = User.query.get(int(user_id))
-    if user:
-        return user
-    return Supplier.query.get(int(user_id))
