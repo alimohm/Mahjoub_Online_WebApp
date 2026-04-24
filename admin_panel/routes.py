@@ -3,11 +3,11 @@ from core.models import db, Supplier, Product
 from core.qumra_sync import qumra_manager  # محرك المزامنة مع قمرة
 import os
 
-# تعريف البلوبرنت (تأكد من تسميته بشكل فريد)
+# تعريف البلوبرنت
 admin_bp = Blueprint('admin_panel', __name__, template_folder='templates')
 
 # --- 1. لوحة التحكم الرئيسية (Dashboard) ---
-@admin_bp.route('/')
+@admin_bp.route('/', strict_slashes=False)
 def dashboard():
     try:
         # جلب الإحصائيات الحقيقية من قاعدة بيانات رندر
@@ -45,7 +45,7 @@ def dashboard():
         return f"<div style='color:red; text-align:center; direction:rtl;'><h2>خطأ في استخراج البيانات:</h2><p>{str(e)}</p></div>"
 
 # --- 2. تنفيذ مزامنة قمرة ---
-@admin_bp.route('/sync_now')
+@admin_bp.route('/sync_now', strict_slashes=False)
 def sync_now():
     success, message = qumra_manager.fetch_and_sync()
     color = "#2ecc71" if success else "#e74c3c"
@@ -60,7 +60,7 @@ def sync_now():
     """
 
 # --- 3. عرض قائمة الموردين ---
-@admin_bp.route('/suppliers')
+@admin_bp.route('/suppliers', strict_slashes=False)
 def list_suppliers():
     suppliers = Supplier.query.all()
     output = "<div style='direction:rtl; text-align:center; font-family:sans-serif;'>"
@@ -73,7 +73,7 @@ def list_suppliers():
     return output
 
 # --- 4. إضافة مورد تجريبي للفحص ---
-@admin_bp.route('/test_add')
+@admin_bp.route('/test_add', strict_slashes=False)
 def test_add():
     try:
         new_s = Supplier(name="مورد تجريبي رويال", phone="777000000", status="active")
