@@ -24,7 +24,6 @@ def create_app():
 
     with app.app_context():
         # --- 🛡️ استيراد الموديلات المقسمة ---
-        # هنا نقوم باستيراد الموديلات من المجلد الجديد لضمان تسجيلها في SQLAlchemy
         from core.models.user import User
         from core.models.supplier import Supplier
         from core.models.product import Product
@@ -39,11 +38,23 @@ def create_app():
                     return admin
                 
                 # ثانياً: البحث في حسابات شركاء النجاح (Supplier)
-                # ضروري جداً لعمل المحفظة اللامركزية MAH-9046
                 return Supplier.query.get(int(user_id))
             except Exception as e:
                 print(f"⚠️ [Auth Error] فشل تحميل المستخدم: {e}")
                 return None
+
+        # --- 📊 نظام العدادات التلقائي (Context Processor) ---
+        # هذا الجزء هو المسؤول عن ظهور رقم "طلبات الانتظار" في الـ Sidebar تلقائياً
+        @app.context_processor
+        def inject_global_data():
+            try:
+                # حساب عدد الموردين الذين ينتظرون الاعتماد
+                p_suppliers = Supplier.query.filter_by(is_approved=False).count()
+                # حساب عدد المنتجات التي تحتاج مراجعة (إذا كان لديك حقل مشابه)
+                # p_products = Product.query.filter_by(is_approved=False).count() 
+                return dict(pending_suppliers_count=p_suppliers)
+            except:
+                return dict(pending_suppliers_count=0)
 
         # --- 🔗 تسجيل بوابات النظام (Blueprints) ---
         try:
@@ -52,17 +63,16 @@ def create_app():
             app.register_blueprint(admin_bp, url_prefix='/admin')
             
             # تسجيل بوابة الموردين (نظام شركاء النجاح)
-            from supplier_panel import supplier_bp
+            # تم التأكد من استيراد المجلد الصحيح
+            from supplier_panel.routes import supplier_bp
             app.register_blueprint(supplier_bp, url_prefix='/supplier')
             
-            print("✅ [System] تم ربط جميع المسارات السيادية بنجاح (الإدارة + الموردين).")
+            print("✅ [System] تم ربط جميع المسارات السيادية (الإدارة /admin + الموردين /supplier).")
         except Exception as e:
             print(f"❌ [Critical Error] فشل في تحميل بوابات النظام: {e}")
 
-        # 4. تحديث وإنشاء جداول قاعدة البيانات
-        # سيقوم بإنشاء الجداول بناءً على الملفات الثلاثة (user, supplier, product)
+        # 4. مزامنة قاعدة البيانات
         db.create_all()
-        
-        print("🚀 [System] منصة محجوب أونلاين تعمل الآن بالهيكل الموزع.")
+        print("🚀 [System] منصة محجوب أونلاين جاهزة للعمل بالهيكل الموزع.")
 
     return app
