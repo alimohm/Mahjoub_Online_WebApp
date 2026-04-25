@@ -11,11 +11,15 @@ class Supplier(db.Model, UserMixin):
     password = db.Column(db.String(200), nullable=False)
     activity_type = db.Column(db.String(100))
     
+    # 🛡️ نظام الرقابة والاعتماد (تم الإضافة هنا)
+    is_approved = db.Column(db.Boolean, default=False) # False = بانتظار الاعتماد السيادي
+    status = db.Column(db.String(20), default='pending') # pending, active, suspended
+    
     # تفاصيل المنشأة والموقع التيهامي
     trade_name = db.Column(db.String(200))
     full_name = db.Column(db.String(200))
-    province = db.Column(db.String(100)) # المحافظة
-    district = db.Column(db.String(100)) # المديرية
+    province = db.Column(db.String(100)) # المحافظة (مثلاً: الحديدة)
+    district = db.Column(db.String(100)) # المديرية (مثلاً: الخوخة)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120), unique=True, nullable=False)
 
@@ -35,5 +39,10 @@ class Supplier(db.Model, UserMixin):
         """توليد الرقم السيادي للمحفظة MAH-9046"""
         return f"MAH-9046{self.id}"
 
+    @property
+    def approval_label(self):
+        """إرجاع حالة الاعتماد نصياً للوحة الإدارة"""
+        return "معتمد ✅" if self.is_approved else "بانتظار المراجعة ⏳"
+
     def __repr__(self):
-        return f'<Supplier: {self.name} | Wallet: {self.sovereign_id}>'
+        return f'<Supplier: {self.name} | Status: {self.status} | Wallet: {self.sovereign_id}>'
