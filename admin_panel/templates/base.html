@@ -151,10 +151,22 @@
             <div class="nav-dropdown" id="vendorsDropdown"> 
                 <div class="nav-item" onclick="toggleDropdown('vendorsDropdown')">
                     <i class="fas fa-store"></i> <span>الموردين</span>
+                    {% if pending_suppliers_count and pending_suppliers_count > 0 %}
+                        <span class="badge" style="margin-right: 10px;">{{ pending_suppliers_count }}</span>
+                    {% endif %}
                     <i class="fas fa-chevron-down chevron" style="margin-right: auto; font-size: 0.7rem;"></i>
                 </div>
                 <div class="dropdown-container">
-                    <a href="{{ url_for('admin_panel.dashboard') }}" class="sub-nav-item"><i class="fas fa-list-ul"></i> <span>سجل الموردين</span></a>
+                    <a href="{{ url_for('admin_panel.manage_suppliers') }}" class="sub-nav-item">
+                        <i class="fas fa-user-clock" style="color: var(--mahjoub-gold);"></i> 
+                        <span>طلبات الانتظار</span>
+                        {% if pending_suppliers_count and pending_suppliers_count > 0 %}
+                            <span class="badge" style="background: var(--mahjoub-gold); color: #000; border:none; box-shadow:none;">{{ pending_suppliers_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('admin_panel.dashboard') }}" class="sub-nav-item">
+                        <i class="fas fa-address-book"></i> <span>سجل الموردين</span>
+                    </a>
                 </div>
             </div>
             
