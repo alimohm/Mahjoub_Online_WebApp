@@ -28,6 +28,8 @@ def login():
         if supplier: 
             login_user(supplier)
             flash(f'تم الولوج بنجاح.. أهلاً بك يا {supplier.name}', 'success')
+            
+            # 🚀 التعديل: التوجه للداشبورد مباشرة وهو سيتكفل بفحص التعميد
             return redirect(url_for('supplier_panel.dashboard'))
         else:
             flash(message, category)
@@ -37,34 +39,45 @@ def login():
 # --- 2. لوحة التحكم (الترسانة الرقمية) ---
 @supplier_bp.route('/dashboard')
 @login_required
-@sovereign_approval_required # 🛡️ الحارس السيادي: يحول المورد لصفحة الانتظار إذا لم يُعتمد
+@sovereign_approval_required # 🛡️ هذا الحارس سيقوم بتحويله لـ /waiting-room إذا لم يُعمد
 def dashboard():
-    # استيراد الموديلات محلياً لمنع الخطأ 500 الناتج عن Circular Import
     from core.models.product import Product
     
     try:
-        # 🔒 فحص الرتبة: التأكد أن المستخدم "مورد" (يملك محفظة)
+        # 🔒 فحص الرتبة
         if not hasattr(current_user, 'wallet_balance'):
             logout_user()
             flash('عذراً، هذه المنطقة مخصصة لشركاء النجاح فقط.', 'danger')
             return redirect(url_for('supplier_panel.login'))
             
-        # 📦 جلب المنتجات المرتبطة بهذا المورد حصراً
+        # 📦 جلب المنتجات
         try:
             my_products = Product.query.filter_by(supplier_id=current_user.id).all()
         except Exception as db_error:
             print(f"⚠️ تنبيه في قاعدة البيانات: {db_error}")
-            my_products = [] # عرض صفحة فارغة بدلاً من الانهيار
+            my_products = []
             
-        # تسليم البيانات للقالب
         return render_template('supplier_dashboard.html', products=my_products)
         
     except Exception as e:
-        # إذا حدث خطأ في القالب أو البيانات، اطبع التفاصيل في الـ Terminal
         print(f"❌ خطأ داخلي في لوحة المورد: {e}")
         return f"خطأ في النظام (500): {e}", 500
 
-# --- 3. خروج المورد وتأمين الترسانة ---
+# --- 3. صفحة الانتظار (البرزخ الرقمي) ---
+@supplier_bp.route('/waiting-room')
+@login_required
+def waiting_room():
+    """
+    هذا المسار هو الذي يتم تحويل المستخدم إليه بواسطة الحارس @sovereign_approval_required
+    """
+    # إذا تم تعميده وهو هنا، ارسله للداشبورد فوراً
+    if hasattr(current_user, 'is_approved') and current_user.is_approved:
+        return redirect(url_for('supplier_panel.dashboard'))
+    
+    # اظهر صفحة الانتظار (تأكد أنها لا ترث من base.html لكي لا يظهر السايدبار)
+    return render_template('waiting_approval.html')
+
+# --- 4. خروج المورد وتأمين الترسانة ---
 @supplier_bp.route('/logout')
 @login_required
 def logout():
