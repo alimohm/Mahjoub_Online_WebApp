@@ -9,12 +9,13 @@ from .decorators import sovereign_approval_required
 def login():
     # منع التداخل: إذا كان المستخدم مسجل دخوله بالفعل
     if current_user.is_authenticated:
-        # إذا كان يمتلك صفات المورد (محفظة)، نرسله للداشبورد مباشرة
-        if hasattr(current_user, 'wallet_balance'):
+        # الفحص يعتمد الآن على "نوع المستخدم" في الجلسة لضمان الدقة
+        if session.get('user_type') == 'supplier':
             return redirect(url_for('supplier_panel.dashboard'))
         else:
-            # إذا كان أدمن يحاول الدخول لبوابة المورد، ننهي جلسته لفتح المجال للهوية الجديدة
-            logout_user() 
+            # إذا كان أدمن أو مستخدم بنوع مختلف، يتم تطهير الجلسة قبل دخول المورد
+            logout_user()
+            session.clear()
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -24,18 +25,17 @@ def login():
             flash('يرجى ملء كافة الحقول السيادية للدخول.', 'warning')
             return render_template('supplier_login.html')
 
-        # التحقق من الهوية عبر المحقق الخارجي (auth_logic)
+        # التحقق من الهوية عبر المحقق الخارجي
         message, category, supplier = verify_supplier_credentials(username, password)
         
         if supplier: 
-            # 🛡️ الربط السيادي: نخبر النظام أن صاحب هذه الجلسة هو "مورد"
-            # هذا السطر هو مفتاح الحل لمنع التداخل مع لوحة الإدارة
+            # 🛡️ الختم السيادي: تحديد نوع الهوية في الجلسة قبل الربط
+            session.permanent = True
             session['user_type'] = 'supplier'
             
             login_user(supplier)
-            flash(f'تم الولوج بنجاح.. أهلاً بك يا {supplier.name}', 'success')
+            flash(f'تم الولوج بنجاح.. أهلاً بك في ترسانتك يا {supplier.name}', 'success')
             
-            # التوجه للداشبورد (سيتكفل الحارس @sovereign_approval_required بفحصه هناك)
             return redirect(url_for('supplier_panel.dashboard'))
         else:
             flash(message, category)
@@ -45,54 +45,58 @@ def login():
 # --- 2. لوحة التحكم (الترسانة الرقمية) ---
 @supplier_bp.route('/dashboard')
 @login_required
-@sovereign_approval_required # 🛡️ هذا الحارس سيقوم بتحويله لـ /waiting-room إذا لم يُعمد
+@sovereign_approval_required 
 def dashboard():
     from core.models.product import Product
     
     try:
-        # فحص الرتبة: للتأكد أن المستخدم ليس أدمن تسلل لهذا المسار
-        if not hasattr(current_user, 'wallet_balance'):
-            session.pop('user_type', None)
+        # التأكد قطعيًا أن المستخدم يحمل وسم "مورد" في جلسته
+        if session.get('user_type') != 'supplier':
+            session.clear()
             logout_user()
-            flash('عذراً، هذه المنطقة مخصصة لشركاء النجاح فقط.', 'danger')
+            flash('عذراً، هذه المنطقة مخصصة للموردين المعتمدين فقط.', 'danger')
             return redirect(url_for('supplier_panel.login'))
             
-        # جلب المنتجات المرتبطة بهذا المورد فقط
+        # جلب منتجات المورد بناءً على معرفه الفريد
         try:
-            # تأكد أن الموديل Product يحتوي على حقل supplier_id
             my_products = Product.query.filter_by(supplier_id=current_user.id).all()
         except Exception as db_error:
             print(f"⚠️ تنبيه في قاعدة البيانات: {db_error}")
             my_products = []
             
-        # استدعاء القالب (dashboard.html) الموجود في مجلد templates الخاص بالمورد
         return render_template('dashboard.html', products=my_products)
         
     except Exception as e:
         print(f"❌ خطأ داخلي في لوحة المورد: {e}")
-        # إظهار رسالة خطأ واضحة في حال الانهيار (500)
         return f"خطأ في النظام (500): {str(e)}", 500
 
-# --- 3. صفحة الانتظار (البرزخ الرقمي) ---
+# --- 3. صفحة الانتظار (تحديث تلقائي للحالة) ---
 @supplier_bp.route('/waiting-room')
 @login_required
 def waiting_room():
     """
-    هذا المسار يستقر فيه المورد حتى يتم اعتماده سيادياً من قبل الإدارة
+    هنا يتم كسر التناقض: يتم فحص حالة المورد من قاعدة البيانات مباشرة 
+    وليس من البيانات المخزنة في الجلسة، لضمان العبور الفوري بعد الاعتماد.
     """
-    # إذا تم اعتماده وهو هنا، ارسله للداشبورد فوراً
-    if hasattr(current_user, 'is_approved') and current_user.is_approved:
+    from core.models.supplier import Supplier
+    
+    # جلب نسخة طازجة من بيانات المورد من قاعدة البيانات
+    fresh_data = Supplier.query.get(current_user.id)
+    
+    if fresh_data and fresh_data.is_approved:
+        # إذا تغيرت الحالة في الإدارة، يتم توجيهه للداشبورد فوراً
+        flash('تهانينا! تم تفعيل حسابك سيادياً.', 'success')
         return redirect(url_for('supplier_panel.dashboard'))
     
-    # استدعاء قالب صفحة الانتظار
     return render_template('waiting_approval.html')
 
-# --- 4. خروج المورد وتأمين الترسانة ---
+# --- 4. خروج المورد وتأمين الجلسة ---
 @supplier_bp.route('/logout')
 @login_required
 def logout():
-    # تنظيف الجلسة السيادية عند الخروج
+    # تطهير كامل للجلسة والوسم السيادي
     session.pop('user_type', None)
+    session.clear()
     logout_user()
     flash('تم تأمين الجلسة وتشفير الخروج بنجاح.', 'info')
     return redirect(url_for('supplier_panel.login'))
