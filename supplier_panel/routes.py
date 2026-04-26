@@ -4,32 +4,29 @@ from . import supplier_bp
 from .auth_logic import verify_supplier_credentials
 from .decorators import sovereign_approval_required 
 from core import db
-from core.models import Product, Supplier  # استدعاء الموديلات الموحدة من النواة
-# استيراد محرك جلب الأقسام من قمرة ليعرضها للمورد عند إضافة منتج
+from core.models import Product, Supplier # استدعاء الموديلات الموحدة من النواة
 from services.qumra_handler import fetch_qumra_collections
 
 # --- 1. بوابة الدخول للموردين ---
-# المسار الفعلي سيكون: /supplier/login
 @supplier_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # التحقق مما إذا كان المستخدم مسجلاً دخوله بالفعل كمورد
+    # منع الدخول المزدوج إذا كان المستخدم مسجلاً بالفعل كمورد
     if current_user.is_authenticated:
         if session.get('user_type') == 'supplier':
             return redirect(url_for('supplier_panel.dashboard'))
         else:
-            # إذا كان المستخدم مسجلاً كأدمن وحاول دخول صفحة المورد، يتم تطهير الجلسة
             logout_user()
             session.clear()
 
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username') # قد يكون الإيميل أو اسم المستخدم
         password = request.form.get('password')
 
         if not username or not password:
             flash('يرجى إدخال بيانات الهوية السيادية للمورد.', 'warning')
             return render_template('supplier_panel/login.html')
 
-        # استخدام منطق التحقق (Auth Logic) الذي يعتمد على التشفير
+        # استدعاء محرك التحقق من auth_logic
         message, category, supplier = verify_supplier_credentials(username, password)
         
         if supplier: 
@@ -41,7 +38,7 @@ def login():
         else:
             flash(message, category)
             
-    # تم توحيد اسم الملف إلى login.html داخل مجلد supplier_panel
+    # توجيه للمجلد الفرعي حسب هيكلك (supplier_panel/templates/supplier_panel/login.html)
     return render_template('supplier_panel/login.html')
 
 # --- 2. لوحة تحكم المورد (مركزي المبيعات) ---
@@ -55,12 +52,12 @@ def dashboard():
         return redirect(url_for('supplier_panel.login'))
         
     try:
-        # جلب المنتجات التابعة للمورد الحالي فقط
+        # جلب المنتجات التابعة لهذا المورد حصراً
         my_products = Product.query.filter_by(supplier_id=current_user.id).all()
         return render_template('supplier_panel/dashboard.html', products=my_products)
     except Exception as e:
         print(f"⚠️ خطأ في استعراض البيانات السيادية: {e}")
-        return f"خطأ في استعراض البيانات السيادية: {str(e)}", 500
+        return f"خطأ تقني: {str(e)}", 500
 
 # --- 3. إضافة منتج جديد (بوابة التوريد) ---
 @supplier_bp.route('/add-product', methods=['GET', 'POST'])
@@ -70,7 +67,7 @@ def add_product():
     if session.get('user_type') != 'supplier':
         return redirect(url_for('supplier_panel.login'))
 
-    # جلب تصنيفات متجر قمرة لإدراج المنتج في مكانه الصحيح
+    # جلب الأقسام من قمرة (Collections)
     collections = fetch_qumra_collections()
 
     if request.method == 'POST':
@@ -85,7 +82,6 @@ def add_product():
             return redirect(request.url)
 
         try:
-            # إنشاء منتج جديد مرتبط بالمورد الحالي
             new_product = Product(
                 name=name,
                 description=description,
@@ -93,12 +89,12 @@ def add_product():
                 cost_price=float(cost_price),
                 currency=currency,
                 supplier_id=current_user.id,
-                status='pending' # الحالة الافتراضية للمراجعة من قبل الأدمن
+                status='pending' 
             )
             
             db.session.add(new_product)
             db.session.commit()
-            flash('✅ تم رفع المنتج بنجاح. سيتم مراجعته ونشره قريباً.', 'success')
+            flash('✅ تم رفع المنتج بنجاح. سيتم مراجعته من قبل القائد علي محجوب.', 'success')
             return redirect(url_for('supplier_panel.dashboard'))
         except Exception as e:
             db.session.rollback()
@@ -106,7 +102,7 @@ def add_product():
 
     return render_template('supplier_panel/add_product.html', collections=collections)
 
-# --- 4. غرفة الانتظار (قبل التعميد النهائي) ---
+# --- 4. غرفة الانتظار ---
 @supplier_bp.route('/waiting-room')
 @login_required
 def waiting_room():
