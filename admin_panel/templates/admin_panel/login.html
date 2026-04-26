@@ -11,6 +11,7 @@
             --mahjoub-purple: #632C8F;
             --mahjoub-gold: #D4AF37;
             --bg-dark: #050505;
+            --glass-bg: rgba(10, 10, 10, 0.85);
         }
 
         body {
@@ -20,172 +21,230 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at center, #0f0c29 0%, #050505 100%);
+            background: radial-gradient(circle at center, #1a0b2e 0%, #050505 100%);
             color: white;
             overflow: hidden;
         }
 
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            padding: 40px;
-            background: rgba(10, 10, 10, 0.8);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 20px;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            text-align: center;
-            position: relative;
+        /* تأثير الخلفية المتحركة */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            opacity: 0.1;
+            animation: moveBg 60s linear infinite;
+            z-index: -1;
         }
 
-        .login-container::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(45deg, var(--mahjoub-purple), transparent, var(--mahjoub-gold));
-            z-index: -1;
-            border-radius: 22px;
-            opacity: 0.3;
+        @keyframes moveBg {
+            from { transform: translate(0,0); }
+            to { transform: translate(-50%, -50%); }
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 50px 40px;
+            background: var(--glass-bg);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 25px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8), 0 0 20px rgba(99, 44, 143, 0.1);
+            text-align: center;
+            position: relative;
+            transition: 0.5s;
+        }
+
+        .login-container:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 30px 70px rgba(0,0,0,0.9), 0 0 30px rgba(212, 175, 55, 0.1);
         }
 
         .logo-section h2 {
             font-weight: 900;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             margin-bottom: 5px;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            background: linear-gradient(to bottom, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .logo-section p {
             color: var(--mahjoub-gold);
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-bottom: 30px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            margin-bottom: 40px;
             text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.9;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: right;
             position: relative;
         }
 
-        .form-group i {
-            position: absolute;
-            right: 15px;
-            top: 42px;
-            color: var(--mahjoub-gold);
-            font-size: 0.9rem;
-        }
-
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 0.85rem;
-            font-weight: 600;
-            color: #94a3b8;
+            font-weight: 700;
+            color: #cbd5e1;
+            margin-right: 5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--mahjoub-gold);
+            font-size: 1rem;
+            transition: 0.3s;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px 45px 12px 15px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
+            padding: 14px 50px 14px 15px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
             color: white;
             font-family: 'Cairo';
+            font-size: 0.95rem;
             box-sizing: border-box;
-            transition: 0.3s;
+            transition: all 0.3s ease;
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--mahjoub-gold);
-            background: rgba(255,255,255,0.1);
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+            background: rgba(255,255,255,0.07);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+        }
+
+        .form-control:focus + i {
+            color: #fff;
+            text-shadow: 0 0 10px var(--mahjoub-gold);
         }
 
         .btn-login {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             background: linear-gradient(135deg, var(--mahjoub-purple), #4a1d6d);
-            border: 1px solid var(--mahjoub-gold);
-            border-radius: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 12px;
             color: white;
-            font-weight: 800;
-            font-size: 1rem;
+            font-weight: 900;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: 0.4s;
-            margin-top: 10px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(99, 44, 143, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(99, 44, 143, 0.5);
+            border-color: var(--mahjoub-gold);
             filter: brightness(1.2);
         }
 
-        .flash-messages {
+        .flash-msg {
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background: rgba(239, 68, 68, 0.15);
+            color: #ff4d4d;
+            border: 1px solid rgba(239, 68, 68, 0.3);
             margin-bottom: 20px;
             list-style: none;
-            padding: 0;
+            animation: shake 0.5s ease-in-out;
         }
 
-        .flash-msg {
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
 
         .footer-text {
-            margin-top: 25px;
-            font-size: 0.7rem;
-            color: #4b5563;
-            font-weight: 700;
+            margin-top: 35px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.2);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* تصميم الحلقات الضوئية حول النموذج */
+        .glow-ring {
+            position: absolute;
+            width: 150px; height: 150px;
+            background: var(--mahjoub-purple);
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.2;
         }
     </style>
 </head>
 <body>
 
+    <div class="glow-ring" style="top: -50px; left: -50px;"></div>
+    <div class="glow-ring" style="bottom: -50px; right: -50px; background: var(--mahjoub-gold);"></div>
+
     <div class="login-container">
         <div class="logo-section">
             <h2>MAHJOUB | <span style="color: var(--mahjoub-gold);">ONLINE</span></h2>
-            <p>برج الرقابة المركزية</p>
+            <p>نظام الولوج السيادي</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            <ul class="flash-messages">
-              {% for category, message in messages %}
-                <li class="flash-msg">{{ message }}</li>
-              {% endfor %}
-            </ul>
+            {% for category, message in messages %}
+              <div class="flash-msg">
+                <i class="fas fa-exclamation-triangle me-2"></i> {{ message }}
+              </div>
+            {% endfor %}
           {% endif %}
         {% endwith %}
 
         <form action="{{ url_for('admin_panel.login') }}" method="POST">
             <div class="form-group">
-                <label>اسم القائد</label>
-                <i class="fas fa-user-shield"></i>
-                <input type="text" name="username" class="form-control" placeholder="علي محجوب" required>
+                <label>معرف القائد</label>
+                <div class="input-wrapper">
+                    <input type="text" name="username" class="form-control" placeholder="اسم المستخدم" required autofocus>
+                    <i class="fas fa-user-shield"></i>
+                </div>
             </div>
 
             <div class="form-group">
-                <label>كلمة المرور السيادية</label>
-                <i class="fas fa-lock"></i>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                <label>مفتاح التشفير</label>
+                <div class="input-wrapper">
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    <i class="fas fa-key"></i>
+                </div>
             </div>
 
             <button type="submit" class="btn-login">
-                <i class="fas fa-sign-in-alt"></i> ولوج آمن
+                <span>ولوج آمن</span>
+                <i class="fas fa-unlock-alt"></i>
             </button>
         </form>
 
         <div class="footer-text">
-            &copy; 2026 جميع الحقوق محفوظة لـ محجوب أونلاين
+            &copy; 2026 محجوب أونلاين | الإصدار 2.0.0
         </div>
     </div>
 
