@@ -5,13 +5,11 @@ from config import Config
 import os
 
 # --- 🛡️ تهيئة الترسانة البرمجية الأساسية ---
-# يتم تعريف الكائنات هنا لضمان توفرها في كامل النظام دون تداخل
 db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
     # 1. إنشاء نسخة التطبيق وتحديد مسارات الموارد
-    # تم ضبط المسارات لضمان وصول السيرفر للملفات الثابتة والقوالب بدقة
     app = Flask(__name__, 
                 static_folder='../static', 
                 template_folder='../templates')
@@ -37,18 +35,11 @@ def create_app():
         @login_manager.user_loader
         def load_user(user_id):
             try:
-                # نعتمد على 'user_type' المخزن في الجلسة (Session) عند تسجيل الدخول
-                # لضمان عدم حدوث تداخل في حال تشابهت المعرفات (IDs) بين جدول القادة والموردين
                 user_type = session.get('user_type')
-
                 if user_type == 'supplier':
                     return Supplier.query.get(int(user_id))
-                
-                # الافتراضي هو البحث في جدول المستخدمين (الأدمن/القادة)
                 return User.query.get(int(user_id))
-            
             except Exception as e:
-                app.logger.error(f"⚠️ [Auth Error] فشل التعرف على الهوية: {e}")
                 return None
 
         # --- 🔗 تسجيل بوابات النظام (Blueprints Registration) ---
@@ -57,28 +48,25 @@ def create_app():
             from admin_panel.routes import admin_bp
             app.register_blueprint(admin_bp, url_prefix='/admin')
             
-            # 2. بوابة الموردين (نظام الحوكمة اللامركزي)
-            # تأكد من أن المجلد يحتوي على ملف __init__.py يُعرف الـ blueprint
-            from supplier_panel.routes import supplier_bp
+            # 2. بوابة الموردين (التصحيح هنا)
+            # نستورد البلوبرنت من المجلد مباشرة لأننا عرفناه في __init__.py الخاص بالمجلد
+            from supplier_panel import supplier_bp
             app.register_blueprint(supplier_bp, url_prefix='/supplier')
             
-            print("✅ [System] تم تفعيل البوابات السيادية وفصل الصلاحيات بنجاح.")
+            print("✅ [System] تم تفعيل بوابة الموردين على المسار /supplier بنجاح.")
         except Exception as e:
             print(f"❌ [Critical Error] خطأ في ربط بوابات النظام: {e}")
 
         # --- 📊 معالج البيانات الشامل (Context Processor) ---
-        # جعل البيانات الهامة متوفرة في كل القوالب تلقائياً (مثل تنبيهات الشريط الجانبي)
         @app.context_processor
         def inject_global_data():
             try:
-                # حساب عدد الموردين الذين ينتظرون "الاعتماد السيادي"
                 p_suppliers = Supplier.query.filter_by(is_approved=False).count()
                 return dict(pending_suppliers_count=p_suppliers)
             except Exception:
                 return dict(pending_suppliers_count=0)
 
-        # --- 🛠️ تهيئة قاعدة البيانات اللحظية ---
-        # يقوم بإنشاء الجداول في Postgres إذا لم تكن موجودة عند أول تشغيل
+        # إنشاء الجداول إذا لم تكن موجودة
         db.create_all()
 
     return app
