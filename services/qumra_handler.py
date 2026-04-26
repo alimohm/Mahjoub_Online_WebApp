@@ -2,7 +2,7 @@ import requests
 import os
 
 # جلب المفاتيح السيادية من متغيرات البيئة (Railway)
-QUMRA_API_URL = os.getenv("QUMRA_API_URL")  # الرابط الذي ينتهي بـ /admin/graphql
+QUMRA_API_URL = os.getenv("QUMRA_API_URL")  # الرابط المباشر لـ GraphQL
 QUMRA_TOKEN = os.getenv("QUMRA_API_KEY")    # التوكن qmr_...
 
 def query_qumra(query, variables=None):
@@ -18,7 +18,7 @@ def query_qumra(query, variables=None):
         if response.status_code == 200:
             return response.json()
         else:
-            print(f"🔴 فشل الاتصال بقمرة: {response.status_code}")
+            print(f"🔴 فشل الاتصال بقمرة: {response.status_code} - {response.text}")
             return None
     except Exception as e:
         print(f"🔴 خطأ تقني في المحرك: {e}")
@@ -39,10 +39,49 @@ def fetch_qumra_collections():
     }
     """
     result = query_qumra(query)
-    if result and 'data' in result:
-        # تحويل البيانات إلى تنسيق (ID, Name) لاستخدامها في Select Field
+    if result and 'data' in result and result['data'].get('collections'):
         return [
             (edge['node']['id'], edge['node']['name']) 
             for edge in result['data']['collections']['edges']
         ]
     return []
+
+def create_qumra_product(name, description, price, collection_id, image_urls=None):
+    """
+    إرسال المنتج نهائياً إلى قمرة (النشر السيادي).
+    يستلم البيانات من الإدارة ويطير بها إلى السحابة فوراً.
+    """
+    mutation = """
+    mutation CreateProduct($input: ProductInput!) {
+      productCreate(input: $input) {
+        product {
+          id
+          name
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+    
+    variables = {
+        "input": {
+            "name": name,
+            "descriptionHtml": description,
+            "collections": [collection_id] if collection_id else [],
+            "variants": [
+                {
+                    "price": float(price),
+                    "inventoryQuantity": 10 # كمية افتراضية أولية
+                }
+            ]
+        }
+    }
+    
+    # إضافة الصور إذا وُجدت روابط مباشرة (بدون تخزين محلي)
+    if image_urls:
+        variables["input"]["images"] = [{"src": url} for url in image_urls]
+
+    return query_qumra(mutation, variables)
