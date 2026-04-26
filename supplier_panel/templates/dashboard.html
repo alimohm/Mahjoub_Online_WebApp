@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "supplier_panel/base.html" %}  {# 👈 التعديل الجوهري هنا: تحديد المسار الكامل #}
 
 {% block title %}لوحة التحكم السيادية | إدارة الترسانة{% endblock %}
 
@@ -118,7 +118,8 @@
                     </div>
                     
                     <div id="wallet-content" class="currency-container animate-fade">
-                        </div>
+                        {# المحتوى يتم تحميله عبر JS #}
+                    </div>
 
                     <div class="text-center pb-4" style="position: relative; z-index: 3;">
                         <span class="dot-indicator active" onclick="showCurrency(0)"></span>
@@ -158,28 +159,18 @@
 </div>
 
 <script>
-    // جلب البيانات من الموديل مباشرة (MAH-9046)
     const walletData = [
         { 
-            label: "الدولار الأمريكي", 
-            code: "USD", 
-            symbol: "$", 
-            balance: {{ current_user.wallet_usd|default(0.0) }}, 
-            color: "#27ae60" 
+            label: "الدولار الأمريكي", code: "USD", symbol: "$", 
+            balance: {{ current_user.wallet_usd|default(0.0) }}, color: "#27ae60" 
         },
         { 
-            label: "الريال السعودي", 
-            code: "SAR", 
-            symbol: "ر.س", 
-            balance: {{ current_user.wallet_sar|default(0.0) }}, 
-            color: "#2980b9" 
+            label: "الريال السعودي", code: "SAR", symbol: "ر.س", 
+            balance: {{ current_user.wallet_sar|default(0.0) }}, color: "#2980b9" 
         },
         { 
-            label: "الريال اليمني", 
-            code: "YER", 
-            symbol: "ر.ي", 
-            balance: {{ current_user.wallet_yer|default(0.0) }}, 
-            color: "#e67e22" 
+            label: "الريال اليمني", code: "YER", symbol: "ر.ي", 
+            balance: {{ current_user.wallet_yer|default(0.0) }}, color: "#e67e22" 
         }
     ];
 
@@ -190,9 +181,7 @@
     function updateWalletUI(index) {
         if (!walletDiv) return;
         const data = walletData[index];
-        
         walletDiv.classList.add('fade-out');
-
         setTimeout(() => {
             walletDiv.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -213,19 +202,12 @@
         }, 300);
     }
 
-    function showCurrency(index) {
-        currentIndex = index;
-        updateWalletUI(index);
-    }
-
-    function forceNextCurrency() {
-        currentIndex = (currentIndex + 1) % walletData.length;
-        updateWalletUI(currentIndex);
-    }
+    function showCurrency(index) { currentIndex = index; updateWalletUI(index); }
+    function forceNextCurrency() { currentIndex = (currentIndex + 1) % walletData.length; updateWalletUI(currentIndex); }
 
     document.addEventListener('DOMContentLoaded', () => {
         updateWalletUI(0);
-        setInterval(forceNextCurrency, 6000); // تغيير تلقائي كل 6 ثواني
+        setInterval(forceNextCurrency, 6000);
     });
 </script>
 {% endblock %}
