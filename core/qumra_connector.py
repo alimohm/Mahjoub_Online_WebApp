@@ -1,60 +1,55 @@
-import requests
-import os
+from services.qumra_handler import query_qumra
+from core.models.product import Product
+from core import db
 
 class QumraSyncManager:
-    def __init__(self):
-        # الرابط المباشر لـ GraphQL في قمرة
-        self.api_url = "https://mahjoub.online/admin/graphql"
-        # سيتم جلب التوكن من متغيرات Railway التي أضفتها
-        self.token = os.environ.get("QUMRA_API_KEY")
+    """
+    مدير المزامنة السيادي: يعمل بنظام "العبور اللحظي" 
+    دون تخزين أصول المنتج محلياً للحفاظ على خفة السيرفر.
+    """
 
-    def fetch_live_products(self, limit=10):
-        """جلب البيانات من قمرة للعرض المباشر دون تخزين"""
-        if not self.token:
-            print("❌ خطأ: QUMRA_API_KEY غير موجود في متغيرات النظام")
-            return []
-
-        # الاستعلام المحسن لجلب البيانات مع الصور (Images)
+    def fetch_live_status(self, q_product_id):
+        """التحقق من حالة منتج معين في قمرة دون حفظه"""
         query = """
-        query {
-          products(first: %d) {
-            data {
-              _id
-              title
-              handle
-              images {
-                url
+        query getProduct($id: ID!) {
+          product(id: $id) {
+            id
+            status
+            variants(first: 1) {
+              edges {
+                node {
+                  price
+                  inventoryQuantity
+                }
               }
-              price
             }
           }
         }
-        """ % limit
+        """
+        variables = {"id": q_product_id}
+        result = query_qumra(query, variables)
+        return result.get('data', {}).get('product') if result else None
+
+    def sync_all_active_products(self):
+        """
+        تحديث حالات المزامنة للمنتجات النشطة فقط 
+        للتأكد من مطابقة السعر والمخزون.
+        """
+        active_products = Product.query.filter_by(status='active').all()
+        sync_results = {"success": 0, "failed": 0}
+
+        for product in active_products:
+            live_data = self.fetch_live_status(product.q_product_id)
+            if live_data:
+                # تحديث مؤشر المزامنة فقط (بيانات خفيفة جداً)
+                product.is_synced = True
+                sync_results["success"] += 1
+            else:
+                product.is_synced = False
+                sync_results["failed"] += 1
         
-        headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
-        }
+        db.session.commit()
+        return sync_results
 
-        try:
-            response = requests.post(self.api_url, json={'query': query}, headers=headers, timeout=10)
-            result = response.json()
-            
-            # استخراج قائمة المنتجات من استجابة قمرة
-            products_list = result.get('data', {}).get('products', {}).get('data', [])
-            
-            # معالجة بسيطة لضمان وجود رابط صورة افتراضي إذا لم تتوفر صورة
-            for p in products_list:
-                if p.get('images') and len(p['images']) > 0:
-                    p['display_image'] = p['images'][0]['url']
-                else:
-                    p['display_image'] = "https://via.placeholder.com/150?text=No+Image"
-            
-            return products_list
-            
-        except Exception as e:
-            print(f"❌ حدث خطأ أثناء جلب البيانات من قمرة: {str(e)}")
-            return []
-
-# إنشاء نسخة المحرك ليتم استدعاؤها في الـ Routes
+# إنشاء نسخة واحدة من المدير لاستخدامها في التطبيق
 qumra_manager = QumraSyncManager()
