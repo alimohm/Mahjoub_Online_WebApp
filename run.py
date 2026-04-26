@@ -3,24 +3,24 @@ from core import create_app, db
 from core.models import User, Supplier, Product
 from werkzeug.security import generate_password_hash
 
-# إنشاء تطبيق Flask بالهوية السيادية
+# 1. إنشاء تطبيق Flask بالهوية السيادية الموحدة
 app = create_app()
 
 def initialize_sovereign_system():
     """
-    وظيفة التطهير والتعميد: لإعادة بناء قاعدة البيانات
+    وظيفة التطهير والتعميد: لإعادة بناء قاعدة البيانات 
     وضمان مطابقة الكود للواقع التقني الجديد والمحافظ المالية.
     """
     with app.app_context():
         try:
-            print("🔄 [System] جاري تطهير وإعادة بناء الهيكل السيادي...")
+            print("🔄 [System] جاري تطهير وإعادة بناء الهيكل السيادي للمنصة...")
             
-            # 🚨 تحذير: مسح شامل لضمان تحديث الحقول الجديدة (مثل المحافظ والمناطق)
+            # 🚨 تحذير سيادي: مسح شامل لضمان تحديث الحقول الجديدة (مثل المحافظ والمناطق)
+            # نستخدم هذا فقط في مرحلة التطوير لضمان تزامن قاعدة البيانات مع الكود
             db.drop_all() 
             db.create_all() 
             
-            # --- 1. تعميد حساب القائد العام (علي محجوب) ---
-            # استخدام التشفير الأمني العالي لضمان قبول الدخول
+            # --- 🔐 1. تعميد حساب القائد العام (علي محجوب) ---
             hashed_admin_pass = generate_password_hash('123') 
             
             admin = User(
@@ -29,17 +29,17 @@ def initialize_sovereign_system():
                 role='admin'
             )
             
-            # --- 2. إنشاء مورد تجريبي متكامل الأركان ---
+            # --- 🏦 2. إنشاء مورد تجريبي متكامل الأركان (للفحص المالي) ---
             test_supplier = Supplier(
                 name='مورد تهامة التجريبي', 
                 password=generate_password_hash('123'), 
                 email='vendor@mahjoub.online',
                 trade_name='مؤسسة تهامة للتجارة',
-                province='الحديدة', # الحقل الجغرافي الذي كان يسبب الخطأ
+                province='الحديدة', # الحقل الجغرافي الأساسي
                 phone='770000000',
                 is_approved=True,
                 status='active',
-                # تصفير المحافظ السيادية لبدء النشاط التجاري
+                # تصفير المحافظ السيادية لبدء النشاط التجاري النظيف
                 wallet_balance=0.00,
                 wallet_sar=0.00,
                 wallet_usd=0.00,
@@ -51,16 +51,19 @@ def initialize_sovereign_system():
             db.session.add(test_supplier)
             db.session.commit()
             
-            print("✅ [Database] تم بناء الهيكل بنجاح. حساب القائد والمورد التجريبي جاهزان!")
+            print("✅ [Database] تم بناء الهيكل بنجاح. حساب القائد والمورد التجريبي جاهزان للإقلاع!")
             
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ [Error] فشل في عملية التطهير والتعميد: {e}")
+            print(f"⚠️ [Error] فشل في عملية التطهير والتعميد التقني: {e}")
 
 if __name__ == "__main__":
-    # تشغيل عملية التهيئة (يتم تفعيلها عند كل ريستارت للسيرفر في Railway)
+    # تشغيل عملية التهيئة (تتم تلقائياً عند كل Deployment أو Restart للسيرفر)
+    # بمجرد استقرار المنصة ورفع بيانات حقيقية، يفضل وضع علامة (#) قبل السطر التالي
     initialize_sovereign_system()
     
-    # ضبط المنفذ العالمي لضمان الربط مع Railway/Render
+    # ضبط المنفذ العالمي لضمان الربط السيادي مع Railway/Render
     port = int(os.environ.get("PORT", 8080))
+    
+    # الانطلاق بالمنصة
     app.run(host='0.0.0.0', port=port)
