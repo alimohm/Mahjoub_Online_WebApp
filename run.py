@@ -14,13 +14,13 @@ def index():
 # 2. إدارة هيكل البيانات والتعميد الأولي للحسابات
 with app.app_context():
     try:
-        # ⚠️ الإجراء الجراحي: تصفير الهيكل (يستخدم عند تحديث أعمدة قاعدة البيانات)
-        # ملاحظة: قم بإزالة db.drop_all() بعد أول تشغيل ناجح للحفاظ على بياناتك مستقبلاً
-        db.drop_all() 
+        # ملاحظة سيادية: تم إيقاف db.drop_all() للحفاظ على بياناتك.
+        # استخدمها فقط إذا قمت بتعديل جذري في أعمدة الجداول.
+        # db.drop_all() 
         
-        # إنشاء الجداول وفقاً للموديلات المحدثة (بما في ذلك q_product_id)
+        # إنشاء الجداول إذا لم تكن موجودة
         db.create_all()
-        print("✅ [Database] تم تصفير الهيكل ومزامنة الأعمدة السيادية بنجاح.")
+        print("✅ [Database] تم التحقق من الهيكل ومزامنة الأعمدة بنجاح.")
 
         # استيراد النماذج داخل السياق لضمان تسجيلها بدقة
         from core.models.user import User
@@ -28,15 +28,22 @@ with app.app_context():
         from core.models.product import Product
         
         # --- تعميد حساب القائد (علي محجوب) ---
+        # نستخدم دقة عالية في التحقق لضمان دخولك بكلمة "123"
         admin_username = 'علي محجوب'
-        if not User.query.filter_by(username=admin_username).first():
+        admin_user = User.query.filter_by(username=admin_username).first()
+        
+        if not admin_user:
             new_admin = User(
                 username=admin_username, 
-                password='123', # تذكر تغيير كلمة المرور بعد أول دخول
+                password='123', 
                 role='admin'
             )
             db.session.add(new_admin)
-            print(f"👤 [Security] تم إنشاء حساب القائد: '{admin_username}'.")
+            print(f"👤 [Security] تم إنشاء حساب القائد: '{admin_username}' بنجاح.")
+        else:
+            # تحديث كلمة السر لضمان أنها "123" في حال نسيانها
+            admin_user.password = '123'
+            print(f"🔐 [Security] تم تأكيد وتحديث كلمة سر القائد '{admin_username}'.")
 
         # --- تعميد حساب المورد الأول (شريك النجاح التجريبي) ---
         supplier_name = 'مورد تجريبي'
@@ -69,14 +76,14 @@ with app.app_context():
             test_product = Product(
                 name="منتج تجريبي سيادي",
                 description="وصف تجريبي للمنتج المرتبط بقمرة",
-                q_collection_id="Q-COL-123", # معرف قسم تجريبي
+                q_collection_id="Q-COL-123", 
                 cost_price=10.0,
                 currency="USD",
-                status="pending", # بانتظار تعميد الإدارة
+                status="pending", 
                 supplier_id=test_supplier.id
             )
             db.session.add(test_product)
-            print(f"📦 [Sourcing] تم إنشاء حساب المورد '{supplier_name}' ومنتج تجريبي بنجاح.")
+            print(f"📦 [Sourcing] تم إنشاء حساب المورد '{supplier_name}' ومنتج تجريبي.")
 
         db.session.commit()
         print("✅ [System] تم حفظ جميع البيانات وتجهيز النظام للإقلاع.")
@@ -87,11 +94,10 @@ with app.app_context():
 
 if __name__ == "__main__":
     # 3. إعدادات المنفذ لبيئة Railway السحابية
-    # نستخدم 8080 أو المنفذ الذي يحدده Railway ديناميكياً
     port = int(os.environ.get("PORT", 8080))
     
     # 4. الإقلاع الرسمي للمنصة
     print(f"🚀 [Mahjoub Online] السيرفر يعمل الآن على المنفذ {port}...")
     
-    # host='0.0.0.0' ضروري جداً لاستقبال الطلبات الخارجية على Railway
+    # host='0.0.0.0' ضروري لاستقبال الطلبات الخارجية على Railway
     app.run(host='0.0.0.0', port=port, debug=False)
