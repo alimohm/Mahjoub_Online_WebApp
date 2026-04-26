@@ -4,11 +4,10 @@ from . import supplier_bp
 from .auth_logic import verify_supplier_credentials
 from .decorators import sovereign_approval_required 
 from core import db
-from core.models import Product, Supplier
-from core.utils.qmr_api import QmrEngine
-
-# استدعاء محرك الربط مع قمرة
-qmr = QmrEngine()
+from core.models.product import Product
+from core.models.supplier import Supplier
+# استخدام المحرك الجديد والخفيف
+from services.qumra_handler import fetch_qumra_collections
 
 # --- 1. مسار تسجيل الدخول السيادي ---
 @supplier_bp.route('/login', methods=['GET', 'POST'])
@@ -26,7 +25,7 @@ def login():
 
         if not username or not password:
             flash('يرجى ملء كافة الحقول السيادية للدخول.', 'warning')
-            return render_template('supplier_panel/supplier_login.html')
+            return render_template('supplier_login.html')
 
         message, category, supplier = verify_supplier_credentials(username, password)
         
@@ -39,7 +38,7 @@ def login():
         else:
             flash(message, category)
             
-    return render_template('supplier_panel/supplier_login.html')
+    return render_template('supplier_login.html')
 
 # --- 2. لوحة التحكم ---
 @supplier_bp.route('/dashboard')
@@ -52,63 +51,66 @@ def dashboard():
             logout_user()
             return redirect(url_for('supplier_panel.login'))
             
+        # جلب منتجات المورد الحالي فقط
         my_products = Product.query.filter_by(supplier_id=current_user.id).all()
-        return render_template('supplier_panel/dashboard.html', products=my_products)
+        return render_template('dashboard.html', products=my_products)
         
     except Exception as e:
         return f"خطأ في النظام السيادي: {str(e)}", 500
 
-# --- 3. إضافة منتج جديد (الربط مع قمرة) ---
+# --- 3. إضافة منتج جديد (الربط الخفيف مع قمرة) ---
 @supplier_bp.route('/add-product', methods=['GET', 'POST'])
 @login_required
 @sovereign_approval_required
 def add_product():
-    # سحب الفئات لحظياً من قمرة عبر GraphQL ليختار منها المورد
-    collections = qmr.get_all_collections()
+    # سحب الأقسام "لحظياً" من قمرة دون تخزينها محلياً
+    collections = fetch_qumra_collections()
 
     if request.method == 'POST':
         name = request.form.get('name')
-        q_product_id = request.form.get('q_product_id')
+        description = request.form.get('description')
+        collection_id = request.form.get('collection_id')
         cost_price = request.form.get('cost_price')
         currency = request.form.get('currency')
         
-        if not q_product_id or not cost_price:
-            flash('يرجى إدخال معرف المنتج وسعر التكلفة لضمان الربط.', 'danger')
+        if not name or not cost_price:
+            flash('يرجى إدخال اسم المنتج وسعر التكلفة لضمان الحوكمة.', 'danger')
             return redirect(request.url)
 
         try:
+            # إنشاء كائن المنتج في الترسانة المحلية (حالة الانتظار)
             new_product = Product(
                 name=name,
-                q_product_id=q_product_id,
+                description=description,
+                q_collection_id=collection_id,
                 cost_price=float(cost_price),
                 currency=currency,
                 supplier_id=current_user.id,
-                status='pending' # المنتج يبقى معلقاً بانتظار تعميد الإدارة
+                status='pending' # يبقى معلقاً حتى تعميده من "برج الرقابة"
             )
             
             db.session.add(new_product)
             db.session.commit()
-            flash('✅ تم رفع المنتج للترسانة بنجاح وهو بانتظار المراجعة السيادية.', 'success')
+            flash('✅ تم رفع المنتج بنجاح وهو بانتظار المراجعة السيادية في برج الرقابة.', 'success')
             return redirect(url_for('supplier_panel.dashboard'))
         except Exception as e:
             db.session.rollback()
-            flash(f'⚠️ حدث خطأ أثناء الحفظ: {str(e)}', 'danger')
+            flash(f'⚠️ حدث خطأ أثناء المعالجة: {str(e)}', 'danger')
 
-    return render_template('supplier_panel/add_product.html', collections=collections)
+    return render_template('add_product.html', collections=collections)
 
-# --- 4. صفحة الانتظار ---
+# --- 4. صفحة الانتظار (للموردين غير المعتمدين) ---
 @supplier_bp.route('/waiting-room')
 @login_required
 def waiting_room():
-    from core.models.supplier import Supplier
-    fresh_data = Supplier.query.get(current_user.id)
-    
-    if fresh_data and fresh_data.is_approved:
+    # التحقق من الحالة اللحظية للمورد من قاعدة البيانات
+    supplier = Supplier.query.get(current_user.id)
+    if supplier and supplier.is_approved:
         return redirect(url_for('supplier_panel.dashboard'))
     
-    return render_template('supplier_panel/waiting_approval.html')
+    return render_template('waiting_approval.html')
 
-# --- 5. خروج المورد ---
+# --- 5. خروج آمن ---
 @supplier_bp.route('/logout')
 @login_required
 def logout():
