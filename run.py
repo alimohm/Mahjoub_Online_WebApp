@@ -15,40 +15,45 @@ def initialize_sovereign_system():
         try:
             print("🔄 [System] جاري تطهير وإعادة بناء الهيكل السيادي للمنصة...")
             
-            # 🚨 تحذير سيادي: مسح شامل لضمان تحديث الحقول الجديدة (مثل المحافظ والمناطق)
-            # نستخدم هذا فقط في مرحلة التطوير لضمان تزامن قاعدة البيانات مع الكود
+            # 🚨 تحذير سيادي: مسح شامل لضمان تحديث الحقول الجديدة
+            # سيقوم بحذف كل البيانات القديمة لضمان عمل الهيكل الجديد 100%
             db.drop_all() 
             db.create_all() 
             
             # --- 🔐 1. تعميد حساب القائد العام (علي محجوب) ---
-            hashed_admin_pass = generate_password_hash('123') 
-            
-            admin = User(
+            admin_user = User(
                 username='علي محجوب', 
-                password=hashed_admin_pass, 
+                password=generate_password_hash('123'), 
                 role='admin'
             )
+            db.session.add(admin_user)
             
-            # --- 🏦 2. إنشاء مورد تجريبي متكامل الأركان (للفحص المالي) ---
-            test_supplier = Supplier(
-                name='مورد تهامة التجريبي', 
-                password=generate_password_hash('123'), 
-                email='vendor@mahjoub.online',
+            # --- 🏦 2. إنشاء حساب مستخدم للمورد التجريبي ---
+            # في الهيكل الجديد، يجب أن يكون للمورد حساب في جدول User أولاً
+            supplier_user = User(
+                username='vendor_test',
+                password=generate_password_hash('123'),
+                role='supplier'
+            )
+            db.session.add(supplier_user)
+            db.session.flush() # لاستخراج الـ ID قبل الحفظ النهائي
+
+            # --- 📦 3. إنشاء بروفايل المورد (التفاصيل المالية والجغرافية) ---
+            test_supplier_profile = Supplier(
+                user_id=supplier_user.id,
                 trade_name='مؤسسة تهامة للتجارة',
-                province='الحديدة', # الحقل الجغرافي الأساسي
+                province='الحديدة',
                 phone='770000000',
                 is_approved=True,
                 status='active',
-                # تصفير المحافظ السيادية لبدء النشاط التجاري النظيف
                 wallet_balance=0.00,
                 wallet_sar=0.00,
                 wallet_usd=0.00,
                 wallet_yer=0.00
             )
+            db.session.add(test_supplier_profile)
             
-            # حفظ البيانات في الخزانة المركزية
-            db.session.add(admin)
-            db.session.add(test_supplier)
+            # حفظ جميع البيانات في الخزانة المركزية
             db.session.commit()
             
             print("✅ [Database] تم بناء الهيكل بنجاح. حساب القائد والمورد التجريبي جاهزان للإقلاع!")
@@ -58,12 +63,13 @@ def initialize_sovereign_system():
             print(f"⚠️ [Error] فشل في عملية التطهير والتعميد التقني: {e}")
 
 if __name__ == "__main__":
-    # تشغيل عملية التهيئة (تتم تلقائياً عند كل Deployment أو Restart للسيرفر)
-    # بمجرد استقرار المنصة ورفع بيانات حقيقية، يفضل وضع علامة (#) قبل السطر التالي
+    # تشغيل عملية التهيئة (تتم تلقائياً عند كل Deployment)
+    # ملاحظة: بمجرد استقرار البيانات الحقيقية، يجب تعطيل هذا السطر
     initialize_sovereign_system()
     
-    # ضبط المنفذ العالمي لضمان الربط السيادي مع Railway/Render
+    # ضبط المنفذ لضمان العمل على Railway
     port = int(os.environ.get("PORT", 8080))
     
     # الانطلاق بالمنصة
+    print(f"📡 المنصة تعمل الآن على المنفذ: {port}")
     app.run(host='0.0.0.0', port=port)
