@@ -1,12 +1,11 @@
 from flask import Blueprint
 
-# تعريف البوابة مع تحديد مجلد القوالب الخاص بها
+# تعريف البلوبرنت بدون استيراد أي شيء آخر في الأعلى
 admin_bp = Blueprint(
     'admin_panel', 
     __name__, 
-    template_folder='templates', # سيبحث داخل admin_panel/templates
-    static_folder='static'
+    template_folder='templates'
 )
 
-# استيراد المسارات لربطها بالبلوبرنت
+# الاستيراد يكون في الأسفل تماماً
 from . import routes
