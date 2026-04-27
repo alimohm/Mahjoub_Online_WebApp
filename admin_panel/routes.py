@@ -1,39 +1,38 @@
-from flask import render_template, redirect, url_for, flash
-from flask_login import login_required, current_user
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, login_required, current_user
 from . import admin_bp
 from core.models import User, db
 
-# --- حماية القيادة العليا ---
-def admin_only(f):
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            flash("⚠️ هذا النطاق مخصص للقيادة العليا فقط.", "error")
-            return redirect(url_for('supplier_panel.login'))
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
+# --- بوابة دخول الإدارة المستقلة ---
+@admin_bp.route('/login', methods=['GET', 'POST'])
+def admin_login():
+    if current_user.is_authenticated and current_user.role == 'admin':
+        return redirect(url_for('admin_panel.dashboard'))
 
-# --- لوحة التحكم الرئيسية للإدارة ---
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username, role='admin').first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for('admin_panel.dashboard'))
+        else:
+            flash('⚠️ فشل التحقق من الهوية القيادية.', 'error')
+            
+    return render_template('admin_panel/login.html') # صفحة دخول خاصة بالمدير
+
+# --- لوحة التحكم ---
 @admin_bp.route('/dashboard')
 @login_required
-@admin_only
 def dashboard():
-    # جلب قائمة الموردين الذين ينتظرون التعميد
+    if current_user.role != 'admin':
+        return redirect(url_for('admin_panel.admin_login'))
+    
     pending_suppliers = User.query.filter_by(role='supplier', status='pending').all()
-    # جلب إحصائيات سريعة
-    stats = {
-        'total_users': User.query.count(),
-        'pending_count': len(pending_suppliers)
-    }
-    return render_template('admin_panel/dashboard.html', suppliers=pending_suppliers, stats=stats)
+    return render_template('admin_panel/dashboard.html', suppliers=pending_suppliers)
 
-# --- محرك التعميد (Approve) ---
-@admin_bp.route('/approve/<int:user_id>')
-@login_required
-@admin_only
-def approve_supplier(user_id):
-    user = User.query.get_or_404(user_id)
-    user.status = 'approved'
-    db.session.commit()
-    flash(f"✅ تم تعميد الشريك {user.name}، يمكنه الآن دخول الترسانة.", "success")
-    return redirect(url_for('admin_panel.dashboard'))
+@admin_bp.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('admin_panel.admin_login'))
