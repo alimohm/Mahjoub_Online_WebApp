@@ -187,7 +187,6 @@
             letter-spacing: 1px;
         }
 
-        /* تصميم الحلقات الضوئية حول النموذج */
         .glow-ring {
             position: absolute;
             width: 150px; height: 150px;
@@ -220,7 +219,7 @@
           {% endif %}
         {% endwith %}
 
-        <form action="{{ url_for('admin_panel.login') }}" method="POST">
+        <form action="{{ url_for('admin_panel.admin_login') }}" method="POST">
             <div class="form-group">
                 <label>معرف القائد</label>
                 <div class="input-wrapper">
