@@ -1,7 +1,6 @@
 from flask import Blueprint
 
-# 1. تعريف البلوبرنت (Blueprint) الخاص بالموردين
-# لاحظ أننا لم نضف url_prefix هنا لأننا قمنا بإضافته في core/__init__.py لضمان المركزية
+# تعريف البلوبرنت الخاص بالموردين
 supplier_bp = Blueprint(
     'supplier_panel', 
     __name__, 
@@ -9,17 +8,14 @@ supplier_bp = Blueprint(
     static_folder='static'
 )
 
-# 2. ربط المكونات الداخلية (المسارات، المنطق، والحماية)
-# الاستيراد يتم في الأسفل لتجنب "الاستيراد الدائري" وضمان تسجيل الروابط بنجاح
+# استيراد الروابط والمنطق الداخلي (auth_logic, decorators) في الأسفل
 try:
-    from . import routes 
+    from . import routes
     from . import auth_logic
     from . import decorators
-    
-    print("🚀 [System] تم تفعيل بوابة الموردين السيادية بنجاح.")
-    
+    print("🚀 [System] بوابة الموردين جاهزة للعمل.")
 except ImportError as e:
-    print(f"⚠️ [Critical Error] فشل في ربط مكونات بوابة الموردين: {e}")
+    print(f"⚠️ [Error] فشل في تحميل مكونات بوابة الموردين: {e}")
 
-# تصدير الكائن ليكون متاحاً للاستدعاء من ملف core/__init__.py
+# تصدير الكائن ليكون متاحاً للنواة
 __all__ = ['supplier_bp']
