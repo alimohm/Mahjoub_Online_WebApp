@@ -1,38 +1,24 @@
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_login import login_user, logout_user, login_required
 from . import admin_bp
-from core.models import User, db
 
-# --- بوابة دخول الإدارة المستقلة ---
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
-    if current_user.is_authenticated and current_user.role == 'admin':
-        return redirect(url_for('admin_panel.dashboard'))
-
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username, role='admin').first()
         
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('admin_panel.dashboard'))
+        # هنا تضع منطق التحقق الخاص بك (مثال مؤقت)
+        if username == "ali_admin" and password == "9046":
+            # تفاصيل تسجيل الدخول...
+            return redirect(url_for('admin_panel.admin_dashboard'))
         else:
-            flash('⚠️ فشل التحقق من الهوية القيادية.', 'error')
+            flash('خطأ في بيانات العبور السيادية', 'danger')
             
-    return render_template('admin_panel/login.html') # صفحة دخول خاصة بالمدير
+    # لاحظ المسار هنا: يتوافق تماماً مع هيكل مجلداتك
+    return render_template('admin_panel/login.html')
 
-# --- لوحة التحكم ---
 @admin_bp.route('/dashboard')
 @login_required
-def dashboard():
-    if current_user.role != 'admin':
-        return redirect(url_for('admin_panel.admin_login'))
-    
-    pending_suppliers = User.query.filter_by(role='supplier', status='pending').all()
-    return render_template('admin_panel/dashboard.html', suppliers=pending_suppliers)
-
-@admin_bp.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('admin_panel.admin_login'))
+def admin_dashboard():
+    return "مرحباً بك في برج الرقابة المركزية"
