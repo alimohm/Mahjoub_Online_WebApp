@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
-# تعريف الكائنات الأساسية
+# 1. تعريف الكائنات الأساسية للنظام
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
@@ -12,51 +12,58 @@ migrate = Migrate()
 def create_app():
     app = Flask(__name__)
 
-    # جلب الإعدادات
+    # 2. جلب الإعدادات من ملف config.py
     from config import Config
     app.config.from_object(Config)
 
-    # تهيئة الإضافات
+    # 3. تهيئة الإضافات وربطها بالتطبيق
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
 
-    # تحديد صفحة الدخول الافتراضية
+    # 4. تحديد "البوابة الافتراضية" التي يذهب إليها المستخدم غير المسجل
+    # تم ربطها بـ admin_login لضمان التوجه لبرج الرقابة
     login_manager.login_view = 'admin_panel.admin_login'
+    login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى النظام السيادي."
+    login_manager.login_message_category = "info"
 
     @login_manager.unauthorized_handler
     def unauthorized():
         return redirect(url_for('admin_panel.admin_login'))
 
     with app.app_context():
+        # 5. استيراد الموديلات (تأكد من وجود __init__.py داخل مجلد core/models)
         from core import models
         
-        # --- تسجيل بوابة الموردين (تعمل حالياً ✅) ---
+        # 6. تسجيل بوابة الموردين (Supplier Panel)
         try:
-            from supplier_panel import supplier_bp
+            from supplier_panel.routes import supplier_bp
             app.register_blueprint(supplier_bp, url_prefix='/supplier')
             print("✅ تم تفعيل بوابة الموردين")
         except Exception as e:
-            print(f"⚠️ خطأ في بوابة الموردين: {e}")
+            print(f"⚠️ فشل في بوابة الموردين: {e}")
 
-        # --- تسجيل بوابة الإدارة (المجلد المنفصل 🏛️) ---
+        # 7. تسجيل بوابة الإدارة (Admin Panel - برج الرقابة 🏛️)
         try:
-            # نستورد admin_bp من مجلد admin_panel مباشرة
-            from admin_panel import admin_bp 
-            # نحدد المسار في المتصفح ليكون /admin
+            # نستورد مباشرة من ملف routes لضمان العثور على الكائن admin_bp
+            from admin_panel.routes import admin_bp 
             app.register_blueprint(admin_bp, url_prefix='/admin')
-            print("✅ تم تفعيل بوابة الإدارة بنجاح")
+            print("✅ تم تفعيل برج الرقابة المركزية بنجاح")
         except Exception as e:
             print(f"⚠️ فشل تسجيل بوابة الإدارة: {e}")
 
+        # 8. إنشاء الجداول في قاعدة البيانات إذا لم تكن موجودة
         db.create_all()
 
     return app
 
+# 9. محمل المستخدم (User Loader) - المحرك الأساسي للتعرف على الهوية
 @login_manager.user_loader
 def load_user(user_id):
-    from core.models import User
+    # استيراد من المسار الدقيق للموديل لضمان عدم حدوث Unknown Location
+    from core.models.user import User
     try:
         return User.query.get(int(user_id))
-    except:
+    except Exception as e:
+        print(f"❌ خطأ في تحميل المستخدم: {e}")
         return None
