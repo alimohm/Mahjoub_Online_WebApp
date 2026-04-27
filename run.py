@@ -1,22 +1,29 @@
-import os
 from core import create_app, db
+import os
 
-# 1. إنشاء تطبيق فلاسك باستخدام المصنع البرمجي (Factory Pattern)
 app = create_app()
 
-# 2. نقطة الإقلاع (Entry Point)
-if __name__ == "__main__":
-    with app.app_context():
-        try:
-            # محاولة إنشاء الجداول في قاعدة البيانات إذا لم تكن موجودة
-            db.create_all()
-            print("🏛️ Database connection established & tables created.")
-        except Exception as e:
-            print(f"⚠️ Database Error: {e}")
+# كود سيادي: إنشاء مستخدم المدير تلقائياً عند أول تشغيل
+with app.app_context():
+    try:
+        from core.models import User
+        from werkzeug.security import generate_password_hash
+        
+        # بيانات الدخول الخاصة بك (يمكنك تغييرها لاحقاً)
+        admin_email = "admin@mahjoub.com"
+        if not User.query.filter_by(email=admin_email).first():
+            admin_user = User(
+                email=admin_email,
+                password=generate_password_hash("Ali_2026_Secure"),
+                is_admin=True
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            print("✨ [SUCCESS] Admin account created: admin@mahjoub.com / Ali_2026_Secure")
+    except Exception as e:
+        print(f"❌ [ERROR] Could not create admin: {e}")
 
-    # 3. جلب المنفذ (Port) من إعدادات السيرفر أو استخدام 8080 كافتراضي
+if __name__ == "__main__":
+    # الحصول على المنفذ من السيرفر أو استخدام 8080 افتراضياً
     port = int(os.environ.get("PORT", 8080))
-    
-    # 4. تشغيل التطبيق
-    # ملاحظة: في Back4app نستخدم Gunicorn للتشغيل وليس app.run مباشرة
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host='0.0.0.0', port=port)
