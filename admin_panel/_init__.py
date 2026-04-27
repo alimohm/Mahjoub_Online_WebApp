@@ -1,7 +1,6 @@
 from flask import Blueprint
 
-# 1. تعريف البلوبرنت (Blueprint) للإدارة
-# تم تحديد template_folder لضمان قراءة القوالب من المجلد الفرعي المنظم
+# تعريف البلوبرنت وتحديد أماكن القوالب والملفات الثابتة
 admin_bp = Blueprint(
     'admin_panel', 
     __name__, 
@@ -9,13 +8,8 @@ admin_bp = Blueprint(
     static_folder='static'
 )
 
-# 2. استيراد المسارات (Routes)
-# يجب الاستيراد في الأسفل لتجنب خطأ الاستيراد الدائري (Circular Import)
-try:
-    from . import routes
-    print("🏰 [System] تم تجهيز بوابة الإدارة السيادية.")
-except ImportError as e:
-    print(f"⚠️ [Error] فشل في تحميل مسارات الإدارة: {e}")
+# استيراد الروابط في الأسفل لتجنب تداخل الاستدعاء مع core
+from . import routes
 
 # تصدير الكائن ليكون متاحاً للنواة
 __all__ = ['admin_bp']
