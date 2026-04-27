@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from core import db
@@ -6,13 +6,11 @@ from core.models import User, Supplier, Product
 # استدعاء المحرك الجديد للربط مع قمرة
 from core.qumra_connector import QumraConnector
 
-# 1. إعداد الـ Blueprint بمسار القوالب الصحيح
-admin_bp = Blueprint(
-    'admin_panel', 
-    __name__, 
-    template_folder='templates'
-)
+# 🚨 التصحيح السيادي: استيراد البلوبرنت من ملف الـ __init__ الخاص بالمجلد
+# هذا يمنع خطأ التكرار ويسمح لـ Flask بالتعرف على المسارات
+from . import admin_bp 
 
+# تهيئة موصل قمرة
 qumra = QumraConnector()
 
 # --- 📊 معالج السياق (تحديث العدادات في القائمة الجانبية آلياً) ---
@@ -22,12 +20,13 @@ def inject_counts():
         # حساب الموردين الذين ينتظرون "التعميد" (الاعتماد السيادي)
         pending_count = Supplier.query.filter_by(is_approved=False).count()
         return dict(pending_suppliers_count=pending_count)
-    except:
+    except Exception:
         return dict(pending_suppliers_count=0)
 
 # --- 2. بوابة دخول القائد علي محجوب ---
 @admin_bp.route('/login', methods=['GET', 'POST'], strict_slashes=False)
 def login():
+    # منع الدخول المتكرر إذا كان القائد مسجلاً بالفعل
     if current_user.is_authenticated and session.get('user_type') == 'admin':
         return redirect(url_for('admin_panel.dashboard'))
 
@@ -35,6 +34,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
+        # البحث عن المستخدم برتبة admin حصراً
         user = User.query.filter_by(username=username, role='admin').first()
 
         # التحقق المشفر لضمان الأمان السيادي
@@ -54,6 +54,7 @@ def login():
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
+    # حماية المسار من أي محاولة دخول لغير الأدمن
     if session.get('user_type') != 'admin':
         logout_user()
         return redirect(url_for('admin_panel.login'))
@@ -107,7 +108,7 @@ def sync_now():
     if session.get('user_type') != 'admin':
         return redirect(url_for('admin_panel.login'))
 
-    # جلب المنتجات غير النشطة التي رفعها الموردون
+    # جلب المنتجات غير النشطة التي رفعها الموردون للمراجعة
     pending_products = Product.query.filter_by(is_active=False).all()
     return render_template('admin_panel/product_review.html', products=pending_products)
 
