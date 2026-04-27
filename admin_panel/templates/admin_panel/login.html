@@ -171,6 +171,7 @@
             margin-bottom: 20px;
             list-style: none;
             animation: shake 0.5s ease-in-out;
+            text-align: center;
         }
 
         @keyframes shake {
@@ -213,7 +214,7 @@
           {% if messages %}
             {% for category, message in messages %}
               <div class="flash-msg">
-                <i class="fas fa-exclamation-triangle me-2"></i> {{ message }}
+                <i class="fas fa-shield-alt"></i> {{ message }}
               </div>
             {% endfor %}
           {% endif %}
@@ -223,7 +224,7 @@
             <div class="form-group">
                 <label>معرف القائد</label>
                 <div class="input-wrapper">
-                    <input type="text" name="username" class="form-control" placeholder="اسم المستخدم" required autofocus>
+                    <input type="text" name="username" class="form-control" placeholder="اسم المستخدم" required autofocus autocomplete="off">
                     <i class="fas fa-user-shield"></i>
                 </div>
             </div>
