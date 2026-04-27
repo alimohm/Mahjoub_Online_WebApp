@@ -1,4 +1,5 @@
 import os
+import sys
 from flask import Flask
 from flask_login import LoginManager
 from config import Config
@@ -9,12 +10,18 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
-    # استخدام os.path لضمان أن المسارات تعمل على Railway (Linux) و Windows
+    # إعداد المسارات الأساسية لضمان عملها على Railway
     base_dir = os.path.abspath(os.path.dirname(__file__))
+    project_root = os.path.abspath(os.path.join(base_dir, '..'))
     
+    # 🚨 الحركة الجوهرية: إضافة جذر المشروع إلى مسار النظام (sys.path)
+    # هذا يسمح لبايثون برؤية admin_panel و supplier_panel فوراً
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
     app = Flask(__name__, 
-                static_folder=os.path.join(base_dir, '../static'), 
-                template_folder=os.path.join(base_dir, '../templates'))
+                static_folder=os.path.join(project_root, 'static'), 
+                template_folder=os.path.join(project_root, 'templates'))
     
     app.config.from_object(Config)
     
@@ -23,12 +30,11 @@ def create_app():
     login_manager.init_app(app)
     
     # إعدادات حماية الدخول
-    login_manager.login_view = 'supplier_panel.login' # جعلنا الافتراضي بوابة الموردين
+    login_manager.login_view = 'supplier_panel.login'
     login_manager.login_message = "هذه المنطقة تتطلب تعميداً سيادياً للدخول."
     login_manager.login_message_category = "info"
 
     with app.app_context():
-        # استيراد الموديلات داخل السياق
         from core.models import User
 
         @login_manager.user_loader
@@ -37,17 +43,16 @@ def create_app():
 
         # 🚨 تعميد الروابط وربط البوابات
         try:
-            # استيراد البلوبرنت من ملفات __init__
+            # الآن سيتمكن النظام من رؤيتهم بفضل sys.path
             from admin_panel import admin_bp
             from supplier_panel import supplier_bp
             
-            # تسجيل البوابات بمسارات واضحة
-            # التأكد من عدم وجود تكرار في السلاش /
             app.register_blueprint(admin_bp, url_prefix='/admin')
             app.register_blueprint(supplier_bp, url_prefix='/supplier')
             
-            print("✅ [System] تم توحيد المحرك وربط البوابات بنجاح.")
+            print("✅ [System] تم توحيد المحرك وربط البوابات بنجاح سيادي.")
         except Exception as e:
-            print(f"❌ [Critical Error] فشل في ربط البوابات: {e}")
+            # طباعة الخطأ بالتفصيل في الـ Logs لتسهيل تتبعه
+            print(f"❌ [Critical Error] فشل في ربط البوابات: {str(e)}")
 
     return app
