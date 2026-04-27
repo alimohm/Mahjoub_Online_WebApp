@@ -1,64 +1,21 @@
-from flask import Flask, session
-from flask_login import LoginManager
-from config import Config
-import os
+from flask import Blueprint
 
-# --- 1. استيراد المحركات المركزية ---
-from core.models import db
+# 1. تعريف البلوبرنت (Blueprint) للإدارة
+# تم تحديد template_folder لضمان قراءة القوالب من المجلد الفرعي المنظم
+admin_bp = Blueprint(
+    'admin_panel', 
+    __name__, 
+    template_folder='templates',
+    static_folder='static'
+)
 
-login_manager = LoginManager()
+# 2. استيراد المسارات (Routes)
+# يجب الاستيراد في الأسفل لتجنب خطأ الاستيراد الدائري (Circular Import)
+try:
+    from . import routes
+    print("🏰 [System] تم تجهيز بوابة الإدارة السيادية.")
+except ImportError as e:
+    print(f"⚠️ [Error] فشل في تحميل مسارات الإدارة: {e}")
 
-def create_app():
-    # إنشاء نسخة التطبيق وتحديد مسارات الموارد المركزية
-    app = Flask(__name__, 
-                static_folder='../static', 
-                template_folder='../templates')
-    
-    app.config.from_object(Config)
-    
-    # --- 2. ربط المحركات بنواة التطبيق ---
-    db.init_app(app)
-    login_manager.init_app(app)
-    
-    # --- 3. بروتوكولات الحماية ---
-    # جعل الدخول الافتراضي هو بوابة الإدارة
-    login_manager.login_view = 'admin_panel.login'  
-    login_manager.login_message = "يرجى إثبات هويتك للوصول إلى هذه المنطقة السيادية."
-    login_manager.login_message_category = "info"
-
-    with app.app_context():
-        # استيراد الموديلات الموحدة
-        from core.models import User, Supplier, Product
-
-        # --- 🔐 نظام التحميل الموحد (Unified User Loader) ---
-        @login_manager.user_loader
-        def load_user(user_id):
-            # الآن كل المستخدمين (أدمن أو مورد) يعيشون في جدول User
-            # التفرقة تتم داخل النظام عبر حقل role
-            return User.query.get(int(user_id))
-
-        # --- 🔗 تسجيل بوابات النظام (Blueprints) ---
-        try:
-            # تسجيل بوابة الإدارة (تأكد من وجود الكائن admin_bp داخل admin_panel)
-            from admin_panel import admin_bp
-            app.register_blueprint(admin_bp, url_prefix='/admin')
-            
-            # تسجيل بوابة الموردين
-            from supplier_panel import supplier_bp
-            app.register_blueprint(supplier_bp, url_prefix='/supplier')
-            
-            print("✅ [System] تم ربط البوابات السيادية (Admin & Supplier) بنجاح.")
-        except Exception as e:
-            print(f"❌ [Critical Error] فشل في ربط البوابات السيادية: {e}")
-
-        # --- 📊 معالج البيانات الشامل (Context Processor) ---
-        @app.context_processor
-        def inject_global_data():
-            try:
-                # جلب عدد الموردين الذين ينتظرون "التعميد" من القائد علي
-                p_suppliers = Supplier.query.filter_by(is_approved=False).count()
-                return dict(pending_suppliers_count=p_suppliers)
-            except Exception:
-                return dict(pending_suppliers_count=0)
-
-    return app
+# تصدير الكائن ليكون متاحاً للنواة
+__all__ = ['admin_bp']
