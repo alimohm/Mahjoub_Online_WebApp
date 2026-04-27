@@ -22,14 +22,14 @@ def login():
             flash('أهلاً بك أيها القائد علي في برج الرقابة.', 'success')
             return redirect(url_for('admin_panel.dashboard'))
         else:
-            flash('الوصول للمنطقة السيادية مرفوض.', 'danger')
-            
+            flash('الوصول مرفوض.', 'danger')
     return render_template('admin_panel/login.html')
 
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
     if session.get('user_type') != 'admin':
-        logout_user()
         return redirect(url_for('admin_panel.login'))
-    return render_template('admin_panel/dashboard.html')
+    s_count = Supplier.query.count()
+    p_count = Product.query.count()
+    return render_template('admin_panel/dashboard.html', s_count=s_count, p_count=p_count)
