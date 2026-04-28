@@ -11,11 +11,11 @@ login_manager = LoginManager()
 migrate = Migrate()
 
 def create_app():
-    # إنشاء تطبيق Flask
-    # ملاحظة: تم ضبط template_folder ليشمل المجلدات الخارجية
-    app = Flask(__name__)
+    # إنشاء تطبيق Flask مع تحديد مسار القوالب الرئيسي (Templates)
+    # نستخدم '../templates' لأن المجلد موجود في الجذر خارج مجلد core
+    app = Flask(__name__, template_folder='../templates')
     
-    # حل مشكلة الروابط و البروتوكولات (HTTP/HTTPS) في بيئة Render/Railway
+    # حل مشكلة الروابط والبروتوكولات (HTTP/HTTPS) في بيئات مثل Railway/Render
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     # 2. تحميل الإعدادات
@@ -23,25 +23,25 @@ def create_app():
         from config import Config
         app.config.from_object(Config)
     except ImportError:
-        # إعدادات احتياطية في حال فقدان ملف config.py
+        # إعدادات افتراضية في حال عدم وجود ملف config.py
         app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///mahjoub_online.db'
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'mahjoub-secret-key-123'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # 3. تهيئة الإضافات مع التطبيق
+    # 3. تهيئة الإضافات
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
 
-    # 4. إعدادات نظام الدخول
+    # 4. إعدادات نظام تسجيل الدخول
     login_manager.login_view = 'admin_panel.admin_login'
     login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى النظام السيادي."
     login_manager.login_message_category = "info"
 
-    # --- ⚓ الموجه الافتراضي ⚓ ---
+    # --- ⚓ الموجه المركزي الافتراضي ⚓ ---
     @app.route('/')
     def index():
-        # توجيه تلقائي لصفحة الإدارة عند فتح الرابط الرئيسي للموقع
+        # التوجه تلقائياً لبرج الرقابة (الإدارة) عند فتح الموقع
         return redirect(url_for('admin_panel.admin_login'))
 
     with app.app_context():
@@ -50,27 +50,27 @@ def create_app():
         from core.models.product import Product
         from core.models.supplier import Supplier
         
-        # إنشاء الجداول إذا لم تكن موجودة
+        # إنشاء الجداول (لن يمسح البيانات الموجودة مسبقاً)
         db.create_all() 
 
         # 6. تسجيل البوابات السيادية (Blueprints)
-        # يتم الاستيراد هنا حصراً لتجنب أخطاء الاستيراد الدائري (Circular Import)
+        # يتم الاستيراد هنا حصراً لتجنب أخطاء الاستيراد الدائري
         
         try:
             from supplier_panel.routes import supplier_bp
             if 'supplier_panel' not in app.blueprints:
                 app.register_blueprint(supplier_bp, url_prefix='/supplier')
-            print("✅ تم ربط بوابة الموردين بنجاح")
+            print("✅ تم تفعيل بوابة الموردين بنجاح")
         except Exception as e:
-            print(f"⚠️ خطأ في ربط بوابة الموردين: {e}")
+            print(f"❌ خطأ في ربط بوابة الموردين: {e}")
 
         try:
             from admin_panel.routes import admin_bp 
             if 'admin_panel' not in app.blueprints:
                 app.register_blueprint(admin_bp, url_prefix='/admin')
-            print("✅ تم ربط برج الرقابة بنجاح")
+            print("✅ تم تفعيل برج الرقابة بنجاح")
         except Exception as e:
-            print(f"⚠️ خطأ في ربط بوابة الإدارة: {e}")
+            print(f"❌ خطأ في ربط بوابة الإدارة: {e}")
 
         # 7. عملية التعميد (تأكيد الحسابات الأساسية فور التشغيل)
         try:
