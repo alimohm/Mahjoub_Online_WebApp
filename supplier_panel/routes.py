@@ -2,25 +2,15 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from core import db
 from core.models.user import User
-# استيراد منطق التحقق (تأكد من وجود هذا الملف في نفس المجلد)
-try:
-    from .auth_logic import handle_supplier_auth
-except ImportError:
-    # دالة احتياطية في حال تعذر استيراد المنطق الخارجي مؤقتاً
-    def handle_supplier_auth(username, password):
-        user = User.query.filter_by(username=username, role='supplier').first()
-        if user and user.check_password(password):
-            return user
-        return None
 
-# 1. تعريف البلوبرينت (Blueprint)
-# تم تحديد template_folder لضمان التعرف على ملفات الـ HTML داخل المجلد الفرعي
+# 1. تعريف البلوبرينت الخاص بالموردين
+# تأكد أن اسم المجلد الفرعي للقوالب هو supplier_panel
 supplier_bp = Blueprint('supplier_panel', __name__, template_folder='templates')
 
 # 2. مسار تسجيل الدخول (Login)
 @supplier_bp.route('/login', methods=['GET', 'POST'])
 def supplier_login():
-    # منع المستخدم المسجل بالفعل من العودة لصفحة الدخول
+    # منع المستخدم المسجل (كمورد) من العودة لصفحة الدخول
     if current_user.is_authenticated:
         if current_user.role == 'supplier':
             return redirect(url_for('supplier_panel.supplier_dashboard'))
@@ -31,37 +21,38 @@ def supplier_login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # استدعاء منطق التحقق السيادي
-        user = handle_supplier_auth(username, password)
+        # البحث عن المستخدم في قاعدة البيانات برتبة مورد فقط
+        user = User.query.filter_by(username=username, role='supplier').first()
         
-        if user:
+        if user and user.check_password(password):
             if user.status == 'approved':
                 login_user(user)
-                flash(f'مرحباً بك في نظام التوريد، {user.username}', 'success')
+                flash(f'مرحباً بك في بوابة التوريد، {user.username}', 'success')
                 return redirect(url_for('supplier_panel.supplier_dashboard'))
             else:
-                flash('حسابك قيد المراجعة من قبل الإدارة المركزية.', 'warning')
+                flash('حسابك لا يزال قيد المراجعة من قبل الإدارة المركزية.', 'warning')
         else:
             flash('بيانات الدخول غير صحيحة أو الحساب غير مسجل كمورد.', 'danger')
 
-    return render_template('supplier_login.html')
+    # استدعاء القالب من المجلد الفرعي: templates/supplier_panel/login.html
+    return render_template('supplier_panel/login.html')
 
 # 3. لوحة تحكم المورد (Dashboard)
-# لاحظ أن الاسم هنا هو 'supplier_dashboard' ليتطابق مع url_for
 @supplier_bp.route('/dashboard')
 @login_required
 def supplier_dashboard():
-    # فحص الرتبة لضمان أمن النظام السيادي
+    # حماية سيادية: التأكد من أن المستخدم ليس مديراً يحاول التطفل
     if current_user.role != 'supplier':
-        flash('وصول غير مصرح به لبرج الموردين.', 'danger')
-        return redirect(url_for('admin_panel.admin_login'))
+        flash('هذا القسم مخصص للموردين فقط.', 'danger')
+        return redirect(url_for('admin_panel.admin_dashboard'))
         
-    return render_template('supplier_dashboard.html', user=current_user)
+    # استدعاء القالب من المجلد الفرعي: templates/supplier_panel/dashboard.html
+    return render_template('supplier_panel/dashboard.html', user=current_user)
 
 # 4. تسجيل الخروج (Logout)
 @supplier_bp.route('/logout')
 @login_required
 def supplier_logout():
     logout_user()
-    flash('تم إنهاء الجلسة اللامركزية بنجاح.', 'info')
+    flash('تم تسجيل الخروج من بوابة الموردين بنجاح.', 'info')
     return redirect(url_for('supplier_panel.supplier_login'))
