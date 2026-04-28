@@ -1,7 +1,6 @@
-from core import db
+from core.models.user import User
+from core.models.product import Product
+from core.models.supplier import Supplier
 
-from .user import User
-from .supplier import Supplier
-from .product import Product
-
-__all__ = ['User', 'Supplier', 'Product']
+# هذا السطر يسهل عملية استدعاء db.create_all() من ملف النواة الرئيسي
+__all__ = ['User', 'Product', 'Supplier']
