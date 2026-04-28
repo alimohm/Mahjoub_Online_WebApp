@@ -3,6 +3,7 @@ from flask import Flask, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from werkzeug.middleware.proxy_fix import ProxyFix # أضف هذا السطر
 
 # 1. تعريف الكائنات الأساسية
 db = SQLAlchemy()
@@ -11,6 +12,9 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
+    
+    # تحسين التعامل مع البروكسي في Render/Railway لضمان سلامة الروابط
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     # 2. الإعدادات
     try:
@@ -28,11 +32,12 @@ def create_app():
 
     # 4. إعدادات الدخول
     login_manager.login_view = 'admin_panel.admin_login'
-    
-    # --- ⚓ المسار الافتراضي (لحل مشكلة عدم ظهور الصفحة) ⚓ ---
+    login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى النظام السيادي."
+    login_manager.login_message_category = "info"
+
+    # --- ⚓ المسار الافتراضي ⚓ ---
     @app.route('/')
     def index():
-        # توجيه تلقائي لصفحة دخول الإدارة عند فتح الموقع
         return redirect(url_for('admin_panel.admin_login'))
 
     with app.app_context():
@@ -41,39 +46,40 @@ def create_app():
         from core.models.product import Product
         from core.models.supplier import Supplier
         
-        # ⚠️ ملاحظة: سطر db.drop_all() يُحذف بعد أول تشغيل ناجح
-        # db.create_all() 
+        # إنشاء الجداول إذا لم تكن موجودة (بدون مسح القديم)
+        db.create_all() 
 
-        # 6. تسجيل البوابات بدقة
+        # 6. تسجيل البوابات (الـ Blueprints)
         try:
             from supplier_panel.routes import supplier_bp
             if 'supplier_panel' not in app.blueprints:
                 app.register_blueprint(supplier_bp, url_prefix='/supplier')
-            print("✅ بوابة الموردين نشطة")
         except Exception as e:
-            print(f"⚠️ خطأ بوابة الموردين: {e}")
+            app.logger.error(f"⚠️ خطأ بوابة الموردين: {e}")
 
         try:
             from admin_panel.routes import admin_bp 
             if 'admin_panel' not in app.blueprints:
                 app.register_blueprint(admin_bp, url_prefix='/admin')
-            print("✅ برج الرقابة نشط")
         except Exception as e:
-            print(f"⚠️ خطأ بوابة الإدارة: {e}")
+            app.logger.error(f"⚠️ خطأ بوابة الإدارة: {e}")
 
-        # 7. التعميد (يبقى كما هو للتأكد من وجود الحسابات)
+        # 7. التعميد السيادي (لضمان وجود المستخدمين الأساسيين دائماً)
         try:
             if not User.query.filter_by(username="علي محجوب").first():
                 admin_user = User(username="علي محجوب", role="admin", status="approved")
                 admin_user.set_password("123")
                 db.session.add(admin_user)
                 db.session.commit()
+                print("✅ تم تعميد حساب المدير بنجاح")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ تعذر التعميد: {e}")
 
     return app
 
 @login_manager.user_loader
 def load_user(user_id):
     from core.models.user import User
+    # استخدام الطريقة الأحدث والمستقرة لجلب المستخدم
     return db.session.get(User, int(user_id))
