@@ -1,7 +1,13 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, Blueprint
 from flask_login import login_required, current_user, login_user, logout_user
-from . import admin_bp
-from core.models.user import User  # استيراد موديل المستخدم من المسار الجديد
+from core.models.user import User  # استيراد الموديل من قلب النظام
+
+# 1. تعريف البلوبرينت (هذا هو السطر الذي كان ينقصك ويسبب الخطأ الفادح)
+admin_bp = Blueprint(
+    'admin_panel', 
+    __name__, 
+    template_folder='templates'
+)
 
 # ==========================================
 # 1. بوابة الدخول (login.html)
@@ -20,7 +26,7 @@ def admin_login():
             login_user(user)
             return redirect(url_for('admin_panel.admin_dashboard'))
         else:
-            flash('فشل الدخول، تأكد من بياناتك وصلاحياتك يا قائد.', 'danger')
+            flash('بيانات الدخول غير صحيحة يا قائد.', 'danger')
             
     return render_template('admin_panel/login.html')
 
@@ -38,6 +44,7 @@ def admin_dashboard():
 @admin_bp.route('/suppliers')
 @login_required
 def admin_suppliers_management():
+    # هنا سيتم لاحقاً جلب قائمة الموردين من قاعدة البيانات
     return render_template('admin_panel/admin_suppliers_management.html')
 
 # ==========================================
