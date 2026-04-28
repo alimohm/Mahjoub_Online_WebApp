@@ -1,6 +1,9 @@
 import os
-from core import app, db
+from core import create_app, db 
 from core.models.user import User
+
+# تهيئة التطبيق للدخول في سياق قاعدة البيانات
+app = create_app()
 
 def setup_system_accounts():
     """
@@ -29,7 +32,7 @@ def setup_system_accounts():
             supplier_user.set_password("123")
             print(f"⚠️ حساب {supplier_name} موجود مسبقاً، تم تحديث الصلاحيات وكلمة المرور.")
 
-        # 2. إعداد حساب الإدارة (علي محجوب) لضمان عدم حدوث خطأ "غير مسجل" هناك أيضاً
+        # 2. إعداد حساب الإدارة (علي محجوب)
         admin_name = "علي محجوب"
         admin_user = User.query.filter_by(username=admin_name).first()
         
@@ -54,7 +57,7 @@ def setup_system_accounts():
             print("\n✨ اكتملت العملية! المنصة اللامركزية جاهزة لاستقبالك الآن.")
         except Exception as e:
             db.session.rollback()
-            print(f"❌ حدث خطأ أثناء الحفظ: {e}")
+            print(f"❌ حدث خطأ أثناء الحفظ في قاعدة البيانات: {e}")
 
 if __name__ == "__main__":
     setup_system_accounts()
