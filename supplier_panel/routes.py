@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask_login import login_required
-from .auth_logic import SupplierAuthLogic # استيراد المنطق من الملف الجديد
+from .auth_logic import SupplierAuthLogic
 
 supplier_bp = Blueprint('supplier_panel', __name__, template_folder='templates')
 
