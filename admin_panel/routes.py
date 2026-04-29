@@ -9,7 +9,7 @@ admin_bp = Blueprint(
     template_folder='templates'
 )
 
-# إنشاء نسخة من المتحكم لإدارة منطق الدخول والعمليات
+# إنشاء نسخة من المتحكم لإدارة العمليات الإدارية
 auth_controller = AdminAuthController()
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
@@ -19,12 +19,12 @@ def admin_login():
 
 @admin_bp.route('/dashboard')
 def admin_dashboard():
-    """لوحة التحكم المركزية للمنصة"""
+    """لوحة التحكم المركزية للمنصة - السوق الذكي"""
     return auth_controller.dashboard_logic()
 
 @admin_bp.route('/suppliers-management')
 def manage_suppliers():
-    """إدارة شركاء النجاح (الموردين) والرقابة على سلاسل التوريد"""
+    """إدارة شركاء النجاح والرقابة على سلاسل التوريد"""
     return auth_controller.suppliers_logic()
 
 @admin_bp.route('/logout')
