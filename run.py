@@ -1,14 +1,10 @@
 import os
 from core import create_app
 
-# إنشاء نسخة التطبيق من مجلد "العاصمة" core
 app = create_app()
 
-if __name__ == '__main__':
-    # الحصول على المنفذ (Port) ديناميكياً من بيئة Render أو Railway
-    # القيمة الافتراضية 10000 هي المناسبة لـ Render
-    port = int(os.environ.get("PORT", 10000))
-    
-    # تشغيل السيرفر ليكون متاحاً للإنترنت (host='0.0.0.0')
-    # تعطيل الـ debug لضمان أمان وحماية بيانات "شركاء النجاح"
-    app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == "__main__":
+    # Render يمرر المنفذ عبر متغير البيئة PORT
+    port = int(os.environ.get("PORT", 5000))
+    # host="0.0.0.0" ضروري للسماح بالاتصالات الخارجية في Render
+    app.run(host="0.0.0.0", port=port)
