@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}لوحة المورد السيادية | محجوب أونلاين{% endblock %}</title>
+    <title>{% block title %}القيادة المركزية | محجوب أونلاين{% endblock %}</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
             overflow-x: hidden;
         }
 
-        /* --- السايدبار الرئيسي (The Fortress) --- */
+        /* --- السايدبار الإداري (The Command Center) --- */
         .sidebar {
             width: var(--sidebar-width);
             background: linear-gradient(180deg, var(--royal-purple) 0%, var(--deep-black) 100%);
@@ -42,7 +42,6 @@
             border-bottom: 1px solid rgba(212, 175, 55, 0.1);
         }
         
-        /* جعل اللوجو أبيض ناصع مع هالة ذهبية خفيفة */
         .logo-img { 
             width: 65px; height: auto; 
             filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
@@ -66,7 +65,6 @@
             transform: translateX(-5px);
         }
 
-        /* --- المنسدلات السيادية --- */
         .dropdown-content {
             display: none; list-style: none; padding: 0; margin-right: 2.5rem;
             border-right: 1px solid rgba(212, 175, 55, 0.3);
@@ -79,7 +77,6 @@
         }
         .dropdown-content li a:hover { color: var(--mahjoub-gold); padding-right: 20px; }
 
-        /* --- منطقة المحتوى الرئيسي --- */
         .main-wrapper { 
             margin-right: var(--sidebar-width); width: 100%; 
             transition: var(--transition); display: flex; flex-direction: column;
@@ -93,9 +90,9 @@
             position: sticky; top: 0; z-index: 1000;
         }
 
-        .store-badge {
-            background: rgba(26, 11, 46, 0.03); padding: 8px 20px; border-radius: 50px;
-            border: 1px solid rgba(26, 11, 46, 0.05); display: flex; align-items: center; gap: 10px;
+        .admin-badge {
+            background: rgba(212, 175, 55, 0.1); padding: 8px 20px; border-radius: 50px;
+            border: 1px solid var(--mahjoub-gold); display: flex; align-items: center; gap: 10px;
         }
 
         .user-profile { display: flex; align-items: center; gap: 12px; }
@@ -107,11 +104,6 @@
         }
 
         .content-area { padding: 2rem; min-height: calc(100vh - 75px); }
-
-        .alert {
-            border: none; border-radius: 15px; padding: 1rem;
-            font-weight: 700; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
 
         @media (max-width: 992px) {
             .sidebar { width: var(--sidebar-mini); }
@@ -126,43 +118,58 @@
     <aside class="sidebar shadow">
         <div class="sidebar-header">
             <img src="https://cdn.qumra.cloud/media/67f7f6d5f0b82f44a47bf845/1770229315912-117966978.webp" class="logo-img" alt="Mahjoub Online">
-            <h2>محجوب أونلاين</h2>
-            <div class="platform-desc">حوكمة التجارة الرقمية | MAH-9046</div>
+            <h2>الإدارة المركزية</h2>
+            <div class="platform-desc">نظام حوكمة سوقك الذكي</div>
         </div>
 
         <nav class="nav-menu">
-            <a href="{{ url_for('supplier_panel.dashboard') }}" class="nav-link {% if request.endpoint == 'supplier_panel.dashboard' %}active{% endif %}">
-                <i class="fas fa-th-large"></i>
-                <span>لوحة التحكم الرئيسية</span>
+            <a href="{{ url_for('admin_panel.admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_panel.admin_dashboard' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                <span>الإحصائيات العامة</span>
             </a>
 
+            <!-- إدارة الموردين - الأولوية القصوى -->
             <div class="nav-item">
                 <div class="nav-link" onclick="toggleDropdown(this)">
-                    <i class="fas fa-boxes-stacked"></i>
-                    <span>إدارة المنتجات</span>
+                    <i class="fas fa-handshake"></i>
+                    <span>إدارة الموردين</span>
                     <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.7rem; transition: 0.3s;"></i>
                 </div>
                 <ul class="dropdown-content">
-                    <li><a href="{{ url_for('supplier_panel.add_product') }}"><i class="fas fa-plus-circle"></i> إضافة منتج جديد</a></li>
-                    <li><a href="{{ url_for('supplier_panel.dashboard') }}"><i class="fas fa-list-ul"></i> عرض كافة المنتجات</a></li>
+                    <li><a href="{{ url_for('admin_panel.manage_suppliers') }}"><i class="fas fa-users-gear"></i> جميع الموردين</a></li>
+                    <li><a href="#"><i class="fas fa-user-plus"></i> طلبات الانضمام</a></li>
                 </ul>
             </div>
 
+            <!-- إدارة المستخدمين -->
             <div class="nav-item">
                 <div class="nav-link" onclick="toggleDropdown(this)">
-                    <i class="fas fa-vault"></i>
-                    <span>الترسانة المالية</span>
+                    <i class="fas fa-users"></i>
+                    <span>قاعدة العملاء</span>
                     <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.7rem; transition: 0.3s;"></i>
                 </div>
                 <ul class="dropdown-content">
-                    <li><a href="#"><i class="fas fa-receipt"></i> كشف حساب تفصيلي</a></li>
-                    <li><a href="#"><i class="fas fa-money-bill-transfer"></i> طلب سحب رصيد</a></li>
+                    <li><a href="#"><i class="fas fa-user-shield"></i> المدراء</a></li>
+                    <li><a href="#"><i class="fas fa-user-tag"></i> العملاء</a></li>
                 </ul>
             </div>
 
-            <a href="{{ url_for('supplier_panel.logout') }}" class="nav-link mt-auto" style="color: #ff7675; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
-                <i class="fas fa-power-off"></i>
-                <span>تسجيل الخروج الآمن</span>
+            <!-- الرقابة المالية -->
+            <div class="nav-item">
+                <div class="nav-link" onclick="toggleDropdown(this)">
+                    <i class="fas fa-monument"></i>
+                    <span>الرقابة المالية</span>
+                    <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.7rem; transition: 0.3s;"></i>
+                </div>
+                <ul class="dropdown-content">
+                    <li><a href="#"><i class="fas fa-file-invoice-dollar"></i> تسويات الموردين</a></li>
+                    <li><a href="#"><i class="fas fa-wallet"></i> الأرباح المركزية</a></li>
+                </ul>
+            </div>
+
+            <a href="{{ url_for('admin_panel.logout') }}" class="nav-link mt-auto" style="color: #ff7675; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+                <i class="fas fa-door-open"></i>
+                <span>خروج آمن</span>
             </a>
         </nav>
     </aside>
@@ -171,17 +178,17 @@
         <header class="top-bar">
             <div class="user-profile">
                 <div class="user-avatar">
-                    <i class="fas fa-crown"></i>
+                    <i class="fas fa-user-tie"></i>
                 </div>
                 <div>
-                    <div style="font-weight: 800; color: var(--royal-purple); line-height: 1.2;">{{ current_user.name }}</div>
-                    <small style="color: #aaa; font-size: 0.75rem;">مورد معتمد سيادياً</small>
+                    <div style="font-weight: 800; color: var(--royal-purple); line-height: 1.2;">علي محجوب</div>
+                    <small style="color: #aaa; font-size: 0.75rem;">المسؤول الأعلى للنظام</small>
                 </div>
             </div>
 
-            <div class="store-badge d-none d-md-flex">
-                <i class="fas fa-shield-check" style="color: var(--mahjoub-gold);"></i>
-                <strong style="color: var(--royal-purple); font-size: 0.9rem;">نظام الحوكمة الرقمية</strong>
+            <div class="admin-badge d-none d-md-flex">
+                <i class="fas fa-vial-circle-check" style="color: var(--mahjoub-gold);"></i>
+                <strong style="color: var(--royal-purple); font-size: 0.9rem;">بيئة التحكم السيادية</strong>
             </div>
         </header>
 
@@ -190,7 +197,7 @@
               {% if messages %}
                 {% for category, message in messages %}
                   <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm border-0 mb-4">
-                      <i class="fas fa-info-circle me-2"></i> {{ message }}
+                      <i class="fas fa-shield-halved me-2"></i> {{ message }}
                       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                   </div>
                 {% endfor %}
@@ -206,21 +213,11 @@
         function toggleDropdown(element) {
             const content = element.nextElementSibling;
             const chevron = element.querySelector('.chevron');
-            
-            // إغلاق أي قوائم أخرى مفتوحة
-            document.querySelectorAll('.dropdown-content').forEach(el => {
-                if (el !== content) el.style.display = 'none';
-            });
-            document.querySelectorAll('.chevron').forEach(ch => {
-                if (ch !== chevron) ch.style.transform = "rotate(0deg)";
-            });
-
-            // تبديل حالة القائمة الحالية
+            document.querySelectorAll('.dropdown-content').forEach(el => { if (el !== content) el.style.display = 'none'; });
+            document.querySelectorAll('.chevron').forEach(ch => { if (ch !== chevron) ch.style.transform = "rotate(0deg)"; });
             const isOpen = content.style.display === "block";
             content.style.display = isOpen ? "none" : "block";
-            if(chevron) {
-                chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-            }
+            if(chevron) chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
         }
     </script>
 </body>
