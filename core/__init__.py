@@ -1,39 +1,52 @@
-from flask import Blueprint, render_template
-from flask_login import login_required
-from .auth_controller import AdminAuthController
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from dotenv import load_dotenv
 
-# تعريف البلوبرينت مع تحديد مسار القوالب بدقة
-admin_bp = Blueprint('admin_panel', __name__, template_folder='templates')
+# تحميل متغيرات البيئة
+load_dotenv()
 
-# إنشاء نسخة من المتحكم لضمان استمرارية الجلسة والمنطق البرمجي
-auth_controller = AdminAuthController()
+# تعريف الكائنات الأساسية
+db = SQLAlchemy()
+login_manager = LoginManager()
 
-@admin_bp.route('/login', methods=['GET', 'POST'])
-def admin_login():
-    # تأكد أن الدالة في Controller ترجع render_template أو redirect
-    return auth_controller.login_logic()
+def create_app():
+    app = Flask(__name__)
 
-@admin_bp.route('/dashboard')
-@login_required
-def admin_dashboard():
-    return auth_controller.dashboard_logic()
+    # --- إعدادات الحوكمة الرقمية ---
+    # تصحيح رابط قاعدة البيانات ليتوافق مع SQLAlchemy 2.0 في Render
+    database_url = os.getenv("DATABASE_URL")
+    if database_url and database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "Mahjoub_Secret_2026")
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-@admin_bp.route('/suppliers-management')
-@login_required
-def manage_suppliers():
-    return auth_controller.suppliers_logic()
+    # مبادرة الكائنات مع التطبيق
+    db.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = 'supplier_panel.supplier_login'
 
-@admin_bp.route('/product-review')
-@login_required
-def sync_now():
-    return auth_controller.sync_logic()
+    # --- تسجيل بوابات المنصة (Blueprints) ---
+    # استيراد وتسجيل بوابة الإدارة
+    from admin_panel.routes import admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
-@admin_bp.route('/wallets')
-@login_required
-def wallets():
-    return auth_controller.wallets_logic()
+    # استيراد وتسجيل بوابة الموردين (شركاء النجاح)
+    from supplier_panel.routes import supplier_bp
+    app.register_blueprint(supplier_bp, url_prefix='/supplier')
 
-@admin_bp.route('/logout')
-@login_required
-def logout():
-    return auth_controller.logout_logic()
+    # استيراد الموديلات لضمان إنشاء الجداول
+    with app.app_context():
+        from . import models
+        # db.create_all() # تفعيل هذا السطر عند أول تشغيل لإنشاء الجداول
+
+    return app
+
+# دالة لتحميل المستخدم (ضرورية لـ Flask-Login)
+@login_manager.user_loader
+def load_user(user_id):
+    from core.models.user import User
+    return User.query.get(int(user_id))
