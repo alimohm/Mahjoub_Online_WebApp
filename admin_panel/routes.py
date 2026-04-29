@@ -1,33 +1,28 @@
-from flask import Blueprint
-from .auth_controller import AdminAuthController
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, current_user, login_required
+from core.models.user import User
 
-# تعريف البلوبرينت الخاص بالإدارة
-# تم تحديد template_folder لضمان التعرف على مسار admin_panel/templates
-admin_bp = Blueprint(
-    'admin_panel', 
-    __name__, 
-    template_folder='templates'
-)
-
-# إنشاء نسخة من المتحكم لإدارة العمليات الإدارية
-auth_controller = AdminAuthController()
+admin_bp = Blueprint('admin_panel', __name__, template_folder='templates')
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
-    """مسار تسجيل دخول الإدارة - يربط مع admin_panel/login.html"""
-    return auth_controller.login_logic()
+    if current_user.is_authenticated and current_user.is_admin():
+        return redirect(url_for('admin_panel.admin_dashboard'))
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password) and user.is_admin():
+            login_user(user)
+            return redirect(url_for('admin_panel.admin_dashboard'))
+        flash('دخول غير مصرح به أو بيانات خاطئة.', 'danger')
+    return render_template('admin_panel/login.html')
 
 @admin_bp.route('/dashboard')
+@login_required
 def admin_dashboard():
-    """لوحة التحكم المركزية للمنصة - السوق الذكي"""
-    return auth_controller.dashboard_logic()
-
-@admin_bp.route('/suppliers-management')
-def manage_suppliers():
-    """إدارة شركاء النجاح والرقابة على سلاسل التوريد"""
-    return auth_controller.suppliers_logic()
-
-@admin_bp.route('/logout')
-def logout():
-    """تسجيل الخروج الآمن من نظام الإدارة"""
-    return auth_controller.logout_logic()
+    if not current_user.is_admin():
+        return redirect(url_for('admin_panel.admin_login'))
+    return render_template('admin_panel/dashboard.html')
