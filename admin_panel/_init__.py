@@ -1,7 +1,13 @@
 from flask import Blueprint
 
-# استيراد كائن البلوبرنت من ملف routes المحلي
-# هذا يضمن أن الإدارة تعمل كقطعة مستقلة (Module) سهلة التبديل أو التطوير
-from .routes import admin_panel
+# 1. تعريف البلوبرنت الخاص ببرج الرقابة المركزية
+# نحدد template_folder ليتعرف النظام على المجلد الذي يحتوي على login.html و dashboard.html
+admin_panel = Blueprint(
+    'admin_panel', 
+    __name__, 
+    template_folder='templates'
+)
 
-# الحفاظ على نظافة الملف يخدم هدفنا في تقليل استهلاك الموارد وسرعة الاستجابة
+# 2. استيراد المسارات (Routes) لربطها بالبلوبرنت
+# نضع الاستيراد هنا في الأسفل لتجنب مشكلة الدوران البرمجي (Circular Import)
+from . import routes
