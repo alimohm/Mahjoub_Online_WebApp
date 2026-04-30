@@ -1,6 +1,4 @@
 from flask import Blueprint
 
-# تعريف البلوبرنت قبل استيراد المسارات
+# تعريف البلوبرنت فقط هنا
 admin_panel = Blueprint('admin_panel', __name__, template_folder='templates')
-
-from . import routes
