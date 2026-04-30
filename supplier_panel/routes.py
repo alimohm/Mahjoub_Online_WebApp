@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user, login_required
 from core.models.user import User
+from core.models.product import Product  # استيراد موديل المنتجات
+from core.models.supplier import Supplier # استيراد موديل المورد
 
 supplier_bp = Blueprint('supplier_panel', __name__, template_folder='templates')
 
@@ -28,4 +30,16 @@ def supplier_login():
 def supplier_dashboard():
     if not current_user.is_supplier():
         return redirect(url_for('supplier_panel.supplier_login'))
-    return render_template('supplier_panel/dashboard.html')
+
+    # 1. جلب بيانات المورد المرتبطة بالمستخدم الحالي
+    supplier_info = Supplier.query.filter_by(user_id=current_user.id).first()
+    
+    # 2. جلب المنتجات التابعة لهذا المورد فقط
+    products = Product.query.filter_by(supplier_id=supplier_info.id).all() if supplier_info else []
+
+    # 3. تمرير البيانات للقالب (Dashboard)
+    return render_template(
+        'supplier_panel/dashboard.html', 
+        supplier=supplier_info, 
+        products=products
+    )
