@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة شركاء الترسانة | محجوب أونلاين{% endblock %}
+
+{% block content %}
+<style>
+    /* تنسيق خاص بجدول الموردين السيادي */
+    .table-sovereign {
+        background: rgba(10, 10, 10, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        backdrop-filter: blur(15px);
+        overflow: hidden;
+    }
+    .badge-verified {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        font-weight: 700;
+    }
+    .badge-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        font-weight: 700;
+    }
+    .btn-verify {
+        background: var(--mahjoub-gold);
+        color: #000;
+        font-weight: 800;
+        border-radius: 10px;
+        transition: 0.3s;
+    }
+    .btn-verify:hover {
+        background: #fff;
+        box-shadow: 0 0 15px var(--mahjoub-gold);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2 class="fw-black text-white mb-1">إدارة شركاء الترسانة</h2>
+            <p class="text-white-50 fw-bold">التحكم في صلاحيات الموردين والتحقق من الهوية الرقمية</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="table-sovereign shadow-lg">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0" dir="rtl">
+                        <thead class="bg-black">
+                            <tr class="text-uppercase" style="font-size: 0.85rem; color: var(--mahjoub-gold);">
+                                <th class="p-4">المتجر / الهوية</th>
+                                <th>نوع النشاط</th>
+                                <th>تاريخ الانضمام</th>
+                                <th>حالة الاعتماد</th>
+                                <th>التحكم السيادي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for supplier in suppliers %}
+                            <tr class="border-bottom border-white border-opacity-5">
+                                <td class="p-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-box me-3 bg-opacity-10 bg-white p-2 rounded-3">
+                                            <i class="fas fa-store text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-white fw-black">{{ supplier.store_name }}</div>
+                                            <small class="text-white-50">بإدارة: {{ supplier.user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="text-white-50">{{ supplier.business_type|default('تجارة إلكترونية') }}</span></td>
+                                <td class="text-white-50 small">{{ supplier.id }} #</td>
+                                <td>
+                                    {% if supplier.is_verified %}
+                                        <span class="badge badge-verified rounded-pill px-3 py-2">
+                                            <i class="fas fa-check-double me-1"></i> معتمد
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-pending rounded-pill px-3 py-2">
+                                            <i class="fas fa-shield-alt me-1"></i> قيد المراجعة
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not supplier.is_verified %}
+                                        <a href="{{ url_for('admin_panel.verify_supplier', supplier_id=supplier.id) }}" 
+                                           class="btn btn-sm btn-verify px-4">
+                                            تفعيل النشاط
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-secondary opacity-50 px-4" disabled>
+                                            نشط حالياً
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-white-50">
+                                    <i class="fas fa-inbox d-block mb-3" style="font-size: 2.5rem;"></i>
+                                    لا يوجد موردون مسجلون في النظام حالياً.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
