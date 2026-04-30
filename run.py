@@ -1,9 +1,9 @@
-import os
 from core import create_app
 
+# إنشاء نسخة التطبيق من المحرك المركزي
 app = create_app()
 
-if __name__ == "__main__":
-    # سيأخذ المنفذ 8080 من إعدادات Railway أو يستخدم 5000 محلياً
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    # تشغيل السيرفر المحلي على المنفذ 5000
+    # ملاحظة: سيقوم التطبيق تلقائياً بالاتصال بقاعدة Render السحابية
+    app.run(debug=True, port=5000)
