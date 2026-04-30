@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
-# تهيئة الإضافات الأساسية - منصة محجوب أونلاين 2026
+# تهيئة الإضافات
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -12,7 +12,7 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__)
 
-    # إعدادات قاعدة البيانات والأمان لبيئة Railway
+    # إعدادات قاعدة البيانات - متوافقة مع Railway 2026
     database_url = os.getenv("DATABASE_URL")
     if database_url and database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -29,17 +29,18 @@ def create_app():
     login_manager.login_view = 'admin_panel.admin_login'
 
     with app.app_context():
-        # --- الحل الجذري والنهائي ---
-        # نستورد الاسم الجديد بوضوح شديد من داخل الحزمة
+        # استيراد البلوبرنت وتسجيله بالاسم الجديد
         from admin_panel import admin_blueprint
         app.register_blueprint(admin_blueprint, url_prefix='/admin')
 
-        # استدعاء الموديلات لضمان استقرار قاعدة البيانات
-        from core import models
+        # ضمان تحميل الموديلات من هيكلة المجلدات الجديدة
+        from core.models.user import User
+        from core.models.supplier import Supplier
+        from core.models.product import Product
 
     return app
 
 @login_manager.user_loader
 def load_user(user_id):
-    from core.models import User
+    from core.models.user import User
     return User.query.get(int(user_id))
