@@ -18,6 +18,7 @@ def admin_login():
         # البحث في قاعدة بيانات Render
         user = User.query.filter_by(username=username, role='admin').first()
 
+        # التحقق من مفتاح التشفير (كلمة المرور)
         if user and user.check_password(password):
             login_user(user)
             flash('تم تفعيل الولوج السيادي بنجاح.', 'success')
@@ -25,31 +26,41 @@ def admin_login():
         else:
             flash('فشل في التحقق من الهوية.. تأكد من معرف القائد أو مفتاح التشفير.', 'danger')
 
-    return render_template('login.html')
+    return render_template('admin_panel/login.html')
 
 # --- برج الرقابة المركزية (لوحة التحكم) ---
 @admin_panel.route('/dashboard')
 @login_required
 @admin_required
 def dashboard():
-    # إحصائيات حية من قاعدة بيانات Render
-    stats = {
-        'total_suppliers': Supplier.query.count(),
-        'total_products': Product.query.count(),
-        'pending_verifications': Supplier.query.filter_by(is_verified=False).count()
+    # إحصائيات حية متوافقة مع تصميم Dashboard الخاص بك
+    stats_data = {
+        'orders_count': 0, # سيتم ربطه بجدول الطلبات لاحقاً
+        's_count': Supplier.query.count(),
+        'total_balance': 0.00, # محرك العملات والسيولة
+        'p_count': Product.query.count()
     }
-    # ملاحظة: يتم تمرير stats إلى القالب لعرضها في الـ Dashboard
-    return render_template('dashboard.html', stats=stats)
+    
+    # جلب آخر العمليات السيادية (فارغة حالياً حتى بناء جدول العمليات)
+    recent_transactions = []
+    
+    return render_template('admin_panel/dashboard.html', 
+                           orders_count=stats_data['orders_count'],
+                           s_count=stats_data['s_count'],
+                           total_balance=stats_data['total_balance'],
+                           p_count=stats_data['p_count'],
+                           transactions=recent_transactions)
 
 # --- إدارة شركاء الترسانة (الموردين) ---
 @admin_panel.route('/manage-suppliers')
 @login_required
 @admin_required
 def manage_suppliers():
+    # جلب جميع الموردين المسجلين في النظام اليمني
     all_suppliers = Supplier.query.all()
-    return render_template('manage_suppliers.html', suppliers=all_suppliers)
+    return render_template('admin_panel/manage_suppliers.html', suppliers=all_suppliers)
 
-# --- نظام الاعتماد الفوري ---
+# --- نظام الاعتماد الفوري للمتاجر ---
 @admin_panel.route('/verify-supplier/<int:supplier_id>')
 @login_required
 @admin_required
