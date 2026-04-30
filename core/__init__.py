@@ -16,7 +16,6 @@ def create_app():
     app = Flask(__name__)
 
     # إعدادات قاعدة البيانات والأمان من متغيرات بيئة Railway
-    # نستخدم os.getenv لجلب DATABASE_URL الموثق في السيرفر
     database_url = os.getenv("DATABASE_URL")
     
     # تصحيح الرابط ليتوافق مع SQLAlchemy 3 (تبديل postgres بـ postgresql)
@@ -24,7 +23,8 @@ def create_app():
         database_url = database_url.replace("postgres://", "postgresql://", 1)
         
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "Sovereign_Default_Key_2026")
+    # استخدام مفتاح الأمان السيادي الخاص بعلي محجوب
+    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "Ali_Mahjoub_Sovereign_2026")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # تفعيل الإضافات داخل سياق التطبيق
@@ -37,12 +37,13 @@ def create_app():
     login_manager.login_message = "الدخول يتطلب صلاحيات القائد."
 
     with app.app_context():
-        # استيراد وتسجيل البلوبرنت الخاص ببرج الرقابة (admin_panel)
-        from admin_panel.routes import admin_panel
-        app.register_blueprint(admin_panel, url_prefix='/admin')
+        # --- التعديل الجوهري هنا ---
+        # نستورد المجلد (Package) الذي يحتوي على تعريف البلوبرنت في __init__.py الخاص به
+        from admin_panel import admin_panel as admin_blueprint
+        app.register_blueprint(admin_blueprint, url_prefix='/admin')
 
-        # استدعاء الموديلات لضمان بناء الجداول (User, Supplier, Product)
-        # هذا يضمن أن 'علي محجوب' موجود في قاعدة البيانات كقائد
+        # استدعاء الموديلات لضمان بناء الجداول
+        # ملاحظة: تأكد من وجود ملف __init__.py داخل مجلد models
         from core import models
 
     return app
