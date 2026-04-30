@@ -1,11 +1,7 @@
 [phases.setup]
-# نكتفي بتعريف بايثون وقاعدة البيانات
+# نحدد المتطلبات الأساسية للنظام فقط
 nixPkgs = ["python311", "postgresql"]
 
-[phases.install]
-# نستخدم pip مباشرة لتثبيت المكتبات دون محاولة إنشاء venv يدوياً
-cmds = ["pip install -r requirements.txt"]
-
 [start]
-# أمر التشغيل المباشر
+# نترك لـ Railway مهمة التثبيت التلقائي ونحدد فقط أمر التشغيل
 cmd = "gunicorn -b 0.0.0.0:8080 run:app"
