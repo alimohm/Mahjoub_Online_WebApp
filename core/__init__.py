@@ -4,7 +4,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
 
-# تعريف الإضافات
+# تعريف الإضافات المركزية للمنصة
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
@@ -13,30 +13,34 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # تهيئة الإضافات بربطها بمحرك التطبيق
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
     
-    # تحديد الصفحة التي يتم تحويل غير المسجلين إليها
+    # تحديد مسار الولوج السيادي لغير المسجلين
+    # ملاحظة: 'admin.admin_login' تعتمد على اسم البلوبرنت المسجل أدناه
     login_manager.login_view = 'admin.admin_login'
     login_manager.login_message_category = 'info'
 
-    # --- هذا الجزء هو الحل للخطأ الحالي ---
-    from core.models.user import User  # استيراد موديل المستخدم
+    # استيراد الموديل لتمكين نظام Flask-Login من التعرف على القائد (User)
+    from core.models.user import User 
     
     @login_manager.user_loader
     def load_user(user_id):
-        # البحث عن المستخدم بواسطة المعرف (ID) لتمكينه من دخول الإدارة
+        # استرجاع بيانات المستخدم من قاعدة البيانات المركزية بواسطة المعرف
         return User.query.get(int(user_id))
-    # -------------------------------------
 
     with app.app_context():
+        # استيراد وتسجيل بلوبرنت "برج الرقابة المركزية"
+        # تم التأكد من مطابقة المسمى 'admin_bp' مع الملف admin_panel/routes.py
         from admin_panel.routes import admin_bp
         app.register_blueprint(admin_bp, url_prefix='/admin')
 
         @app.route('/')
         def index():
-            # تحويل تلقائي للوحة تحكم الإدارة لتركيز العمل هناك
+            # توجيه تلقائي إلى بوابة الدخول لتركيز إدارة العمليات
             return redirect(url_for('admin.admin_login'))
 
-        return app
+    # إرجاع كائن التطبيق جاهزاً للتشغيل عبر run.py
+    return app
