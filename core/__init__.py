@@ -44,3 +44,7 @@ def create_app(config_class=Config):
 
     # إرجاع كائن التطبيق جاهزاً للتشغيل عبر run.py
     return app
+with app.app_context():
+    # استيراد البلوبرنت الذي يحتوي على المنطق والتعريف
+    from admin_panel import admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
