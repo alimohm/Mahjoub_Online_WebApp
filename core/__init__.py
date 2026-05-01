@@ -49,3 +49,8 @@ def create_app(config_class=Config):
 def load_user(user_id):
     from core.models.user import User
     return User.query.get(int(user_id))
+# في ملف core/__init__.py
+# من الأفضل توجيه الرابط الرئيسي مباشرة إلى لوحة التحكم
+@app.route('/')
+def redirect_to_admin():
+    return redirect(url_for('admin.admin_login'))
