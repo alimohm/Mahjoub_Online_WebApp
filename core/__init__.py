@@ -4,9 +4,8 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
 from sqlalchemy import text
-from werkzeug.security import generate_password_hash
 
-# تعريف الأدوات المركزية
+# تعريف الأدوات المركزية للمنصة
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
@@ -15,7 +14,7 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # تهيئة الإضافات
+    # تهيئة الإضافات والربط مع قاعدة البيانات
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
@@ -30,50 +29,55 @@ def create_app(config_class=Config):
         return User.query.get(int(user_id))
 
     with app.app_context():
-        # --- المرحلة الأولى: ترميم الجداول ---
+        # --- المرحلة الأولى: ترميم الهيكل وحل نزاع القيود ---
         try:
-            db.create_all() # إنشاء الجداول إذا لم تكن موجودة
-            # ترميم الأعمدة لضمان التوافق مع تحديثات "علي محجوب"
+            db.create_all()
+            
+            # تعطيل شرط الـ NOT NULL عن العمود القديم "password" لفتح الطريق أمام الزرع
+            db.session.execute(text('ALTER TABLE users ALTER COLUMN password DROP NOT NULL;'))
+            
+            # التأكد من وجود الأعمدة الجديدة المطلوبة للهوية الحالية
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(150) UNIQUE;'))
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);'))
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT \'admin\';'))
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active_account BOOLEAN DEFAULT TRUE;'))
+            
             db.session.commit()
-            print("✅ تم فحص وترميم أعمدة قاعدة البيانات بنجاح.")
+            print("✅ تم تحرير قيود قاعدة البيانات وترميم الأعمدة بنجاح.")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ تنبيه الترميم: {e}")
+            print(f"⚠️ تنبيه أثناء الترميم (قد تكون القيود محررة بالفعل): {e}")
 
-        # --- المرحلة الثانية: الزرع القسري للقائد (الحل الجذري) ---
+        # --- المرحلة الثانية: الزرع القسري للقائد (علي محجوب) ---
         try:
             target_name = "علي محجوب"
-            # البحث عن المستخدم
             admin_user = User.query.filter_by(username=target_name).first()
             
             if not admin_user:
-                print(f"🚀 لم يتم العثور على القائد.. جاري زرع حساب: {target_name}")
+                print(f"🚀 البدء في زرع الحساب السيادي: {target_name}")
                 new_admin = User(
                     username=target_name,
                     role='admin',
                     is_active_account=True
                 )
-                new_admin.set_password('123')
+                # ملاحظة: set_password ستقوم بملء الحقلين لضمان القبول
+                new_admin.set_password('123') 
                 db.session.add(new_admin)
                 db.session.commit()
-                print(f"✅ تم زرع حساب {target_name} بنجاح كمسؤول نظام.")
+                print(f"✅ تم زرع الحساب بنجاح. يمكنك الدخول الآن.")
             else:
-                # تحديث كلمة المرور لضمان أنها 123 في حال حدوث أي خطأ سابق
+                # تحديث دوري لضمان صلاحية البيانات
                 admin_user.set_password('123')
                 admin_user.role = 'admin'
                 admin_user.is_active_account = True
                 db.session.commit()
-                print(f"ℹ️ حساب {target_name} موجود بالفعل وتم تحديث صلاحياته وكلمة مروره.")
+                print(f"ℹ️ حساب {target_name} نشط وجاهز للعمل.")
         
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ فشل زرع القائد في قلب النظام: {e}")
+            print(f"⚠️ فشل الزرع مجدداً: {e}")
 
-        # تسجيل Blueprints
+        # تسجيل Blueprints وتوجيه المسارات
         from admin_panel.routes import admin_bp
         app.register_blueprint(admin_bp, url_prefix='/admin')
 
