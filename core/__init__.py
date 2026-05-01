@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
-from sqlalchemy import text # لاستخدام أوامر SQL المباشرة
+from sqlalchemy import text
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -26,18 +26,14 @@ def create_app(config_class=Config):
         return User.query.get(int(user_id))
 
     with app.app_context():
-        # --- منطق التحديث التلقائي (Auto-Update Logic) ---
+        # تحديث تلقائي لقاعدة البيانات لضمان عدم الانهيار
         try:
-            # تنفيذ أمر إضافة العمود إذا لم يكن موجوداً
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(120);'))
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT \'supplier\';'))
             db.session.execute(text('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active_account BOOLEAN DEFAULT TRUE;'))
             db.session.commit()
-            print("✅ تم فحص وتحديث قاعدة البيانات بنجاح.")
-        except Exception as e:
+        except Exception:
             db.session.rollback()
-            print(f"⚠️ تنبيه: قاعدة البيانات محدثة بالفعل أو حدث خطأ بسيط: {e}")
-        # -----------------------------------------------
 
         from admin_panel import admin_bp
         app.register_blueprint(admin_bp, url_prefix='/admin')
