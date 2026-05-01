@@ -1,14 +1,12 @@
 from flask import Blueprint
 
-# تعريف البلوبرنت المركزي للإدارة
-# ملاحظة: تم تثبيت الاسم 'admin' ليتوافق مع روابط url_for('admin.login') في القوالب
-admin_blueprint = Blueprint(
+# تعريف البلوبرنت الخاص بالإدارة والتحكم
+admin_bp = Blueprint(
     'admin', 
     __name__, 
     template_folder='templates',
-    static_folder='static'  # أضفنا هذا تحسباً لإضافة ملفات CSS/JS خاصة لاحقاً
+    static_folder='static'
 )
 
-# استيراد المسارات (routes) لربطها بالبلوبرنت وتفعيلها
-# نضعه في الأسفل لتجنب مشاكل الاستيراد الدائري (Circular Import)
+# استيراد المسارات (المنطق) لربطها بالبلوبرنت
 from . import routes
