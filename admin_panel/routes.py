@@ -1,46 +1,27 @@
 from flask import render_template
 from flask_login import login_required, current_user
 from . import admin_bp
-from core.models.user import User
-# استيراد موديلات الموردين والطلبات (تأكد من وجود هذه الموديلات في core)
+# تأكد من استيراد الموديلات عند تفعيلها في قاعدة البيانات
 # from core.models.business import Supplier, Order 
 
 @admin_bp.route('/dashboard')
-@login_required  # حماية السيادة: الدخول للقائد فقط
+@login_required  # حماية السيادة: الوصول للقائد فقط
 def admin_dashboard():
     """
-    لوحة التحكم المركزية لإدارة الخط التجاري في اليمن
+    لوحة التحكم المركزية لإدارة الخط التجاري في اليمن (محجوب أونلاين)
     """
-    # هنا نقوم بجلب إحصائيات حقيقية لعرضها في الواجهة
-    # مثال: إحصائيات الموردين في (الخوخة، عدن، المخا، وحيس)
-    stats = {
-        'total_suppliers': 0, # سيتم جلبها من قاعدة البيانات لاحقاً
-        'active_orders': 0,
-        'cities_covered': ['الخوخة', 'عدن', 'المخا', 'حيس']
-    }
     
-    # تمرير اسم القائد (علي) والإحصائيات إلى صفحة dashboard.html
-    return render_template(
-        'dashboard.html', 
-        title="برج الرقابة المركزية",
-        admin_name=current_user.username,
-        stats=stats
-    )
-from flask import render_template
-from flask_login import login_required
-from . import admin_bp
-
-@admin_bp.route('/dashboard')
-@login_required
-def admin_dashboard():
-    # جلب البيانات الحقيقية من قاعدة البيانات
-    # هذه المتغيرات يجب أن تطابق الأسماء في ملف HTML الخاص بك
+    # تجهيز البيانات لتتوافق مع تصميم dashboard.html
+    # ملاحظة: يمكنك لاحقاً استبدال القيم النصية بطلبات Query من قاعدة البيانات
     context = {
-        'orders_count': "1,250",       # إجمالي المبيعات
-        's_count': "48",              # شركاء الترسانة (الموردين)
-        'total_balance': "15.5K",      # السيولة المركزية
+        'orders_count': "1,250",       # إجمالي المبيعات (تظهر في البطاقة الأولى)
+        's_count': "48",              # شركاء الترسانة - الموردين
+        'total_balance': "15,500",     # السيولة المركزية بالدولار
         'p_count': "12",               # طلبات قيد التدقيق
-        'transactions': [              # سجل العمليات (نموذج بيانات)
+        'admin_name': current_user.username, # عرض اسمك (علي) في الترحيب
+        
+        # بيانات العمليات السيادية للجدول
+        'transactions': [
             {
                 'supplier_name': 'مورد عدن المركزي',
                 'type': 'توريد بضائع',
@@ -58,4 +39,5 @@ def admin_dashboard():
         ]
     }
     
+    # تمرير البيانات كمتغيرات مستقلة باستخدام **context
     return render_template('dashboard.html', **context)
