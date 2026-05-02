@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash, session
+from flask_login import login_required, logout_user
 from core import db 
 
 # استيراد النماذج (Models) بمساراتها الصحيحة من قلب النظام
@@ -11,51 +12,34 @@ except ImportError:
     User = None
 
 from . import admin_bp
+from .auth import handle_admin_login  # استيراد محرك التحقق المركزي
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """بوابة الدخول السيادية لمركز القيادة - محجوب أونلاين"""
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        # البحث عن القائد في الترسانة الرقمية
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
-            if user.role == 'admin':
-                session['admin_id'] = user.id
-                session['admin_name'] = user.username
-                # رسالة ترحيبية تليق بمقام القيادة
-                flash(f"أهلاً بك ياقائد {user.username}، تم تفعيل مركز المراقبة السيادي.", "success")
-                return redirect(url_for('admin.admin_dashboard'))
-            else:
-                flash("تنبيه: لا تملك صلاحيات الوصول لهذه المنطقة السيادية.", "danger")
-        else:
-            flash("خطأ: بيانات الدخول غير صحيحة، تأكد من مفتاح التشفير وحاول مجدداً.", "danger")
-            
-    return render_template('login.html')
+    # تفويض المهمة لمحرك التحقق في auth.py لمنع تضارب المنطق
+    return handle_admin_login()
 
 @admin_bp.route('/logout')
+@login_required
 def logout():
     """إغلاق جلسة الوصول وتأمين النظام بالكامل"""
+    logout_user() # إنهاء جلسة القائد بشكل آمن
     session.clear()
     flash("تم تسجيل الخروج وتأمين مركز القيادة بنجاح.", "info")
     return redirect(url_for('admin.login'))
 
 @admin_bp.route('/dashboard')
+@login_required
 def admin_dashboard():
     """مركز المراقبة والإحصائيات الرئيسي لإدارة العمليات في اليمن"""
-    if 'admin_id' not in session:
-        return redirect(url_for('admin.login'))
+    # نظام flask_login يتكفل بالتحقق من الهوية عبر @login_required
     return render_template('dashboard.html')
 
 @admin_bp.route('/withdraw-requests')
+@login_required
 def withdraw_requests():
     """عرض كافة طلبات تصفية الأرصدة المعلقة للموردين"""
-    if 'admin_id' not in session:
-        return redirect(url_for('admin.login'))
-        
     if WithdrawRequest is None:
         flash("تنبيه: نظام طلبات السحب غير مفعل في الترسانة حالياً.", "warning")
         return render_template('withdraw_requests.html', requests=[])
@@ -69,11 +53,9 @@ def withdraw_requests():
         return render_template('withdraw_requests.html', requests=[])
 
 @admin_bp.route('/finalize-withdrawal', methods=['POST'])
+@login_required
 def finalize_withdrawal():
     """تعميد الحوالات المالية وأرشفتها في سجلات المنصة"""
-    if 'admin_id' not in session:
-        return redirect(url_for('admin.login'))
-
     request_id = request.form.get('request_id')
     bank_name = request.form.get('bank_name')
     reference_number = request.form.get('reference_number')
@@ -93,11 +75,9 @@ def finalize_withdrawal():
     return redirect(url_for('admin.withdraw_requests'))
 
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
+@login_required
 def add_supplier():
     """إضافة مورد جديد لشبكة محجوب أونلاين"""
-    if 'admin_id' not in session:
-        return redirect(url_for('admin.login'))
-
     if request.method == 'POST':
         name = request.form.get('name')
         city = request.form.get('city')
