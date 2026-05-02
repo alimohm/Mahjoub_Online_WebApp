@@ -33,8 +33,36 @@ def logout():
 @login_required
 def admin_dashboard():
     """مركز المراقبة والإحصائيات الرئيسي لإدارة العمليات في اليمن"""
-    # نظام flask_login يتكفل بالتحقق من الهوية عبر @login_required
-    return render_template('dashboard.html')
+    try:
+        # جلب إحصائيات الترسانة الرقمية لتغذية القالب
+        # 1. عدد الموردين (شركاء الترسانة)
+        suppliers_count = Vendor.query.count() if Vendor else 0
+        
+        # 2. طلبات السحب قيد التدقيق (Pending)
+        pending_requests = 0
+        if WithdrawRequest:
+            pending_requests = WithdrawRequest.query.filter_by(status='pending').count()
+            
+        # 3. إحصائيات افتراضية (يمكن ربطها بالجداول المناسبة لاحقاً)
+        orders_count = 0  # إجمالي المبيعات
+        total_balance = 0 # السيولة المركزية
+
+        return render_template(
+            'dashboard.html',
+            suppliers_count=suppliers_count,
+            pending_requests=pending_requests,
+            orders_count=orders_count,
+            total_balance=total_balance
+        )
+    except Exception as e:
+        flash(f"خلل في محرك الإحصائيات: {str(e)}", "danger")
+        return render_template(
+            'dashboard.html',
+            suppliers_count=0,
+            pending_requests=0,
+            orders_count=0,
+            total_balance=0
+        )
 
 @admin_bp.route('/withdraw-requests')
 @login_required
