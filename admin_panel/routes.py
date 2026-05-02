@@ -1,24 +1,24 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-# استيراد قاعدة البيانات والنماذج البرمجية
+# الحل الجذري للمشكلة الموضحة في صورة image_a37ff4.png:
+# يجب الاستيراد من المسار الصحيح للمشروع (app هو المجلد الرئيسي)
 from app import db 
-from models import WithdrawRequest, Vendor 
+from app.models import WithdrawRequest, Vendor 
 
-# تعريف الـ Blueprint الخاص بلوحة الإدارة
+# ملاحظة: في بعض الهيكليات قد تحتاج لتغيير الاستيراد أعلاه إلى:
+# from core import db (إذا كان db معرفاً داخل مجلد core كما يظهر في سجلات الخطأ)
+
+# تعريف الـ Blueprint باسم يتوافق مع ما تم تسجيله في __init__.py
 admin = Blueprint('admin', __name__)
 
 @admin.route('/withdraw-requests')
 def withdraw_requests():
     """
     عرض كافة طلبات تصفية الأرصدة المعلقة للموردين.
-    يتم جلب البيانات حية من قاعدة البيانات لضمان الدقة المالية.
     """
     try:
-        # جلب الطلبات التي تنتظر التعميد (status = pending)
-        # يتم ترتيبها من الأحدث إلى الأقدم
+        # جلب الطلبات المعلقة وترتيبها من الأحدث
         pending_requests = WithdrawRequest.query.filter_by(status='pending').order_by(WithdrawRequest.created_at.desc()).all()
-        
         return render_template('withdraw_requests.html', requests=pending_requests)
-    
     except Exception as e:
         flash(f"حدث خطأ أثناء جلب البيانات: {str(e)}", "danger")
         return render_template('withdraw_requests.html', requests=[])
@@ -26,21 +26,17 @@ def withdraw_requests():
 @admin.route('/finalize-withdrawal', methods=['POST'])
 def finalize_withdrawal():
     """
-    دالة التعميد المالي السيادي:
-    1. تستقبل بيانات الحوالة المرجعية وجهة التحويل.
-    2. تقوم بتحديث حالة الطلب إلى 'مكتمل'.
-    3. تؤرشف بيانات التحويل لضمان عدم تكرار المطالبة المالية.
+    دالة التعميد المالي السيادي لأرشفة بيانات التحويل.
     """
     request_id = request.form.get('request_id')
     bank_name = request.form.get('bank_name')
     reference_number = request.form.get('reference_number')
 
-    # التحقق من وجود البيانات الأساسية لضمان سلامة الأرشفة
     if not request_id or not reference_number:
-        flash("تنبيه: يجب إدخال رقم الحوالة المرجعي لإتمام عملية التعميد.", "warning")
+        flash("تنبيه: يجب إدخال رقم الحوالة المرجعي لإتمام عملية التعميد ياقائد.", "warning")
         return redirect(url_for('admin.withdraw_requests'))
 
-    # البحث عن طلب السحب المحدد
+    # البحث عن طلب السحب باستخدام المعرف الفريد
     withdrawal_entry = WithdrawRequest.query.get(request_id)
 
     if not withdrawal_entry:
@@ -48,21 +44,18 @@ def finalize_withdrawal():
         return redirect(url_for('admin.withdraw_requests'))
 
     try:
-        # تحديث بيانات السجل المالي
+        # تحديث بيانات السجل المالي للتعميد
         withdrawal_entry.status = 'completed'
         withdrawal_entry.bank_used = bank_name
         withdrawal_entry.reference_id = reference_number
         
-        # حفظ التغييرات نهائياً في قاعدة البيانات
+        # حفظ التغييرات نهائياً في قاعدة بيانات محجوب أونلاين
         db.session.commit()
         
-        flash(f"تم تعميد الحوالة رقم ({reference_number}) بنجاح. تم تصفية رصيد المورد وأرشفة الطلب.", "success")
+        flash(f"تم تعميد الحوالة رقم ({reference_number}) بنجاح وأرشفة الطلب.", "success")
         
     except Exception as e:
-        # التراجع عن العملية في حال حدوث أي خلل تقني لضمان سلامة البيانات
-        db.session.rollback()
+        db.session.rollback() # التراجع في حالة وجود خطأ تقني
         flash(f"فشل نظام الأرشفة في معالجة الطلب: {str(e)}", "danger")
 
     return redirect(url_for('admin.withdraw_requests'))
-
-# يمكنك إضافة مسارات أخرى خاصة بلوحة الإدارة هنا مستقبلاً
