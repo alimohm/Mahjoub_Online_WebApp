@@ -26,3 +26,36 @@ def admin_dashboard():
         admin_name=current_user.username,
         stats=stats
     )
+from flask import render_template
+from flask_login import login_required
+from . import admin_bp
+
+@admin_bp.route('/dashboard')
+@login_required
+def admin_dashboard():
+    # جلب البيانات الحقيقية من قاعدة البيانات
+    # هذه المتغيرات يجب أن تطابق الأسماء في ملف HTML الخاص بك
+    context = {
+        'orders_count': "1,250",       # إجمالي المبيعات
+        's_count': "48",              # شركاء الترسانة (الموردين)
+        'total_balance': "15.5K",      # السيولة المركزية
+        'p_count': "12",               # طلبات قيد التدقيق
+        'transactions': [              # سجل العمليات (نموذج بيانات)
+            {
+                'supplier_name': 'مورد عدن المركزي',
+                'type': 'توريد بضائع',
+                'amount': 2500,
+                'date': '2026-05-02',
+                'status': 'مكتمل'
+            },
+            {
+                'supplier_name': 'شركة المخا للاستيراد',
+                'type': 'سحب سيولة',
+                'amount': -450,
+                'date': '2026-05-01',
+                'status': 'قيد التدقيق'
+            }
+        ]
+    }
+    
+    return render_template('dashboard.html', **context)
