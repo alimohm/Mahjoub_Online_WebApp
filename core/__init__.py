@@ -22,10 +22,9 @@ def create_app(config_class=Config):
     # تحديد بوابة الدخول الرئيسية للإدارة
     login_manager.login_view = 'admin.admin_login'
 
-    # --- التعديل الجوهري هنا ---
-    # استيراد الموديلات من المجلد المركزي لضمان ترتيب بناء الجداول
+    # --- الاستيراد المركزي للموديلات ---
+    # نستخدم الاستيراد من core.models لضمان قراءة ملف __init__ الخاص بالموديلات أولاً
     from core.models import User, Supplier, Order 
-    # ---------------------------
     
     @login_manager.user_loader
     def load_user(user_id):
@@ -35,20 +34,20 @@ def create_app(config_class=Config):
         try:
             print("🚨 جاري تصفير الترسانة الرقمية وإعادة الهيكلة...")
             
-            # تنفيذ مسح شامل للجداول (بالترتيب الصحيح لتجنب تعليق المفاتيح الخارجية)
-            # تم إضافة جدول orders لضمان تنظيف كامل
+            # تنفيذ مسح شامل للجداول بالترتيب الصحيح (من التابع إلى الأساس)
+            # ترتيب الحذف مهم جداً لتجنب قيود المفاتيح الخارجية
             db.session.execute(text('DROP TABLE IF EXISTS orders CASCADE;'))
             db.session.execute(text('DROP TABLE IF EXISTS suppliers CASCADE;'))
             db.session.execute(text('DROP TABLE IF EXISTS products CASCADE;'))
             db.session.execute(text('DROP TABLE IF EXISTS users CASCADE;'))
             db.session.commit()
             
-            # إعادة بناء الهيكل النظيف
+            # إعادة بناء الهيكل النظيف بناءً على الموديلات الحالية
             db.create_all() 
             print("✅ تم إعادة بناء الجداول بنظافة تامة.")
 
             # زرع حساب القائد (علي محجوب) في الهيكل الجديد
-            # ملاحظة: تأكد أن موديل User يحتوي على حقول role و is_active_account
+            # ملاحظة: تأكد أن موديل User يدعم حقول role و is_active_account
             admin_user = User(
                 username="علي محجوب", 
                 role='admin', 
@@ -64,6 +63,7 @@ def create_app(config_class=Config):
             print(f"⚠️ خطأ حرج أثناء التصفير أو الزرع: {e}")
 
     # تسجيل Blueprint الإدارة لربط مجلد admin_panel بالمنصة
+    # تأكد من أن الملف موجود في admin_panel/routes.py
     from admin_panel.routes import admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
