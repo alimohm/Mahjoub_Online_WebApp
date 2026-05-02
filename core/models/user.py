@@ -1,15 +1,18 @@
-# core/models/user.py
 from core import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    __tablename__ = 'user'
     
-    # أضف هذه الحقول فوراً لتتوافق مع عملية "الزرع"
-    role = db.Column(db.String(20), default='user') 
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    
+    # رتبة المستخدم (admin للقائد علي)
+    role = db.Column(db.String(50), default='staff')
+    
+    # حالة الحساب (حاسم لمنطق auth.py الجديد)
     is_active_account = db.Column(db.Boolean, default=True)
 
     def set_password(self, password):
