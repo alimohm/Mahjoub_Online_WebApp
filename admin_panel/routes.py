@@ -5,10 +5,11 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
 from core import db 
 
-# --- استيراد النماذج (Models) مع التأكد من وجودها لمنع خطأ NoneType ---
+# --- استيراد النماذج (Models) ---
 from core.models.vendor import Vendor
 from core.models.user import User 
-# ملاحظة: إذا لم يكن WithdrawRequest موجوداً بعد، يفضل إنشاؤه أو حذفه مؤقتاً
+
+# ملاحظة: التحقق من وجود نموذج طلبات السحب
 try:
     from core.models.vendor import WithdrawRequest 
 except ImportError:
@@ -51,7 +52,7 @@ def admin_dashboard():
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
-    # أ- توليد المعرف السيادي التالي (تلقائي للعرض)
+    # أ- حساب المعرف السيادي التالي بناءً على آخر سجل في القاعدة
     next_id = "MAH-9631"
     try:
         last_vendor = Vendor.query.order_by(Vendor.id.desc()).first()
@@ -62,15 +63,23 @@ def add_supplier():
         next_id = "MAH-9631"
 
     if request.method == 'POST':
+        # 🛡️ حماية الحوكمة: تنظيف أي عمليات فاشلة معلقة في الجلسة فوراً
+        db.session.rollback()
+        
         try:
-            # 1. استلام البيانات
+            # 1. استلام البيانات الأساسية
             username = request.form.get('username')
             password = request.form.get('password', '123456')
             e_wallet = request.form.get('e_wallet') or next_id
             
+            # التحقق من عدم تكرار اسم المستخدم
+            user_check = User.query.filter_by(username=username).first()
+            if user_check:
+                return jsonify({"status": "error", "message": f"اسم المستخدم '{username}' مسجل مسبقاً في النظام"}), 400
+
             activity = request.form.get('manual_activity') if request.form.get('activity_type') == 'manual' else request.form.get('activity_type')
             
-            # 2. الأرشفة السيادية (GitHub)
+            # 2. الأرشفة السيادية للوثائق (GitHub)
             github_path = "Local_Archive_Only"
             id_file = request.files.get('id_image')
             
@@ -85,8 +94,7 @@ def add_supplier():
                     ext=ext
                 )
 
-            # 3. إنشاء حساب المستخدم (User)
-            # تم تعديل password_hash ليتوافق مع الموديل الخاص بك
+            # 3. إنشاء حساب الولوج (User) مع تشفير كلمة المرور
             new_user = User(
                 username=username,
                 password_hash=generate_password_hash(password),
@@ -94,9 +102,9 @@ def add_supplier():
                 is_active_account=True
             )
             db.session.add(new_user)
-            db.session.flush() 
+            db.session.flush() # الحصول على ID المستخدم لربطه بالمورد
 
-            # 4. إنشاء سجل المورد (Vendor)
+            # 4. إنشاء سجل المورد السيادي (Vendor)
             new_vendor = Vendor(
                 user_id=new_user.id,
                 owner_name=request.form.get('owner_name'),
@@ -117,15 +125,14 @@ def add_supplier():
             )
             
             db.session.add(new_vendor)
-            db.session.commit()
+            db.session.commit() # الحفظ النهائي لجميع البيانات
 
-            return jsonify({"status": "success", "message": "تم التعميد والأرشفة بنجاح"}), 200
+            return jsonify({"status": "success", "message": "تم التعميد والأرشفة السيادية بنجاح"}), 200
 
         except Exception as e:
-            db.session.rollback()
-            # هذا السطر سيطبع الخطأ الحقيقي في سجلات Railway لتعرفه
-            print(f"CRITICAL ERROR: {str(e)}")
-            return jsonify({"status": "error", "message": f"تعثر في الترسانة: {str(e)}"}), 500
+            db.session.rollback() # التراجع عن أي تغييرات في حال حدوث خطأ
+            print(f"CRITICAL ERROR IN SOVEREIGN SYSTEM: {str(e)}")
+            return jsonify({"status": "error", "message": f"تعثر في الترسانة الرقمية: {str(e)}"}), 500
 
     return render_template('add_supplier.html', next_id=next_id)
 
