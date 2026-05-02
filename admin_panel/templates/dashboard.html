@@ -1,10 +1,10 @@
-{% extends "admin_panel/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}برج الرقابة المركزية | محجوب أونلاين{% endblock %}
 
 {% block content %}
 <style>
-    /* تحسين الخطوط والأوزان */
+    /* تحسين الخطوط والأوزان لتعزيز الهوية البصرية */
     .fw-black { font-weight: 900 !important; }
     
     .stat-card {
@@ -28,9 +28,10 @@
         width: 5px; height: 100%;
         transition: 0.3s;
     }
-    .card-orders::before { background: var(--mahjoub-purple); }
+    /* تعريف المتغيرات اللونية في حال عدم وجودها في base.html */
+    .card-orders::before { background: #632C8F; } /* الأرجواني الملكي الخاص بك */
     .card-suppliers::before { background: #10b981; }
-    .card-balance::before { background: var(--mahjoub-gold); }
+    .card-balance::before { background: #D4AF37; } /* الذهبي الملكي */
     .card-review::before { background: #3b82f6; }
 
     .icon-box {
@@ -54,7 +55,7 @@
         background: linear-gradient(to left, rgba(99, 44, 143, 0.3), transparent);
     }
     .table-sovereign th { 
-        color: var(--mahjoub-gold) !important; 
+        color: #D4AF37 !important; 
         font-weight: 900; 
         text-transform: uppercase; 
         letter-spacing: 1px;
@@ -70,7 +71,7 @@
     }
 
     .btn-gold {
-        background: var(--mahjoub-gold);
+        background: #D4AF37;
         color: #000;
         border: none;
         transition: 0.3s;
@@ -94,20 +95,21 @@
 <div class="container-fluid py-4">
     <div class="row mb-5 align-items-center">
         <div class="col-md-8">
-            <h1 class="fw-black text-white mb-2" style="font-size: 2.2rem;">نظام الرقابة العليا</h1>
+            <h1 class="fw-black text-dark mb-2" style="font-size: 2.2rem;">نظام الرقابة العليا</h1>
             <div class="d-flex align-items-center">
                 <span class="pulse-indicator bg-success"></span>
-                <p class="mb-0 opacity-75 fw-bold text-white">المحرك الرقمي "محجوب أونلاين" يعمل بكفاءة قصوى</p>
+                <p class="mb-0 opacity-75 fw-bold text-secondary">المحرك الرقمي "محجوب أونلاين" يعمل بكفاءة قصوى</p>
             </div>
         </div>
         <div class="col-md-4 text-md-start d-flex align-items-center justify-content-md-end mt-3 mt-md-0">
-            <div class="text-white bg-white bg-opacity-5 p-3 rounded-4 border border-white border-opacity-10 shadow-lg">
-                <small class="d-block opacity-50 fw-bold">توقيت البرج المركزي</small>
-                <span class="fw-black" id="liveClock" style="font-size: 1.2rem; color: var(--mahjoub-gold);">--:--:--</span>
+            <div class="bg-dark p-3 rounded-4 border border-warning border-opacity-10 shadow-lg">
+                <small class="d-block opacity-50 fw-bold text-white">توقيت البرج المركزي</small>
+                <span class="fw-black" id="liveClock" style="font-size: 1.2rem; color: #D4AF37;">--:--:--</span>
             </div>
         </div>
     </div>
 
+    <!-- بطاقات البيانات الرقمية -->
     <div class="row g-4">
         <div class="col-xl-3 col-md-6">
             <div class="stat-card card-orders p-4">
@@ -116,7 +118,7 @@
                         <p class="text-white-50 small fw-bold mb-1 text-uppercase">إجمالي المبيعات</p>
                         <h2 class="text-white fw-black mb-0">{{ orders_count|default('1,250') }}</h2>
                     </div>
-                    <div class="icon-box text-primary shadow-sm" style="color: var(--mahjoub-purple) !important;">
+                    <div class="icon-box shadow-sm" style="color: #632C8F !important;">
                         <i class="fas fa-rocket"></i>
                     </div>
                 </div>
@@ -142,7 +144,7 @@
                 <div class="d-flex justify-content-between">
                     <div>
                         <p class="text-white-50 small fw-bold mb-1 text-uppercase">السيولة المركزية</p>
-                        <h2 class="text-white fw-black mb-0" style="color: var(--mahjoub-gold) !important;">{{ total_balance|default('15.5K') }} $</h2>
+                        <h2 class="text-white fw-black mb-0" style="color: #D4AF37 !important;">{{ total_balance|default('15.5K') }} $</h2>
                     </div>
                     <div class="icon-box text-warning">
                         <i class="fas fa-coins"></i>
@@ -166,12 +168,13 @@
         </div>
     </div>
 
+    <!-- سجل العمليات -->
     <div class="row mt-5">
         <div class="col-12">
             <div class="stat-card p-0 shadow-2xl">
                 <div class="d-flex justify-content-between align-items-center p-4 border-bottom border-white border-opacity-5">
                     <h5 class="mb-0 text-white fw-black">
-                        <i class="fas fa-bolt me-2" style="color: var(--mahjoub-gold);"></i> سجل العمليات السيادية
+                        <i class="fas fa-bolt me-2" style="color: #D4AF37;"></i> سجل العمليات السيادية
                     </h5>
                     <a href="#" class="btn btn-sm btn-gold rounded-pill px-4 fw-bold">تحميل التقرير</a>
                 </div>
@@ -191,7 +194,7 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle p-2 me-3 d-flex align-items-center justify-content-center shadow-inner" style="width:35px; height:35px; background: rgba(99, 44, 143, 0.2); border: 1px solid var(--mahjoub-purple);">
+                                        <div class="rounded-circle p-2 me-3 d-flex align-items-center justify-content-center shadow-inner" style="width:35px; height:35px; background: rgba(99, 44, 143, 0.2); border: 1px solid #632C8F;">
                                             <i class="fas fa-store-alt text-white" style="font-size: 0.8rem;"></i>
                                         </div>
                                         <span class="text-white fw-bold">{{ transaction.supplier_name }}</span>
@@ -210,7 +213,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center py-5 opacity-50">
+                                <td colspan="5" class="text-center py-5 opacity-50 text-white">
                                     <i class="fas fa-database mb-3 d-block" style="font-size: 2rem;"></i>
                                     لا توجد عمليات مسجلة حالياً في قاعدة البيانات
                                 </td>
@@ -225,7 +228,6 @@
 </div>
 
 <script>
-    // تحديث الساعة الحية للبرج المركزي بتوقيت اليمن
     function updateClock() {
         const options = { timeZone: 'Asia/Aden', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
         const now = new Date();
