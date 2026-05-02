@@ -3,6 +3,10 @@
 {% block title %}التعميد السيادي للموردين | محجوب أونلاين{% endblock %}
 
 {% block content %}
+<!-- المكتبات اللازمة للتنبيهات والأيقونات -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
 <style>
     :root {
         --gov-purple: #632C8F;
@@ -92,6 +96,17 @@
         transition: 0.3s;
     }
 
+    .btn-copy-mini {
+        background: none;
+        border: none;
+        color: var(--gov-gold);
+        cursor: pointer;
+        margin-right: 8px;
+        transition: 0.2s;
+    }
+    
+    .btn-copy-mini:hover { color: var(--gov-purple); transform: scale(1.2); }
+
     .fin-card {
         background: #fff;
         border: 2px solid #e2e8f0;
@@ -112,7 +127,6 @@
         color: var(--gov-purple);
     }
 
-    /* تحسين شكل حقل رفع الملفات */
     input[type="file"]::file-selector-button {
         background: var(--gov-purple);
         color: white;
@@ -128,18 +142,19 @@
     <div class="form-header">
         <h2 style="margin:0;">🛡️ تعميد مورد جديد</h2>
         <div style="text-align:left;">
-            <small>الرقم السيادي (ID)</small><br>
+            <small>الهوية السيادية (ID/Wallet)</small><br>
             <strong id="sovereign_id_display" style="font-size:1.2rem; color:var(--gov-gold);">{{ next_id if next_id else '---' }}</strong>
         </div>
     </div>
 
-    <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data" onsubmit="return startLoading()">
+    <!-- تم تعديل المعرف وربط دالة الجافاسكريبت المحدثة -->
+    <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data">
         
         <div class="section-banner">👤 بيانات الحساب والنشاط التجاري</div>
         <div class="grid-layout">
             <div class="input-box">
                 <label>اسم المستخدم</label>
-                <input type="text" name="username" class="form-control-gov" placeholder="مثال: ali_2026" required>
+                <input type="text" name="username" id="form_username" class="form-control-gov" placeholder="مثال: ali_2026" required>
             </div>
             <div class="input-box">
                 <label>كلمة المرور</label>
@@ -179,13 +194,10 @@
                 <label>رقم الهوية / السجل</label>
                 <input type="text" name="id_card_number" class="form-control-gov" placeholder="رقم البطاقة أو السجل" required>
             </div>
-
-            <!-- الحقل الجديد: رفع صورة الهوية -->
             <div class="input-box">
                 <label>صورة الهوية / السجل (أرشفة ضوئية)</label>
                 <input type="file" name="id_image" class="form-control-gov" accept="image/*" required>
             </div>
-
             <div class="input-box">
                 <label>الاسم التجاري للمنشأة</label>
                 <input type="text" name="trade_name" class="form-control-gov" required>
@@ -215,7 +227,7 @@
         <div class="section-banner">🏦 الربط المالي والمحفظة السيادية</div>
         <div class="grid-layout">
             <div class="input-box">
-                <label>رقم المحفظة السيادي (تلقائي)</label>
+                <label>رقم المحفظة / الأيدي (تلقائي)</label>
                 <input type="text" name="e_wallet" id="e_wallet_input" class="form-control-gov form-control-readonly" readonly>
             </div>
             <div class="input-box" style="grid-column: 1 / -1;">
@@ -311,6 +323,72 @@
         bSelect.add(new Option("أخرى (إدخال يدوي)...", "other"));
     }
 
+    // دالة نسخ النص
+    function copyText(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text);
+        Swal.fire({
+            title: 'تم النسخ!',
+            text: text,
+            icon: 'info',
+            timer: 1000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    }
+
+    // معالجة النموذج بنظام AJAX لإظهار التنبيه
+    document.getElementById('sovereignForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitBtn');
+        const sovereignID = document.getElementById('sovereign_id_display').innerText.trim();
+        const username = document.getElementById('form_username').value;
+        
+        submitBtn.innerHTML = "⏳ جاري الأرشفة والتعميد...";
+        submitBtn.disabled = true;
+
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                Swal.fire({
+                    title: '✅ تم التعميد بنجاح',
+                    html: `
+                        <div style="text-align: right; direction: rtl; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <p><strong>الرقم السيادي/المحفظة:</strong> <span id="res_wallet">${sovereignID}</span> 
+                                <button type="button" onclick="copyText('res_wallet')" class="btn-copy-mini"><i class="fas fa-copy"></i></button></p>
+                            <p><strong>اسم المستخدم:</strong> <span id="res_user">${username}</span>
+                                <button type="button" onclick="copyText('res_user')" class="btn-copy-mini"><i class="fas fa-copy"></i></button></p>
+                            <p><strong>كلمة المرور:</strong> 123</p>
+                            <hr>
+                            <small style="color: var(--gov-purple);">انسخ هذه البيانات وزود بها المورد فوراً.</small>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'حسناً، الانتقال للمراقبة',
+                    confirmButtonColor: '#632C8F',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = "{{ url_for('admin.admin_dashboard') }}";
+                    }
+                });
+            } else {
+                throw new Error();
+            }
+        } catch (err) {
+            Swal.fire('خطأ!', 'حدثت مشكلة في الاتصال بالترسانة الرقمية.', 'error');
+            submitBtn.innerHTML = "🛡️ إعادة محاولة التعميد";
+            submitBtn.disabled = false;
+        }
+    };
+
     window.onload = () => {
         const pSelect = document.getElementById('prov_select');
         Object.keys(geoData).sort().forEach(p => pSelect.add(new Option(p, p)));
@@ -320,12 +398,6 @@
         if(sovereignID && sovereignID !== '---') {
             document.getElementById('e_wallet_input').value = sovereignID;
         }
-    }
-
-    function startLoading() {
-        document.getElementById('submitBtn').innerHTML = "⏳ جاري المعالجة والتعميد...";
-        document.getElementById('submitBtn').disabled = true;
-        return true;
     }
 </script>
 {% endblock %}
