@@ -1,71 +1,42 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
+from core import db  # استيراد كائن db المعرف في __init__.py الخاص بـ core
+from datetime import datetime
 
-class Vendor(models.Model):
-    # --- الربط الأساسي مع المستخدم ---
-    user = models.OneToOneField(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='vendor_profile',
-        verbose_name="حساب المستخدم"
-    )
+class Vendor(db.Model):
+    __tablename__ = 'vendors'
 
+    # --- الحقول الأساسية ---
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # الربط مع المستخدم (User Model) - افترضنا أن اسم الجدول هو 'users'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
+    
     # --- بيانات الهوية والملك ---
-    owner_name = models.CharField(max_length=255, verbose_name="اسم المالك الكامل")
-    id_type = models.CharField(max_length=100, verbose_name="نوع الهوية")
-    id_card_number = models.CharField(max_length=50, verbose_name="رقم الهوية / السجل التجاري")
+    owner_name = db.Column(db.String(255), nullable=False)
+    id_type = db.Column(db.String(100), nullable=False)
+    id_card_number = db.Column(db.String(50), nullable=False)
     
     # --- بيانات المنشأة والنشاط ---
-    trade_name = models.CharField(max_length=255, verbose_name="الاسم التجاري للمنشأة")
-    activity_type = models.CharField(max_length=100, verbose_name="نوع النشاط التجاري")
+    trade_name = db.Column(db.String(255), nullable=False)
+    activity_type = db.Column(db.String(100), nullable=False)
     
     # --- البيانات الجغرافية والاتصال ---
-    # ملاحظة: تعكس هذه الحقول نطاق عملياتك في اليمن (الخوخة، عدن، المخا، إلخ)
-    province = models.CharField(max_length=100, verbose_name="المحافظة")
-    district = models.CharField(max_length=100, verbose_name="المديرية")
-    address_detail = models.CharField(max_length=500, verbose_name="العنوان بالتفصيل")
-    
-    phone_regex = RegexValidator(regex=r'^7\d{8}$', message="يجب إدخال رقم هاتف يمني صحيح يبدأ بـ 7")
-    phone = models.CharField(validators=[phone_regex], max_length=9, verbose_name="رقم الهاتف")
+    province = db.Column(db.String(100), nullable=False)
+    district = db.Column(db.String(100), nullable=False)
+    address_detail = db.Column(db.String(500), nullable=False)
+    phone = db.Column(db.String(9), nullable=False) # التحقق يتم عادة في Form أو Logic في Flask
 
     # --- الربط المالي والسيادي ---
-    # الرقم السيادي يتم توليده برمجياً أو عبر الـ ID التلقائي
-    e_wallet = models.CharField(
-        max_length=50, 
-        unique=True, 
-        blank=True, 
-        verbose_name="رقم المحفظة السيادي"
-    )
-    
-    FINANCE_CHOICES = [
-        ('banks', 'بنوك إسلامية'),
-        ('exchange', 'شركات صرافة'),
-    ]
-    fin_type = models.CharField(max_length=20, choices=FINANCE_CHOICES, default='banks', verbose_name="تصنيف الجهة المالية")
-    bank_name = models.CharField(max_length=150, verbose_name="اسم البنك / شركة الصرافة")
-    bank_acc = models.CharField(max_length=100, verbose_name="رقم الحساب البنكي")
+    e_wallet = db.Column(db.String(50), unique=True, nullable=True)
+    fin_type = db.Column(db.String(20), default='banks')
+    bank_name = db.Column(db.String(150), nullable=False)
+    bank_acc = db.Column(db.String(100), nullable=False)
 
     # --- بيانات النظام ---
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ التعميد")
-    is_verified = models.BooleanField(default=True, verbose_name="حالة التعميد السيادي")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_verified = db.Column(db.Boolean, default=True)
 
-    class Meta:
-        verbose_name = "مورد سيادي"
-        verbose_name_plural = "الموردون السياديون"
-        ordering = ['-created_at']
+    def __repr__(self):
+        return f"<Vendor {self.trade_name} - {self.e_wallet}>"
 
-    def __str__(self):
-        return f"{self.trade_name} - {self.e_wallet}"
-
-    def save(self, *args, **kwargs):
-        """
-        منطق الربط التلقائي:
-        يتم جعل رقم المحفظة مطابقاً للرقم التعريفي (Primary Key) لضمان الربط السيادي.
-        """
-        super().save(*args, **kwargs)
-        if not self.e_wallet:
-            # استخدام الرقم التعريفي كقيمة للمحفظة السيادية بعد الحفظ الأول
-            self.e_wallet = str(self.id).zfill(6) # مثال: 000001
-            # تحديث الحقل فقط لتجنب التكرار اللانهائي (Recursion)
-            Vendor.objects.filter(pk=self.pk).update(e_wallet=self.e_wallet)
+    # ملاحظة: في Flask-SQLAlchemy، منطق "التوليد التلقائي" للـ e_wallet 
+    # يُفضل أن يتم في ملف routes.py بعد عملية الحفظ الأولية للمورد
