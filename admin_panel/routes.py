@@ -1,30 +1,28 @@
-from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, login_required, current_user
-from core.models.user import User 
-from core import db
+from flask import render_template
+from flask_login import login_required, current_user
 from . import admin_bp
-
-@admin_bp.route('/login', methods=['GET', 'POST'])
-def admin_login():
-    if current_user.is_authenticated:
-        return redirect(url_for('admin.admin_dashboard'))
-    
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
-            login_user(user)
-            flash('تم الدخول بنجاح يا قائد.', 'success')
-            return redirect(url_for('admin.admin_dashboard'))
-        else:
-            flash('⚠️ بيانات الدخول غير صحيحة.', 'danger')
-            
-    return render_template('login.html')
+from core.models.user import User
+# استيراد موديلات الموردين والطلبات (تأكد من وجود هذه الموديلات في core)
+# from core.models.business import Supplier, Order 
 
 @admin_bp.route('/dashboard')
-@login_required
+@login_required  # حماية السيادة: الدخول للقائد فقط
 def admin_dashboard():
-    return render_template('dashboard.html')
+    """
+    لوحة التحكم المركزية لإدارة الخط التجاري في اليمن
+    """
+    # هنا نقوم بجلب إحصائيات حقيقية لعرضها في الواجهة
+    # مثال: إحصائيات الموردين في (الخوخة، عدن، المخا، وحيس)
+    stats = {
+        'total_suppliers': 0, # سيتم جلبها من قاعدة البيانات لاحقاً
+        'active_orders': 0,
+        'cities_covered': ['الخوخة', 'عدن', 'المخا', 'حيس']
+    }
+    
+    # تمرير اسم القائد (علي) والإحصائيات إلى صفحة dashboard.html
+    return render_template(
+        'dashboard.html', 
+        title="برج الرقابة المركزية",
+        admin_name=current_user.username,
+        stats=stats
+    )
