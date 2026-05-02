@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}طلبات السحب والسيادة المالية{% endblock %}
+{% block title %}التعميد السيادي للموردين | محجوب أونلاين{% endblock %}
 
 {% block content %}
 <style>
     :root {
-        --gov-purple: #6b21a8;
-        --gov-gold: #C5A021;
+        --gov-purple: #632C8F; /* اللون الأرجواني الملكي */
+        --gov-gold: #C5A021; /* اللون الذهبي */
         --text-main: #1e293b;
-        --bg-soft: #f1f5f9;
         --accent-green: #10b981;
     }
 
@@ -64,7 +63,7 @@
     .form-control-gov:focus {
         border-color: var(--gov-purple);
         outline: none;
-        box-shadow: 0 0 0 3px rgba(107, 33, 168, 0.1);
+        box-shadow: 0 0 0 3px rgba(99, 44, 143, 0.1);
     }
 
     .finance-selector {
@@ -97,8 +96,6 @@
         color: var(--gov-purple);
     }
 
-    .fin-card.active i { color: var(--gov-purple); }
-
     .upload-zone {
         margin: 20px 25px;
         border: 2px dashed #94a3b8;
@@ -110,20 +107,14 @@
         transition: 0.3s;
     }
 
-    .upload-zone:hover {
-        border-color: var(--gov-purple);
-        background: #f5f3ff;
-    }
+    .upload-zone:hover { border-color: var(--gov-purple); background: #f5f3ff; }
 
-    .upload-zone i { font-size: 2.5rem; color: var(--gov-purple); margin-bottom: 10px; }
     .file-counter { 
         display: inline-block; margin-top: 10px; padding: 5px 15px; 
         background: var(--accent-green); color: white; border-radius: 20px;
         font-size: 0.8rem; font-weight: bold; display: none;
     }
 
-    .btn-submit-container { text-align: center; padding: 30px; }
-    
     .btn-gov {
         background: var(--gov-purple);
         color: white;
@@ -136,12 +127,6 @@
         transition: 0.3s;
     }
 
-    .btn-gov:disabled {
-        background: #94a3b8;
-        border-color: #cbd5e1;
-        cursor: not-allowed;
-    }
-
     .loader-text { display: none; margin-top: 10px; color: var(--gov-purple); font-weight: bold; }
 </style>
 
@@ -150,30 +135,31 @@
         <h2 style="margin:0;">🛡️ تعميد مورد جديد</h2>
         <div style="text-align:left;">
             <small>الرقم السيادي المتوقع</small><br>
-            <strong style="font-size:1.2rem; color:var(--gov-gold);">{{ next_id }}</strong>
+            <strong style="font-size:1.2rem; color:var(--gov-gold);">{{ next_id if next_id else '---' }}</strong>
         </div>
     </div>
 
-    <form id="sovereignForm" action="{{ url_for('add_vendor') }}" method="POST" enctype="multipart/form-data" onsubmit="startLoading()">
+    <form id="sovereignForm" action="{{ url_for('admin.add_vendor') }}" method="POST" enctype="multipart/form-data" onsubmit="return startLoading()">
         
         <div class="section-banner">👤 بيانات الحساب والنشاط</div>
         <div class="grid-layout">
             <div class="input-box">
                 <label>اسم المستخدم (الدخول)</label>
-                <input type="text" name="username" value="{{ old_data.get('username', '') }}" class="form-control-gov" placeholder="مثال: ali_2024" required>
+                <input type="text" name="username" value="{{ old_data.username if old_data and old_data.username else '' }}" class="form-control-gov" placeholder="مثال: ali_2024" required>
             </div>
             <div class="input-box">
                 <label>كلمة المرور</label>
-                <input type="text" name="password" value="{{ old_data.get('password', '123') }}" class="form-control-gov" required>
+                <input type="text" name="password" value="{{ old_data.password if old_data and old_data.password else '123' }}" class="form-control-gov" required>
             </div>
             <div class="input-box">
                 <label>نوع النشاط التجاري</label>
-                <select name="activity_type" id="activity_type" class="form-control-gov" required>
-                    <option value="مواد غذائية" {% if old_data.get('activity_type') == 'مواد غذائية' %}selected{% endif %}>مواد غذائية</option>
-                    <option value="مقاولات عامة" {% if old_data.get('activity_type') == 'مقاولات عامة' %}selected{% endif %}>مقاولات عامة</option>
-                    <option value="أدوية ومستلزمات" {% if old_data.get('activity_type') == 'أدوية ومستلزمات' %}selected{% endif %}>أدوية ومستلزمات طبية</option>
-                    <option value="إلكترونيات" {% if old_data.get('activity_type') == 'إلكترونيات' %}selected{% endif %}>إلكترونيات وتقنية</option>
-                    <option value="ملابس ومنسوجات" {% if old_data.get('activity_type') == 'ملابس ومنسوجات' %}selected{% endif %}>ملابس ومنسوجات</option>
+                <select name="activity_type" class="form-control-gov" required>
+                    {% set act = old_data.activity_type if old_data else '' %}
+                    <option value="مواد غذائية" {{ 'selected' if act == 'مواد غذائية' }}>مواد غذائية</option>
+                    <option value="مقاولات عامة" {{ 'selected' if act == 'مقاولات عامة' }}>مقاولات عامة</option>
+                    <option value="أدوية ومستلزمات" {{ 'selected' if act == 'أدوية ومستلزمات' }}>أدوية ومستلزمات طبية</option>
+                    <option value="إلكترونيات" {{ 'selected' if act == 'إلكترونيات' }}>إلكترونيات وتقنية</option>
+                    <option value="ملابس ومنسوجات" {{ 'selected' if act == 'ملابس ومنسوجات' }}>ملابس ومنسوجات</option>
                 </select>
             </div>
         </div>
@@ -182,19 +168,11 @@
         <div class="grid-layout">
             <div class="input-box">
                 <label>الاسم التجاري للمنشأة</label>
-                <input type="text" name="trade_name" value="{{ old_data.get('trade_name', '') }}" class="form-control-gov" placeholder="مثال: شركة المحجوب للتجارة" required>
+                <input type="text" name="trade_name" value="{{ old_data.trade_name if old_data and old_data.trade_name else '' }}" class="form-control-gov" required>
             </div>
             <div class="input-box">
                 <label>اسم المالك الكامل</label>
-                <input type="text" name="full_name" value="{{ old_data.get('full_name', '') }}" class="form-control-gov" required>
-            </div>
-            <div class="input-box">
-                <label>نوع الهوية</label>
-                <select name="id_type" class="form-control-gov" required>
-                    <option value="بطاقة شخصية ذكية" {% if old_data.get('id_type') == 'بطاقة شخصية ذكية' %}selected{% endif %}>بطاقة شخصية ذكية</option>
-                    <option value="جواز سفر" {% if old_data.get('id_type') == 'جواز سفر' %}selected{% endif %}>جواز سفر</option>
-                    <option value="إقامة" {% if old_data.get('id_type') == 'إقامة' %}selected{% endif %}>إقامة نظامية</option>
-                </select>
+                <input type="text" name="full_name" value="{{ old_data.full_name if old_data and old_data.full_name else '' }}" class="form-control-gov" required>
             </div>
             <div class="input-box">
                 <label>المحافظة</label>
@@ -210,7 +188,7 @@
             </div>
             <div class="input-box">
                 <label>رقم الهاتف (الرسمي)</label>
-                <input type="text" name="phone" value="{{ old_data.get('phone', '') }}" class="form-control-gov" placeholder="7xxxxxxxx" required>
+                <input type="text" name="phone" value="{{ old_data.phone if old_data and old_data.phone else '' }}" class="form-control-gov" placeholder="7xxxxxxxx" required>
             </div>
         </div>
 
@@ -227,7 +205,7 @@
                         <span>شركات صرافة</span>
                     </div>
                 </div>
-                <input type="hidden" name="fin_type" id="fin_type_hidden" value="{{ old_data.get('fin_type', 'banks') }}">
+                <input type="hidden" name="fin_type" id="fin_type_hidden" value="{{ old_data.fin_type if old_data and old_data.fin_type else 'banks' }}">
             </div>
             <div class="input-box">
                 <label>اسم الجهة المالية</label>
@@ -236,16 +214,15 @@
                 </select>
             </div>
             <div class="input-box">
-                <label>رقم الحساب / الآيبان</label>
-                <input type="text" name="bank_acc" value="{{ old_data.get('bank_acc', '') }}" class="form-control-gov" required>
+                <label>رقم الحساب</label>
+                <input type="text" name="bank_acc" value="{{ old_data.bank_acc if old_data and old_data.bank_acc else '' }}" class="form-control-gov" required>
             </div>
         </div>
 
         <div class="section-banner">📂 الأرشفة السيادية للوثائق (GitHub)</div>
         <div class="upload-zone" onclick="document.getElementById('docs_input').click()">
             <i class="fas fa-cloud-upload-alt"></i>
-            <h3 style="margin:5px 0;">اضغط هنا لرفع الوثائق للأرشيف</h3>
-            <p style="color:#64748b; font-size:0.8rem;">يتم إنشاء المجلد السيادي تلقائياً فور الرفع</p>
+            <h3 style="margin:5px 0;">رفع الوثائق للمستودع الرقمي</h3>
             <input type="file" name="vendor_docs" id="docs_input" style="display:none;" multiple onchange="updateFileCount(this)">
             <span id="file_badge" class="file-counter"></span>
         </div>
@@ -253,7 +230,7 @@
         <div class="btn-submit-container">
             <button type="submit" id="submitBtn" class="btn-gov">🛡️ إتمام التعميد والأرشفة</button>
             <div id="loaderText" class="loader-text">
-                <i class="fas fa-spinner fa-spin"></i> جاري إنشاء المجلدات والأرشفة السحابية...
+                <i class="fas fa-spinner fa-spin"></i> جاري الأرشفة السحابية والربط...
             </div>
         </div>
     </form>
@@ -261,38 +238,18 @@
 
 <script>
     const geoData = {
-        "صنعاء (الأمانة)": ["السبعين", "التحرير", "الثورة", "صنعاء القديمة", "بني الحارث", "وحدة", "معين"],
-        "عدن": ["المنصورة", "كريتر", "الشيخ عثمان", "البريقة", "المعلا", "التواهي", "خور مكسر", "دار سعد"],
-        "تعز": ["المخاء", "القاهرة", "المظفر", "صالة", "ذباب", "صبر الموادم", "التربة", "المواسط"],
-        "حضرموت": ["المكلا", "سيئون", "الشحر", "تريم", "القطن", "شبام", "غيل باوزير"],
-        "الحديدة": ["الخوخة", "الحوك", "الميناء", "باجل", "زبيد", "بيت الفقيه", "القناوص", "الزيدية"],
-        "إب": ["الظهار", "المشنة", "جبلة", "يريم", "العدين", "القفر"],
-        "أبين": ["زنجبار", "خنفار", "لودر", "مودية", "أحور"],
-        "لحج": ["الحوطة", "تبن", "يافع", "المفلحي", "المقاطرة"],
-        "مأرب": ["مأرب المدينة", "مأرب الوادي", "حريب", "الجوبة"],
-        "شبوة": ["عتق", "بيحان", "نصاب", "ميفعة", "حبان"],
-        "المهرة": ["الغيضة", "سيحوت", "قشن", "شحن"],
-        "صعدة": ["صعدة المدينة", "سحار", "مجز", "حيدان"],
-        "حجة": ["حجة المدينة", "عبس", "المحابشة", "كحلان عفار"],
-        "البيضاء": ["البيضاء المدينة", "رداع", "السوادية", "الزاهر"],
-        "الضالع": ["الضالع المدينة", "قعطبة", "دمت", "الأزارق"],
-        "ذمار": ["ذمار المدينة", "عنس", "معبر", "ضوران آنس"],
-        "عمران": ["عمران المدينة", "ريدة", "خمر", "ثلاء"],
-        "الجوف": ["الحزم", "المصلوب", "المتون", "برط العنان"],
-        "المحويت": ["المحويت المدينة", "شبام كوكبان", "الطويلة"],
-        "ريمة": ["الجبين", "بلاد الطعام", "كسمة"],
-        "سقطرى": ["حديبو", "قلنسية"]
+        "صنعاء (الأمانة)": ["السبعين", "التحرير", "الثورة", "صنعاء القديمة"],
+        "عدن": ["المنصورة", "كريتر", "الشيخ عثمان", "خور مكسر"],
+        "تعز": ["المخاء", "القاهرة", "المظفر", "ذباب"],
+        "الحديدة": ["الخوخة", "الحوك", "الميناء", "زبيد"],
+        "مأرب": ["مأرب المدينة", "مأرب الوادي"],
+        "حضرموت": ["المكلا", "سيئون", "الشحر"]
     };
 
     const finData = {
-        "banks": ["بنك الكريمي الإسلامي", "بنك القطيبي الإسلامي", "بنك التضامن", "بنك الشمول", "بنك اليمن والبحرين", "بنك اليمن الدولي", "بنك سبأ الإسلامي"],
-        "exchange": ["شركة المريسي للصرافة", "شركة سويد", "شركة النجم", "شركة العامري", "شركة الصيفي", "شركة الامتياز", "شركة المحسن"]
+        "banks": ["بنك الكريمي الإسلامي", "بنك القطيبي الإسلامي", "بنك التضامن"],
+        "exchange": ["شركة المريسي للصرافة", "شركة سويد", "شركة النجم"]
     };
-
-    const oldProv = "{{ old_data.get('province', '') }}";
-    const oldDist = "{{ old_data.get('district', '') }}";
-    const oldFinType = "{{ old_data.get('fin_type', 'banks') }}";
-    const oldBankName = "{{ old_data.get('bank_name', '') }}";
 
     function loadDistricts(prov, selectedDist = "") {
         const dSelect = document.getElementById('dist_select');
@@ -326,8 +283,6 @@
         if(input.files.length > 0) {
             badge.style.display = 'inline-block';
             badge.innerText = `✅ تم اختيار ${input.files.length} وثائق`;
-        } else {
-            badge.style.display = 'none';
         }
     }
 
@@ -339,14 +294,8 @@
 
     window.onload = () => {
         const pSelect = document.getElementById('prov_select');
-        Object.keys(geoData).sort().forEach(p => {
-            let opt = new Option(p, p);
-            if(p === oldProv) opt.selected = true;
-            pSelect.add(opt);
-        });
-
-        if(oldProv) loadDistricts(oldProv, oldDist);
-        setFinance(oldFinType, oldBankName);
+        Object.keys(geoData).sort().forEach(p => pSelect.add(new Option(p, p)));
+        setFinance('banks');
     }
 </script>
 {% endblock %}
