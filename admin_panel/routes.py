@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, logout_user, current_user
 from . import admin_bp
 from .auth import handle_admin_login
-# من المفترض استيراد الموديلات هنا لاحقاً (مثل User, Supplier, Order)
+# من المفترض استيراد الموديلات هنا لاحقاً (مثل User, Supplier, Order, WithdrawRequest)
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
@@ -25,6 +25,20 @@ def admin_dashboard():
     }
     return render_template('dashboard.html', **stats)
 
+# --- قسم حوكمة الموردين ---
+
+@admin_bp.route('/add-supplier', methods=['GET', 'POST'])
+@login_required
+def add_vendor():
+    """تعميد مورد جديد في النظام الملكي"""
+    if request.method == 'POST':
+        # هنا سيتم لاحقاً إضافة منطق حفظ البيانات وتوليد الرقم السيادي
+        # مبدأنا: النجاح يبنى بالثقة وليس على الأوراق
+        flash('تم تعميد المورد بنجاح وفتح محافظه المالية الثلاث.', 'success')
+        return redirect(url_for('admin.manage_suppliers'))
+    
+    return render_template('add_supplier.html')
+
 @admin_bp.route('/manage-suppliers')
 @login_required
 def manage_suppliers():
@@ -32,11 +46,22 @@ def manage_suppliers():
     # سيتم ربطها بجدول الموردين في قاعدة البيانات
     return render_template('manage_suppliers.html')
 
+# --- قسم الهندسة المالية ---
+
+@admin_bp.route('/withdraw-requests')
+@login_required
+def withdraw_requests():
+    """إدارة طلبات سحب الأرصدة والتسويات"""
+    # سيتم جلب الطلبات المعلقة من قاعدة البيانات هنا
+    return render_template('withdraw_requests.html')
+
 @admin_bp.route('/financial-engineering')
 @login_required
 def financial_reports():
     """تقارير الهندسة المالية والأرباح"""
     return render_template('financial_reports.html')
+
+# --- إعدادات السيادة ---
 
 @admin_bp.route('/system-settings')
 @login_required
