@@ -10,3 +10,12 @@ from core.models.user import User
 
 # تعريف الحزم المصدرة
 __all__ = ['User']
+
+# استيراد النماذج من الملفات المنفصلة لجعلها مرئية لـ Django
+from .vendor import Vendor
+
+# إذا كان لديك نماذج أخرى مستقبلاً، يتم إضافتها هنا بنفس الطريقة
+# from .customer import Customer
+# from .product import Product
+
+__all__ = ['Vendor']
