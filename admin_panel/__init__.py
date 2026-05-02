@@ -1,13 +1,7 @@
 from flask import Blueprint
 
-# تعريف بوابة الإدارة المركزية
-admin_bp = Blueprint(
-    'admin', 
-    __name__, 
-    template_folder='templates',
-    static_folder='static'
-)
+# تعريف الـ Blueprint ليكون مستقلاً بمجلده وقوالبه
+admin_bp = Blueprint('admin', __name__, template_folder='templates')
 
-# استيراد المنطق من الملفات المستقلة
-from . import auth
+# استيراد الروابط والمنطق بعد التعريف لربطها بالـ Blueprint
 from . import routes
