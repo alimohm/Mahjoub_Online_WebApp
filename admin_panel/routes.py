@@ -1,28 +1,27 @@
 from flask import render_template, request, redirect, url_for, flash
-# استيراد db من المجلد الأساسي core بناءً على هيكلية مشروعك
+# استيراد db من النواة
 from core import db 
 
-# تصحيح مسار الاستيراد: النماذج موجودة داخل core
-# بناءً على سطر (from core.models.user import User) في ملفك السابق
-from core.models.user import User
-# يجب أن يكون استيراد طلبات السحب من نفس المسار
+# تصحيح الخطأ الجذري: الاستيراد من المسار المعتمد في مشروعك
 try:
-    from core.models.finance import WithdrawRequest 
+    # بما أن core/models/__init__.py يستورد Vendor، فنحن نستورده من هناك
+    from core.models import Vendor
+    # إذا كان WithdrawRequest موجوداً داخل ملف vendor.py استورده هكذا:
+    from core.models.vendor import WithdrawRequest
 except ImportError:
-    # إذا كان الملف موجوداً في مجلد models مباشرة داخل core
-    from core.models import WithdrawRequest
+    # محاولة استيراد في حال كان الموديل معرفاً في مكان آخر داخل النماذج
+    from core.models.user import User
+    # ملاحظة: تأكد أن كلاس WithdrawRequest موجود فعلياً داخل ملف vendor.py
+    flash("تنبيه: تأكد من وجود كلاس WithdrawRequest داخل ملف vendor.py", "warning")
 
-# استيراد البلوبرنت الخاص بالإدارة المعرف في نفس المجلد
+# استيراد البلوبرنت
 from . import admin_bp
 
 @admin_bp.route('/withdraw-requests')
 def withdraw_requests():
-    """
-    عرض كافة طلبات تصفية الأرصدة المعلقة للموردين.
-    يتم جلب البيانات حية من قاعدة البيانات لضمان الدقة المالية.
-    """
+    """عرض كافة طلبات تصفية الأرصدة المعلقة"""
     try:
-        # جلب الطلبات المعلقة وترتيبها من الأحدث
+        # جلب البيانات (تأكد من أن اسم الموديل WithdrawRequest)
         pending_requests = WithdrawRequest.query.filter_by(status='pending').order_by(WithdrawRequest.created_at.desc()).all()
         return render_template('withdraw_requests.html', requests=pending_requests)
     except Exception as e:
@@ -31,37 +30,26 @@ def withdraw_requests():
 
 @admin_bp.route('/finalize-withdrawal', methods=['POST'])
 def finalize_withdrawal():
-    """
-    دالة التعميد المالي: تؤرشف بيانات التحويل وتحدث الحالة في قاعدة البيانات.
-    """
+    """تعميد الحوالة وأرشفة البيانات سيادياً"""
     request_id = request.form.get('request_id')
     bank_name = request.form.get('bank_name')
     reference_number = request.form.get('reference_number')
 
     if not request_id or not reference_number:
-        flash("تنبيه: يجب إدخال رقم الحوالة المرجعي لإتمام العملية.", "warning")
+        flash("يرجى إدخال رقم الحوالة ياقائد.", "warning")
         return redirect(url_for('admin.withdraw_requests'))
 
-    # البحث عن الطلب
     withdrawal_entry = WithdrawRequest.query.get(request_id)
 
-    if not withdrawal_entry:
-        flash("خطأ: لم يتم العثور على السجل.", "danger")
-        return redirect(url_for('admin.withdraw_requests'))
-
-    try:
-        # تحديث بيانات التعميد
-        withdrawal_entry.status = 'completed'
-        withdrawal_entry.bank_used = bank_name
-        withdrawal_entry.reference_id = reference_number
-        
-        # حفظ التغييرات سيادياً في قاعدة البيانات
-        db.session.commit()
-        
-        flash(f"تم تعميد الحوالة رقم ({reference_number}) بنجاح وأرشفة الطلب.", "success")
-        
-    except Exception as e:
-        db.session.rollback() # التراجع لضمان سلامة الأرصدة
-        flash(f"فشل نظام الأرشفة: {str(e)}", "danger")
-
+    if withdrawal_entry:
+        try:
+            withdrawal_entry.status = 'completed'
+            withdrawal_entry.bank_used = bank_name
+            withdrawal_entry.reference_id = reference_number
+            db.session.commit()
+            flash(f"تم اعتماد الحوالة رقم {reference_number} بنجاح.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"خطأ في الحفظ: {str(e)}", "danger")
+    
     return redirect(url_for('admin.withdraw_requests'))
