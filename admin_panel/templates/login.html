@@ -98,7 +98,7 @@
             gap: 10px;
         }
 
-        .flash-danger { background: rgba(255, 77, 77, 0.15); color: var(--danger); border-color: rgba(255, 77, 77, 0.3); }
+        .flash-danger, .flash-error { background: rgba(255, 77, 77, 0.15); color: var(--danger); border-color: rgba(255, 77, 77, 0.3); }
         .flash-warning { background: rgba(255, 204, 0, 0.1); color: var(--warning); border-color: rgba(255, 204, 0, 0.3); }
         .flash-success { background: rgba(0, 255, 204, 0.1); color: var(--success); border-color: rgba(0, 255, 204, 0.3); }
 
@@ -216,7 +216,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="flash-msg flash-{{ 'danger' if category == 'error' else category }}">
+              <div class="flash-msg flash-{{ 'danger' if category == 'error' or category == 'danger' else category }}">
                 <i class="fas {% if category == 'error' or category == 'danger' %}fa-exclamation-circle{% elif category == 'warning' %}fa-user-slash{% else %}fa-info-circle{% endif %}"></i>
                 {{ message }}
               </div>
@@ -224,7 +224,8 @@
           {% endif %}
         {% endwith %}
 
-        <form action="{{ url_for('admin.admin_login') }}" method="POST">
+        <!-- تم تعديل المسار هنا ليتوافق مع admin.login -->
+        <form action="{{ url_for('admin.login') }}" method="POST">
             <div class="form-group">
                 <label>معرف القائد</label>
                 <div class="input-wrapper">
