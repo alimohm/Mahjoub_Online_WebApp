@@ -111,6 +111,17 @@
         background: #f5f3ff;
         color: var(--gov-purple);
     }
+
+    /* تحسين شكل حقل رفع الملفات */
+    input[type="file"]::file-selector-button {
+        background: var(--gov-purple);
+        color: white;
+        border: none;
+        padding: 5px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
 </style>
 
 <div class="form-container">
@@ -122,7 +133,6 @@
         </div>
     </div>
 
-    <!-- تم تعديل السطر التالي ليرسل البيانات لنفس دالة الإضافة المبرمجة في Python -->
     <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data" onsubmit="return startLoading()">
         
         <div class="section-banner">👤 بيانات الحساب والنشاط التجاري</div>
@@ -148,7 +158,7 @@
             </div>
         </div>
 
-        <div class="section-banner">📍 بيانات المالك والمنشأة</div>
+        <div class="section-banner">📍 بيانات المالك والمنشأة والوثائق</div>
         <div class="grid-layout">
             <div class="input-box">
                 <label>اسم المالك الكامل</label>
@@ -169,6 +179,13 @@
                 <label>رقم الهوية / السجل</label>
                 <input type="text" name="id_card_number" class="form-control-gov" placeholder="رقم البطاقة أو السجل" required>
             </div>
+
+            <!-- الحقل الجديد: رفع صورة الهوية -->
+            <div class="input-box">
+                <label>صورة الهوية / السجل (أرشفة ضوئية)</label>
+                <input type="file" name="id_image" class="form-control-gov" accept="image/*" required>
+            </div>
+
             <div class="input-box">
                 <label>الاسم التجاري للمنشأة</label>
                 <input type="text" name="trade_name" class="form-control-gov" required>
@@ -308,7 +325,6 @@
     function startLoading() {
         document.getElementById('submitBtn').innerHTML = "⏳ جاري المعالجة والتعميد...";
         document.getElementById('submitBtn').disabled = true;
-        // لا نحتاج لاستدعاء submit() يدوياً هنا لأن return true سيكمل العملية طبيعياً
         return true;
     }
 </script>
