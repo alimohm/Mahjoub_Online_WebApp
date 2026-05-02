@@ -4,6 +4,7 @@ from flask_login import login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
 from core import db 
+from sqlalchemy import text
 
 # --- استيراد النماذج (Models) ---
 from core.models.vendor import Vendor
@@ -23,10 +24,30 @@ except (ImportError, Exception):
 from . import admin_bp
 from .auth import handle_admin_login
 
+# متغير تحكم محلي (سيختفي الرابط عند إعادة تشغيل التطبيق أو بعد الضغط عليه)
+SHOW_REPAIR_LINK = True
+
+# --- نظام الإصلاح التلقائي السيادي ---
+@admin_bp.route('/system-repair-sovereign')
+@login_required
+def auto_repair():
+    global SHOW_REPAIR_LINK
+    db.session.rollback()
+    try:
+        # تنفيذ أمر مباشر لإضافة العمود الناقص في حال عدم وجوده
+        db.session.execute(text("ALTER TABLE vendors ADD COLUMN IF NOT EXISTS user_id INTEGER;"))
+        db.session.commit()
+        SHOW_REPAIR_LINK = False # إخفاء الرابط بعد الإصلاح
+        flash("تم إصلاح هيكل الترسانة الرقمية بنجاح. العمود user_id مفعل الآن.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"فشل الإصلاح التلقائي: {str(e)}", "danger")
+    
+    return redirect(url_for('admin.admin_dashboard'))
+
 # --- 1. بوابة الدخول والخروج ---
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # صمام أمان: إذا حدث خطأ سابق في القاعدة، يتم تنظيفه هنا قبل محاولة الدخول
     db.session.rollback()
     return handle_admin_login()
 
@@ -43,7 +64,6 @@ def logout():
 @admin_bp.route('/dashboard')
 @login_required
 def admin_dashboard():
-    # 🛡️ معالجة الخطأ الظاهر في الصورة: تنظيف الجلسة فوراً
     db.session.rollback()
     
     try:
@@ -52,19 +72,22 @@ def admin_dashboard():
         
         return render_template('dashboard.html', 
                                suppliers_count=suppliers_count, 
-                               pending_withdrawals=pending_withdrawals)
+                               pending_withdrawals=pending_withdrawals,
+                               show_repair=SHOW_REPAIR_LINK) # نمرر حالة الرابط للقالب
     except Exception as e:
-        # تسجيل الخطأ في Railway Logs مع منع انهيار الصفحة
         print(f"CRITICAL SQL ERROR: {str(e)}")
         db.session.rollback()
-        return render_template('dashboard.html', suppliers_count=0, pending_withdrawals=0)
+        return render_template('dashboard.html', 
+                               suppliers_count=0, 
+                               pending_withdrawals=0,
+                               show_repair=SHOW_REPAIR_LINK)
 
 # --- 3. إدارة الموردين (التعميد والأرشفة) ---
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
     next_id = "MAH-9631"
-    db.session.rollback() # تنظيف قبل البدء
+    db.session.rollback() 
     
     try:
         last_vendor = Vendor.query.order_by(Vendor.id.desc()).first()
@@ -83,7 +106,6 @@ def add_supplier():
             
             activity = request.form.get('manual_activity') if request.form.get('activity_type') == 'manual' else request.form.get('activity_type')
             
-            # الأرشفة السيادية
             github_path = "Local_Archive_Only"
             id_file = request.files.get('id_image')
             if archiver and id_file and id_file.filename:
