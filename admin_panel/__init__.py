@@ -1,7 +1,7 @@
 from flask import Blueprint
 
 # تعريف الـ Blueprint للقيادة المركزية (محجوب أونلاين)
-# تم دمج الإعدادات لضمان تحميل موارد الهوية البصرية (الأرجواني والذهبي) بشكل صحيح
+# تم إعداد المسارات لضمان تحميل القوالب والموارد الثابتة (الأرجواني والذهبي) بكفاءة
 admin_bp = Blueprint(
     'admin', 
     __name__, 
@@ -10,7 +10,14 @@ admin_bp = Blueprint(
     static_url_path='/admin/static'
 )
 
-# استيراد الروابط (Routes) في الأسفل حصراً
-# هذا الإجراء ضروري جداً لتجنب مشاكل "الاستيراد الدائري" (Circular Imports) 
-# التي تسببت في انهيار السيرفر سابقاً
-from . import routes
+# ملاحظة سيادية: يتم استيراد الروابط هنا لمنع "الاستيراد الدائري" (Circular Import)
+# هذا يضمن أن جميع الدوال (مثل force_repair) أصبحت مسجلة ومعرفة لدى التطبيق
+try:
+    from . import routes
+except ImportError as e:
+    # تسجيل الخطأ في حال وجود مشكلة في استيراد المسارات لسهولة التصحيح في Railway
+    import logging
+    logging.error(f"❌ فشل تحميل مسارات لوحة التحكم: {str(e)}")
+
+# توثيق المكونات النشطة في الـ Blueprint
+# المسارات المتاحة حالياً: dashboard, manage_suppliers, withdraw_requests, force_repair
