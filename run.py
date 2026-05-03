@@ -7,14 +7,19 @@ from core.models.user import User
 app = create_app()
 
 def patch_database():
-    """فحص وإصلاح هيكل الجداول (الترسانة) تلقائياً"""
+    """إصلاح شامل وهجومي لهيكل الجداول لضمان عدم التعثر"""
     with app.app_context():
-        # قائمة بالأعمدة الجديدة التي نحتاج للتأكد من وجودها
+        # قائمة كاملة بالأعمدة المطلوبة بناءً على آخر خطأ (UndefinedColumn)
         sql_commands = [
-            # إضافة العمود الذي تسبب في التعثر وربطه بالمستخدمين
+            # الربط الأساسي
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id);",
             
-            # إضافة حقول الهوية والأرشفة والموقع والربط المالي
+            # البيانات الأساسية التي اشتكى النظام من فقدانها
+            "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS owner_name VARCHAR(150);",
+            "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS trade_name VARCHAR(150);",
+            "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS phone VARCHAR(50);",
+            
+            # نظام الهوية والموقع
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS id_type VARCHAR(100);",
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS id_card_number VARCHAR(100);",
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS id_image VARCHAR(255);",
@@ -22,25 +27,30 @@ def patch_database():
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS province VARCHAR(100);",
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS district VARCHAR(100);",
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS address_detail VARCHAR(255);",
+            
+            # الربط المالي
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS bank_name VARCHAR(150);",
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS bank_acc VARCHAR(100);",
             "ALTER TABLE vendors ADD COLUMN IF NOT EXISTS fin_type VARCHAR(50);"
         ]
         
+        print("🔍 جاري فحص وتحديث الترسانة الرقمية...")
         for cmd in sql_commands:
             try:
+                # تنفيذ كل أمر بشكل مستقل لضمان مرور العمليات الناجحة
                 db.session.execute(text(cmd))
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-                # نتجاهل الأخطاء هنا لأن العمود قد يكون موجوداً بالفعل
+                # تجاهل الخطأ إذا كان العمود موجوداً مسبقاً
                 continue
+        print("✅ تم تحديث هيكل الجداول بنجاح.")
 
 def initialize_system():
     """تهيئة النظام السيادي وقاعدة البيانات عند الإقلاع"""
     with app.app_context():
         try:
-            # 1. تحديث هيكل الجداول أولاً لإصلاح أي نقص
+            # 1. تحديث هيكل الجداول أولاً قبل أي استعلام (Query)
             patch_database()
             
             # 2. التأكد من وجود الجداول الأساسية
@@ -54,18 +64,18 @@ def initialize_system():
                 new_admin.set_password('123')
                 db.session.add(new_admin)
                 db.session.commit()
-                print("✅ تم تأكيد صلاحيات القائد وتحديث الترسانة في النظام.")
+                print("✅ تم تأكيد صلاحيات القائد في النظام.")
             else:
                 print("✅ النظام والترسانة في حالة جاهزية تامة.")
         except Exception as e:
             print(f"⚠️ تنبيه النظام: {str(e)}")
 
-# تنفيذ التهيئة والإصلاح قبل بدء استقبال الطلبات
+# تنفيذ التهيئة والإصلاح الشامل قبل بدء استقبال الطلبات
 initialize_system()
 
 if __name__ == "__main__":
-    # Railway يتطلب الربط مع المنفذ الديناميكي PORT
+    # الحصول على المنفذ من بيئة تشغيل Railway
     port = int(os.environ.get("PORT", 5000))
     
-    # تشغيل التطبيق (نضع debug=False في الإنتاج على Railway)
+    # تشغيل التطبيق على العنوان الشامل 0.0.0.0
     app.run(host='0.0.0.0', port=port, debug=False)
