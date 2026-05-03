@@ -67,7 +67,6 @@ def admin_dashboard():
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
-    # صمام أمان أولي
     try:
         db.session.rollback()
     except:
@@ -86,20 +85,35 @@ def add_supplier():
             if not User or not Vendor:
                 return jsonify({"status": "error", "message": "نماذج البيانات غير محملة بشكل صحيح"}), 500
 
+            # --- رادار فحص التكرار السيادي ---
+            if User.query.filter_by(username=username).first():
+                return jsonify({"status": "error", "message": f"عذراً، اسم المستخدم ({username}) مسجل مسبقاً في الترسانة."})
+            
+            if Vendor.query.filter_by(e_wallet=wallet_id).first():
+                return jsonify({"status": "error", "message": f"الرقم السيادي ({wallet_id}) مستخدم بالفعل لمورد آخر."})
+
             # 1. إنشاء حساب المستخدم المرتبط بالمورد
             new_user = User(username=username, role='vendor')
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.flush() 
 
-            # 2. إنشاء بيانات المورد (معالجة اسم الحقل لتجنب تعثر الترسانة)
+            # 2. إنشاء بيانات المورد (مطابقة تماماً لملف core/models/vendor.py)
             new_vendor = Vendor(
                 user_id=new_user.id,
-                store_name=trade_name, # تأكد أن الحقل في Model هو store_name
-                owner_full_name=owner_name,
-                phone_number=phone,
-                wallet_number=wallet_id,
-                activity_type=request.form.get('activity_type', 'عام')
+                owner_name=owner_name,
+                trade_name=trade_name,
+                phone=phone,
+                e_wallet=wallet_id,
+                id_type=request.form.get('id_type'),
+                id_card_number=request.form.get('id_card_number'),
+                activity_type=request.form.get('activity_type'),
+                province=request.form.get('province'),
+                district=request.form.get('district'),
+                address_detail=request.form.get('address_detail'),
+                bank_name=request.form.get('bank_name'),
+                bank_acc=request.form.get('bank_acc'),
+                fin_type=request.form.get('fin_type')
             )
             db.session.add(new_vendor)
             db.session.commit()
@@ -110,16 +124,20 @@ def add_supplier():
             db.session.rollback()
             return jsonify({"status": "error", "message": f"تعثر في الترسانة: {str(e)}"}), 500
 
-    # منطق GET: توليد الرقم السيادي ليبدأ من MAH-963
+    # منطق GET: توليد الرقم السيادي ليبدأ من MAH-9631
     try:
         if Vendor:
             last_vendor = Vendor.query.order_by(Vendor.id.desc()).first()
-            # الترقيم يبدأ من 963 للمورد الأول
-            next_id_num = (last_vendor.id + 1) if (last_vendor and hasattr(last_vendor, 'id')) else 963
+            if last_vendor and last_vendor.e_wallet:
+                # استخراج الرقم الأخير وزيادة 1
+                last_id_str = str(last_vendor.e_wallet).replace("MAH-", "")
+                next_id_num = int(last_id_str) + 1
+            else:
+                next_id_num = 9631 # البداية المحددة للمورد الأول
         else:
-            next_id_num = 963
+            next_id_num = 9631
     except:
-        next_id_num = 963
+        next_id_num = 9631
         
     next_id = f"MAH-{next_id_num}"
     
