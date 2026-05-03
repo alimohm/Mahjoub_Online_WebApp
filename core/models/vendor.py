@@ -1,27 +1,19 @@
-from core import db
-from datetime import datetime
+# core/models/vendor.py
 
 class Vendor(db.Model):
     __tablename__ = 'vendors'
-    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     
-    # الحقول السيادية التي أضفناها في الربط
-    owner_name = db.Column(db.String(150))
+    # الحقول الأساسية التي أضفتها أنت سابقاً
     trade_name = db.Column(db.String(150))
-    phone = db.Column(db.String(50))
-    e_wallet = db.Column(db.String(100), unique=True) # رمز المحفظة (W-MAH-XXXX)
+    owner_name = db.Column(db.String(150))
+    e_wallet = db.Column(db.String(100), unique=True) # الرقم السيادي للمحفظة
     
-    # أرصدة الترسانة (YER, SAR, USD)
-    balance_yer = db.Column(db.Float, default=0.0)
-    balance_sar = db.Column(db.Float, default=0.0)
-    balance_usd = db.Column(db.Float, default=0.0)
+    # --- الأعمدة المالية المطلوبة (أضفها إذا لم تكن موجودة) ---
+    balance_yer = db.Column(db.Float, default=0.0) # رصيد ريال يمني
+    balance_sar = db.Column(db.Float, default=0.0) # رصيد ريال سعودي
+    balance_usd = db.Column(db.Float, default=0.0) # رصيد دولار أمريكي
     
-    # توثيق زمن التعميد
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # حقول إضافية للتحقق
-    id_type = db.Column(db.String(50))
-    id_card_number = db.Column(db.String(100))
-    address_detail = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    # ... بقية الحقول (الهاتف، المحافظة، إلخ)
