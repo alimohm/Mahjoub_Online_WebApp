@@ -57,7 +57,7 @@
 
 <div class="container-fluid py-4" dir="rtl">
     
-    <!-- ⚠️ نظام الترميم التلقائي (يظهر عند الحاجة فقط) -->
+    <!-- ⚠️ نظام الترميم التلقائي -->
     {% if show_repair %}
     <div class="repair-banner shadow-sm">
         <div>
@@ -86,7 +86,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-uppercase opacity-75">قاعدة الموردين</h6>
-                        <h2 class="display-5 fw-bold">{{ suppliers_count }}</h2>
+                        <h2 class="display-5 fw-bold">{{ suppliers_count|default(0) }}</h2>
                         <p class="mb-0 mt-2"><i class="fas fa-check-circle"></i> موردين معمدين</p>
                     </div>
                     <i class="fas fa-store fa-3x opacity-25"></i>
@@ -100,12 +100,13 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-uppercase opacity-75">طلبات السحب</h6>
-                        <h2 class="display-5 fw-bold">{{ pending_withdrawals }}</h2>
+                        <h2 class="display-5 fw-bold">{{ pending_withdrawals|default(0) }}</h2>
                         <p class="mb-0 mt-2"><i class="fas fa-clock"></i> بانتظار المراجعة المالية</p>
                     </div>
                     <i class="fas fa-hand-holding-usd fa-3x opacity-25"></i>
                 </div>
-                <a href="{{ url_for('admin.withdraw_requests') }}" class="stretched-link"></a>
+                <!-- تعديل: تم توجيه الرابط لصفحة إدارة الموردين مؤقتاً لتجنب الخطأ 500 -->
+                <a href="{{ url_for('admin.manage_suppliers') }}" class="stretched-link"></a>
             </div>
         </div>
 
@@ -114,7 +115,8 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-uppercase opacity-75">إجمالي الطلبات</h6>
-                        <h2 class="display-5 fw-bold">{{ orders_count }}</h2>
+                        <!-- إضافة default(0) لمنع الخطأ في حال عدم إرسال المتغير -->
+                        <h2 class="display-5 fw-bold">{{ orders_count|default(0) }}</h2>
                         <p class="mb-0 mt-2"><i class="fas fa-shopping-cart"></i> عمليات جارية</p>
                     </div>
                     <i class="fas fa-chart-line fa-3x opacity-25"></i>
