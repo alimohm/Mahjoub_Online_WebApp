@@ -1,26 +1,33 @@
+# core/models/__init__.py
+
 from core import db
 
-# 1. استيراد النماذج من ملفاتها الفرعية
+# 1. استيراد نماذج الهوية والمستخدمين
 from core.models.user import User
-from .vendor import Vendor
 
-# ملاحظة هامة: إذا كان كلاس WithdrawRequest موجوداً داخل ملف vendor.py، 
-# يجب استيراده هنا أيضاً ليصبح مرئياً للنظام بالكامل.
+# 2. استيراد نماذج الأعمال والربط السيادي (المحافظات، المديريات، الموردين)
+from .business import Province, District, FinancialEntity, Supplier, Order
+
+# 3. استيراد نماذج المتاجر والمنتجات
+from .vendor import Vendor
+from .product import Product
+
+# استيراد طلبات السحب إذا كانت موجودة في ملف vendor
 try:
     from .vendor import WithdrawRequest
 except ImportError:
-    # في حال لم يتم تعريفه بعد في ملف vendor
     WithdrawRequest = None
 
-# 2. تعريف الحزم المصدرة (قائمة واحدة شاملة)
-# وضع كافة النماذج في قائمة __all__ واحدة يضمن أن النظام يراها جميعاً
+# 4. تعريف الحزم المصدرة (قائمة واحدة شاملة لضمان رؤية النظام لكل الجداول)
 __all__ = [
-    'User', 
-    'Vendor', 
+    'db',
+    'User',
+    'Province',
+    'District',
+    'FinancialEntity',
+    'Supplier',
+    'Order',
+    'Vendor',
+    'Product',
     'WithdrawRequest'
 ]
-
-# 3. قسم التوسعات المستقبلية (إلغاء التعليق عند الجاهزية)
-# from .supplier import Supplier
-# from .order import Order
-# from .product import Product
