@@ -1,4 +1,5 @@
 import re
+import random
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -48,34 +49,38 @@ def create_app(config_class=Config):
 
         @app.context_processor
         def utility_processor():
-            def get_next_vendor_id():
+            def get_sovereign_data():
                 """
-                منطق جلب المعرف السيادي التالي بناءً على التسلسل المطلوب:
-                MAH-963 + (1, 2, 3...) -> MAH-9631
+                توليد البيانات السيادية الموحدة (المعرف والمحفظة) برقم تسلسلي واحد.
+                الهدف: MAH-9631 و W-MAH-9631
                 """
                 base_prefix = "MAH-963"
                 try:
                     db.session.rollback()
-                    # جلب عدد الموردين الحاليين لضمان التسلسل التصاعدي المستقر
-                    # نعتمد على العد (Count) لضمان أن المورد الأول يأخذ رقم 1
+                    # جلب عدد الموردين الحاليين لضمان التسلسل التصاعدي
                     count = db.session.query(Vendor).count()
                     next_num = count + 1
                     
-                    # النتيجة المرجوة: MAH-9631 للمورد الأول، MAH-9632 للثاني...
-                    return f"{base_prefix}{next_num}"
+                    # الرقم التسلسلي النهائي (مثلاً 9631)
+                    final_serial = f"{base_prefix}{next_num}"
+                    
+                    return {
+                        "id": final_serial,
+                        "wallet": f"W-{final_serial}"
+                    }
                     
                 except Exception as e:
-                    print(f"⚠️ خطأ في توليد المعرف السيادي: {e}")
-                    return f"{base_prefix}1"
+                    print(f"⚠️ خطأ في توليد البيانات السيادية: {e}")
+                    # حالة احتياطية في حال تعطل قاعدة البيانات
+                    return {"id": f"{base_prefix}1", "wallet": f"W-{base_prefix}1"}
 
-            # استخراج المعرف الحالي ليتم استخدامه في القوالب
-            current_id = get_next_vendor_id()
+            # استدعاء الدالة للحصول على القيم الموحدة
+            sov_data = get_sovereign_data()
             
-            # جعل next_id و next_wallet متاحين في جميع واجهات القوالب (Jinja2)
-            # المحفظة تتبع المعرف تلقائياً: W-MAH-9631
+            # جعل next_id و next_wallet متاحين في جميع القوالب بنفس الرقم
             return dict(
-                next_id=current_id,
-                next_wallet=f"W-{current_id}"
+                next_id=sov_data['id'],
+                next_wallet=sov_data['wallet']
             )
 
         # تسجيل البلوبيرنت الخاص بلوحة الإدارة (مركز القيادة)
