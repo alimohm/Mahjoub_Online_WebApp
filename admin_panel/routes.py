@@ -11,7 +11,6 @@ from core import db
 try:
     from core.models.user import User
     from core.models.vendor import Vendor
-    # استيراد النماذج الجديدة من ملف business
     from core.models.business import Province, District, FinancialEntity, Supplier, Order
 except ImportError:
     User = Vendor = Province = District = FinancialEntity = Supplier = Order = None
@@ -41,26 +40,21 @@ def get_next_sovereign_id():
     except:
         return f"MAH-963{random.randint(1, 99)}"
 
-# --- 1. مسار الطوارئ، الترميم، والتعميد (المطور) ---
+# --- 1. مسار الطوارئ والتعميد ---
 @admin_bp.route('/force-repair-now')
 def force_repair():
     try:
         db.session.rollback() 
-        # 1. ترميم المستخدمين
         db.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'admin';"))
         db.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active_account BOOLEAN DEFAULT TRUE;"))
-        
-        # 2. إنشاء الجداول الجديدة (التعميد السيادي)
         db.create_all()
 
-        # 3. تغذية البيانات الجغرافية إذا كانت فارغة
         if Province and not Province.query.first():
             hodeidah = Province(name='الحديدة')
             aden = Province(name='عدن')
             db.session.add_all([hodeidah, aden])
             db.session.commit()
             
-            # إضافة مديريات أساسية
             districts = [
                 District(name='الخوخة', province_id=hodeidah.id),
                 District(name='حيس', province_id=hodeidah.id),
@@ -70,11 +64,11 @@ def force_repair():
 
         db.session.commit()
         session['repair_done'] = True
-        flash("تم ترميم النظام وتعميد الجداول الجغرافية بنجاح", "success")
+        flash("تم ترميم النظام وتعميد الجداول بنجاح", "success")
         return redirect(url_for('admin.admin_dashboard'))
     except Exception as e:
         db.session.rollback()
-        return f"Error during repair: {str(e)}"
+        return f"Error: {str(e)}"
 
 # --- 2. لوحة التحكم ---
 @admin_bp.route('/')
@@ -96,7 +90,7 @@ def admin_dashboard():
         db.session.rollback()
         return render_template('dashboard.html', suppliers_count=0, pending_withdrawals=0, show_repair=True)
 
-# --- 3. حوكمة الموردين (المسار المطور) ---
+# --- 3. حوكمة الموردين ---
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
@@ -109,7 +103,7 @@ def add_supplier():
             received_wallet = request.form.get('e_wallet') or generate_wallet_id(received_id)
 
             if User.query.filter_by(username=username).first():
-                return jsonify({"status": "error", "message": "اسم المستخدم موجود مسبقاً"})
+                return jsonify({"status": "error", "message": "اسم المستخدم موجود"})
 
             new_user = User(username=username, role='vendor')
             new_user.set_password(password)
@@ -117,39 +111,23 @@ def add_supplier():
             db.session.flush() 
 
             new_vendor = Vendor(
-                user_id=new_user.id, 
-                vendor_uid=received_id,
-                owner_name=request.form.get('owner_name'), 
-                trade_name=request.form.get('trade_name'),
-                phone=request.form.get('phone'), 
-                e_wallet=received_wallet,
+                user_id=new_user.id, vendor_uid=received_id,
+                owner_name=request.form.get('owner_name'), trade_name=request.form.get('trade_name'),
+                phone=request.form.get('phone'), e_wallet=received_wallet,
                 balance_yer=0.0, balance_sar=0.0, balance_usd=0.0,
-                # تخزين الأسماء المختارة من القوائم
                 province=request.form.get('province_name'), 
                 district=request.form.get('district_name')
             )
             db.session.add(new_vendor)
             db.session.commit()
-            return jsonify({"status": "success", "message": "تم تسجيل المورد في الترسانة بنجاح"})
+            return jsonify({"status": "success", "message": "تم التسجيل بنجاح"})
         except Exception as e:
             db.session.rollback()
             return jsonify({"status": "error", "message": str(e)}), 500
 
-    # في حالة GET: جلب البيانات للقوائم المنسدلة
     provinces = Province.query.all() if Province else []
     banks = FinancialEntity.query.all() if FinancialEntity else []
-    
-    return render_template('add_supplier.html', 
-                           provinces=provinces, 
-                           banks=banks,
-                           next_id=get_next_sovereign_id())
-
-# مسار API لجلب المديريات للمتصفح
-@admin_bp.route('/api/get-districts/<int:province_id>')
-@login_required
-def get_districts(province_id):
-    districts = District.query.filter_by(province_id=province_id).all()
-    return jsonify([{'id': d.id, 'name': d.name} for d in districts])
+    return render_template('add_supplier.html', provinces=provinces, banks=banks, next_id=get_next_sovereign_id())
 
 @admin_bp.route('/suppliers')
 @login_required
@@ -157,7 +135,30 @@ def manage_suppliers():
     suppliers_list = Vendor.query.all() if Vendor else []
     return render_template('manage_suppliers.html', suppliers=suppliers_list)
 
-# --- بقية المسارات (تسجيل الخروج والدخول) تبقى كما هي ---
+# --- 4. المسارات المفقودة المطلوبة من القوالب (تم التصحيح هنا) ---
+
+@admin_bp.route('/manage-wallets')
+@login_required
+def manage_wallets():
+    """هذا هو المسار الذي يطلبه القالب ويسبب خطأ 500 حالياً"""
+    suppliers_list = Vendor.query.all() if Vendor else []
+    # استدعاء ملف القالب الصحيح wallets.html
+    return render_template('wallets.html', suppliers=suppliers_list)
+
+@admin_bp.route('/withdraw-requests')
+@login_required
+def withdraw_requests():
+    """مسار طلبات السحب لمنع الخطأ في القائمة الجانبية"""
+    requests = WithdrawRequest.query.all() if WithdrawRequest else []
+    return render_template('manage_suppliers.html', suppliers=[]) # استبدله بقالب السحب لاحقاً
+
+# --- 5. الهوية والـ API ---
+@admin_bp.route('/api/get-districts/<int:province_id>')
+@login_required
+def get_districts(province_id):
+    districts = District.query.filter_by(province_id=province_id).all()
+    return jsonify([{'id': d.id, 'name': d.name} for d in districts])
+
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated and getattr(current_user, 'role', 'admin') == 'admin':
