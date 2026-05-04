@@ -163,7 +163,6 @@
     </div>
 
     <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data">
-        <!-- الحقول المخفية للقيم البرمجية -->
         <input type="hidden" name="next_id" value="{{ next_id }}">
         <input type="hidden" name="e_wallet" value="{{ next_wallet }}">
         <input type="hidden" name="fin_type" id="fin_type_hidden" value="banks">
@@ -171,12 +170,12 @@
         <div class="section-banner"><i class="fas fa-user-shield"></i> بيانات الهوية الرقمية والنشاط</div>
         <div class="grid-layout">
             <div class="input-box">
-                <label>اسم المستخدم (النظام)</label>
-                <input type="text" name="username" id="form_username" class="form-control-gov" placeholder="مثال: mahjoub_store" required>
+                <label>اسم المستخدم (الدخول للنظام)</label>
+                <input type="text" name="username" class="form-control-gov" placeholder="مثال: store_963" required>
             </div>
             <div class="input-box">
                 <label>كلمة المرور المؤقتة</label>
-                <input type="text" name="password" id="form_password" value="123456" class="form-control-gov" required>
+                <input type="text" name="password" value="123456" class="form-control-gov" required>
             </div>
             <div class="input-box">
                 <label>تصنيف النشاط التجاري</label>
@@ -185,7 +184,6 @@
                     <option value="إلكترونيات">إلكترونيات وتقنية</option>
                     <option value="ملابس">ملابس ومنسوجات</option>
                     <option value="أدوية">أدوية ومستلزمات طبية</option>
-                    <option value="بناء">مواد بناء وإعمار</option>
                     <option value="manual">أخرى (إدخال يدوي)...</option>
                 </select>
                 <input type="text" name="manual_activity" id="manual_activity" class="form-control-gov manual-input" placeholder="اكتب نوع النشاط هنا">
@@ -195,79 +193,70 @@
         <div class="section-banner"><i class="fas fa-id-card"></i> بيانات المالك والتوثيق</div>
         <div class="grid-layout">
             <div class="input-box" style="grid-column: span 2;">
-                <label>اسم المالك الكامل (حسب الهوية)</label>
-                <input type="text" name="owner_name" id="form_owner_name" class="form-control-gov" placeholder="الاسم الرباعي الكامل للمفوض" required>
+                <label>اسم المالك الكامل (كما في الهوية)</label>
+                <input type="text" name="owner_name" class="form-control-gov" placeholder="الاسم الرباعي الكامل" required>
             </div>
             <div class="input-box">
                 <label>نوع وثيقة الإثبات</label>
                 <select name="id_type" id="id_type_select" class="form-control-gov" onchange="toggleManualInput(this, 'manual_id_type')" required>
                     <option value="بطاقة شخصية">بطاقة شخصية (ذكية)</option>
-                    <option value="بطاقة شخصية قديمة">بطاقة شخصية (قديمة)</option>
                     <option value="جواز سفر">جواز سفر يمني</option>
                     <option value="سجل تجاري">سجل تجاري نافذ</option>
-                    <option value="manual">أخرى (إدخال يدوي)...</option>
+                    <option value="manual">أخرى...</option>
                 </select>
-                <input type="text" name="manual_id_type" id="manual_id_type" class="form-control-gov manual-input" placeholder="اكتب نوع الهوية هنا">
+                <input type="text" name="manual_id_type" id="manual_id_type" class="form-control-gov manual-input" placeholder="نوع الهوية">
             </div>
             <div class="input-box">
                 <label>رقم الوثيقة / السجل</label>
-                <input type="text" name="id_card_number" class="form-control-gov" placeholder="رقم البطاقة أو السجل التجاري" required>
+                <input type="text" name="id_card_number" class="form-control-gov" placeholder="رقم الهوية" required>
             </div>
             <div class="input-box" style="grid-column: span 2;">
-                <label>الاسم التجاري للمنشأة (سوقك الذكي)</label>
-                <input type="text" name="trade_name" id="form_store_name" class="form-control-gov" placeholder="اسم المحل أو الشركة" required>
+                <label>الاسم التجاري (سوقك الذكي)</label>
+                <input type="text" name="trade_name" class="form-control-gov" placeholder="اسم المنشأة التجاري" required>
+            </div>
+            <div class="input-box">
+                <label>رقم الهاتف المعتمد</label>
+                <input type="text" name="phone" class="form-control-gov" placeholder="7xxxxxxxx" required>
             </div>
             <div class="input-box">
                 <label>أرشفة الهوية (اختياري)</label>
                 <input type="file" name="id_image" class="form-control-gov" accept="image/*">
             </div>
-             <div class="input-box">
-                <label>رقم الهاتف المعتمد</label>
-                <input type="text" name="phone" class="form-control-gov" placeholder="7xxxxxxxx" required>
-            </div>
         </div>
 
         <div class="section-banner"><i class="fas fa-university"></i> الربط المالي والمحفظة السيادية</div>
         <div class="grid-layout">
-            <!-- عرض رمز المحفظة المولد -->
             <div class="input-box">
-                <label>كود المحفظة السيادية (E-Wallet)</label>
-                <div style="position: relative;">
-                    <input type="text" value="{{ next_wallet }}" class="form-control-gov" readonly style="background:#f1f5f9; font-weight:900; color:var(--gov-purple); border: 2px dashed var(--gov-gold);">
-                    <i class="fas fa-wallet" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gov-gold);"></i>
-                </div>
+                <label>كود المحفظة المولد</label>
+                <input type="text" value="{{ next_wallet }}" class="form-control-gov" readonly style="background:#f1f5f9; font-weight:900; color:var(--gov-purple);">
             </div>
-
-            <!-- اختيار نوع الربط المالي -->
             <div class="input-box" style="grid-column: span 2;">
-                <label>بروتوكول الاستلام المالي المعتمد</label>
+                <label>بروتوكول الاستلام المالي</label>
                 <div style="display: flex; gap: 15px;">
                     <div class="fin-card active" id="btn_banks" onclick="setFinance('banks')" style="flex:1;">
-                        <i class="fa-solid fa-building-columns fa-2x" style="color: var(--gov-purple);"></i>
-                        <span style="font-weight: 800;">بنوك إسلامية</span>
+                        <i class="fa-solid fa-building-columns fa-2x"></i>
+                        <span>بنوك إسلامية</span>
                     </div>
                     <div class="fin-card" id="btn_exchange" onclick="setFinance('exchange')" style="flex:1;">
-                        <i class="fa-solid fa-money-bill-transfer fa-2x" style="color: var(--gov-gold);"></i>
-                        <span style="font-weight: 800;">شركات صرافة</span>
+                        <i class="fa-solid fa-money-bill-transfer fa-2x"></i>
+                        <span>شركات صرافة</span>
                     </div>
                 </div>
             </div>
-
-            <!-- بيانات الحساب التفصيلية -->
             <div class="input-box">
-                <label>اسم البنك / شركة الصرافة</label>
+                <label>اسم الجهة المالية</label>
                 <select name="bank_name" id="bank_select" class="form-control-gov" onchange="toggleManualInput(this, 'manual_bank')" required>
                     <option value="">اختر من القائمة...</option>
                 </select>
-                <input type="text" name="manual_bank" id="manual_bank" class="form-control-gov manual-input" placeholder="أدخل اسم الجهة المالية يدوياً">
+                <input type="text" name="manual_bank" id="manual_bank" class="form-control-gov manual-input" placeholder="اسم البنك/الصراف يدوياً">
             </div>
             <div class="input-box">
-                <label>رقم الحساب أو الآيبان المعتمد</label>
-                <input type="text" name="bank_acc" class="form-control-gov" placeholder="أدخل رقم الحساب لتحويل المستحقات" required>
+                <label>رقم الحساب المعتمد</label>
+                <input type="text" name="bank_acc" class="form-control-gov" placeholder="رقم الحساب للتحويل" required>
             </div>
         </div>
 
-        <div class="section-banner"><i class="fas fa-map-marker-alt"></i> النطاق الجغرافي للمنشأة</div>
+        <div class="section-banner"><i class="fas fa-map-marker-alt"></i> النطاق الجغرافي</div>
         <div class="grid-layout">
             <div class="input-box">
                 <label>المحافظة</label>
@@ -283,35 +272,27 @@
             </div>
             <div class="input-box" style="grid-column: span 2;">
                 <label>العنوان التفصيلي</label>
-                <input type="text" name="address_detail" class="form-control-gov" placeholder="الشارع - الحي - أقرب معلم بارز" required>
+                <input type="text" name="address_detail" class="form-control-gov" placeholder="الشارع - الحي - معلم بارز" required>
             </div>
         </div>
 
         <div style="padding: 40px 30px;">
-            <button type="submit" id="submitBtn" class="btn-gov">🛡️ إتمام التعميد والأرشفة السيادية</button>
+            <button type="submit" id="submitBtn" class="btn-gov">🛡️ إتمام التعميد والأرشفة</button>
         </div>
     </form>
 </div>
 
 <script>
-    // بيانات المحافظات والمديريات اليمنية
-   // بيانات المحافظات والمديريات اليمنية الموسعة
     const geoData = {
-        "أمانة العاصمة": ["السبعين", "التحرير", "الثورة", "صنعاء القديمة", "بني الحارث", "وحدة", "معين", "شعوب", "أزال", "الصافية"],
-        "عدن": ["المنصورة", "كريتر", "الشيخ عثمان", "البريقة", "المعلا", "خور مكسر", "التواهي", "دار سعد"],
-        "الحديدة": ["الخوخة", "حيس", "الحوك", "الميناء", "زبيد", "بيت الفقيه", "باجل", "الضحى", "الزيدية"],
-        "تعز": ["المخاء", "القاهرة", "المظفر", "صالة", "ذباب", "التربة", "شرعب", "ماوية"],
-        "حضرموت": ["المكلا", "سيئون", "الشحر", "تريم", "القطن", "دوعن", "شبوة"],
-        "مأرب": ["مأرب المدينة", "مأرب الوادي", "حريب", "الجوبة", "صرواح"],
-        "إب": ["إب المدينة", "الظهار", "جبلة", "يريم", "القفر", "بعدان", "السياني"],
-        "لحج": ["الحوطة", "تبن", "يافع", "المفلحي"],
-        "أبين": ["زنجبار", "جعار", "لودر", "مودية"]
+        "الحديدة": ["الخوخة", "حيس", "الحوك", "الميناء", "زبيد", "بيت الفقيه"],
+        "أمانة العاصمة": ["السبعين", "التحرير", "الثورة", "صنعاء القديمة"],
+        "عدن": ["المنصورة", "كريتر", "الشيخ عثمان", "البريقة"],
+        "تعز": ["المخاء", "القاهرة", "المظفر"]
     };
 
-    // بيانات المؤسسات المالية
     const finData = {
-        "banks": ["بنك الكريمي الإسلامي", "بنك القطيبي الإسلامي", "بنك التضامن", "بنك اليمن والبحرين", "بنك الشمول", "بنك البسيري"],
-        "exchange": ["شركة المريسي للصرافة", "شركة سويد", "شركة النجم", "شركة العامري", "شركة المحسن"]
+        "banks": ["بنك الكريمي الإسلامي", "بنك القطيبي الإسلامي", "بنك التضامن", "بنك اليمن والبحرين"],
+        "exchange": ["شركة المريسي للصرافة", "شركة سويد", "شركة النجم"]
     };
 
     function toggleManualInput(selectObj, inputId) {
@@ -344,7 +325,7 @@
         const submitBtn = document.getElementById('submitBtn');
         const formData = new FormData(this);
         
-        submitBtn.innerHTML = "⏳ جاري الربط المالي والتعميد...";
+        submitBtn.innerHTML = "⏳ جاري التعميد...";
         submitBtn.disabled = true;
 
         try {
@@ -353,8 +334,8 @@
 
             if (result.status === 'success') {
                 Swal.fire({
-                    title: '✅ تم التعميد والربط',
-                    text: `تم تسجيل المورد وربط المحفظة رقم (${formData.get('e_wallet')}) بنجاح`,
+                    title: '✅ تم بنجاح',
+                    text: result.message,
                     icon: 'success',
                     confirmButtonColor: '#632C8F'
                 }).then(() => {
@@ -364,18 +345,15 @@
                 throw new Error(result.message);
             }
         } catch (err) {
-            Swal.fire('❌ فشل بروتوكول التسجيل', err.message, 'error');
+            Swal.fire('❌ فشل البروتوكول', err.message, 'error');
             submitBtn.innerHTML = "🛡️ إعادة محاولة التعميد";
             submitBtn.disabled = false;
         }
     };
 
     window.onload = () => {
-        // تعبئة المحافظات
         const pSelect = document.getElementById('prov_select');
         Object.keys(geoData).sort().forEach(p => pSelect.add(new Option(p, p)));
-        
-        // تفعيل البنوك كخيار افتراضي
         setFinance('banks');
     }
 </script>
