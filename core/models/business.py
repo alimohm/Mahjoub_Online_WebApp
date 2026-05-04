@@ -1,104 +1,52 @@
-from core import db
-from datetime import datetime
+from django.db import models
+from django.conf import settings
 
-# ============================================================
-# جداول البنية التحتية الجغرافية (Geographic Infrastructure)
-# ============================================================
-
-class Province(db.Model):
-    """
-    موديل المحافظات: لتصنيف النطاق الجغرافي للترسانة (عدن، الحديدة، إلخ)
-    """
-    __tablename__ = 'provinces'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
+class Supplier(models.Model):
+    # الربط مع نظام المستخدمين الأساسي
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='supplier_profile'
+    )
     
-    # علاقة لجلب كافة المديريات التابعة لهذه المحافظة
-    districts = db.relationship('District', backref='province', lazy=True)
-
-    def __repr__(self):
-        return f"<Province {self.name}>"
-
-class District(db.Model):
-    """
-    موديل المديريات: يمثل نقاط التمركز الدقيقة (الخوخة، حيس، المخاء، إلخ)
-    """
-    __tablename__ = 'districts'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    province_id = db.Column(db.Integer, db.ForeignKey('provinces.id'), nullable=False)
-
-    def __repr__(self):
-        return f"<District {self.name}>"
-
-# ============================================================
-# جداول الربط المالي (Financial Connectivity)
-# ============================================================
-
-class FinancialEntity(db.Model):
-    """
-    موديل الجهات المالية: البنوك الإسلامية وشركات الصرافة المعتمدة
-    """
-    __tablename__ = 'financial_entities'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False) # بنك الكريمي، القطيبي، إلخ
-    entity_type = db.Column(db.String(50))           # 'bank' أو 'exchange'
-    active = db.Column(db.Boolean, default=True)
-
-    def __repr__(self):
-        return f"<FinancialEntity {self.name}>"
-
-# ============================================================
-# جداول النشاط التجاري (Core Business Models)
-# ============================================================
-
-class Supplier(db.Model):
-    """
-    موديل الموردين المطور: يربط شركاء الترسانة بالهوية الرقمية والجغرافية
-    """
-    __tablename__ = 'suppliers'
+    # المعرفات السيادية (نظام الترسانة)
+    sovereign_id = models.CharField(max_length=20, unique=True, verbose_name="المعرف السيادي")
+    e_wallet = models.CharField(max_length=50, unique=True, verbose_name="المحفظة الإلكترونية")
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    trade_name = db.Column(db.String(150)) # الاسم التجاري (سوقك الذكي)
+    # بيانات النشاط والتوثيق
+    trade_name = models.CharField(max_length=255, verbose_name="الاسم التجاري")
+    owner_name = models.CharField(max_length=255, verbose_name="اسم المالك")
+    activity_type = models.CharField(max_length=100, verbose_name="نوع النشاط")
     
-    # الروابط الجغرافية الديناميكية
-    province_id = db.Column(db.Integer, db.ForeignKey('provinces.id'))
-    district_id = db.Column(db.Integer, db.ForeignKey('districts.id'))
-    address_detail = db.Column(db.Text) # العنوان التفصيلي
+    # بيانات الهوية
+    id_type = models.CharField(max_length=50, verbose_name="نوع الوثيقة")
+    id_card_number = models.CharField(max_length=100, verbose_name="رقم الوثيقة")
+    id_image = models.ImageField(upload_to='suppliers/ids/', null=True, blank=True, verbose_name="أرشفة الهوية")
+    phone = models.CharField(max_length=20, verbose_name="رقم الهاتف")
     
-    phone = db.Column(db.String(20), nullable=True)
-    
-    # بيانات الهوية والأرشفة
-    id_card_number = db.Column(db.String(50))
-    id_image = db.Column(db.String(255)) # مسار صورة الهوية
+    # النطاق الجغرافي (الربط مع Aden, Al-Khokha, Mocha, Hays)
+    province = models.CharField(max_length=100, verbose_name="المحافظة")
+    district = models.CharField(max_length=100, verbose_name="المديرية")
+    address_detail = models.TextField(verbose_name="العنوان التفصيلي")
     
     # الربط المالي السيادي
-    e_wallet = db.Column(db.String(100), unique=True) # رمز المحفظة
-    bank_id = db.Column(db.Integer, db.ForeignKey('financial_entities.id'))
-    bank_acc = db.Column(db.String(100))
+    FINANCE_TYPES = (
+        ('banks', 'بنوك إسلامية'),
+        ('exchange', 'شركات صرافة'),
+    )
+    fin_type = models.CharField(max_length=20, choices=FINANCE_TYPES, default='banks', verbose_name="نوع الربط المالي")
+    bank_name = models.CharField(max_length=150, verbose_name="جهة الاستلام")
+    bank_acc = models.CharField(max_length=100, verbose_name="رقم الحساب/الآيبان")
     
-    # ربط المورد بحساب القائد (User)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    # علاقة الطلبات
-    orders = db.relationship('Order', backref='supplier', lazy=True)
+    # بيانات النظام
+    is_active = models.BooleanField(default=True, verbose_name="حالة التعميد")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ التسجيل")
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def __repr__(self):
-        return f"<Supplier {self.name} - Wallet: {self.e_wallet}>"
+    class Meta:
+        verbose_name = "مورد سيادي"
+        verbose_name_plural = "الموردون المعتمدون"
+        ordering = ['-created_at']
 
-class Order(db.Model):
-    """
-    موديل الطلبات: لتتبع حركة السلع والسيولة المركزية
-    """
-    __tablename__ = 'orders'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Float, nullable=False, default=0.0)
-    status = db.Column(db.String(50), default='قيد التدقيق')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
-
-    def __repr__(self):
-        return f"<Order {self.id} - {self.status}>"
+    def __str__(self):
+        return f"{self.trade_name} ({self.sovereign_id})"
