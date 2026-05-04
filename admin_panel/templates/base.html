@@ -19,7 +19,6 @@
             --sidebar-width: 280px;
             --sidebar-mini: 85px;
             --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            /* لون الحجر المصقول */
             --polished-stone: #e0e0e0; 
         }
 
@@ -46,7 +45,6 @@
             box-shadow: -5px 0 20px rgba(0,0,0,0.4);
         }
 
-        /* خلفية الحجر المصقول للهيدر */
         .sidebar-header { 
             padding: 2.2rem 1rem; text-align: center; 
             border-bottom: 1px solid rgba(212, 175, 55, 0.15);
@@ -99,7 +97,7 @@
         .dropdown-content li a:hover { color: var(--mahjoub-gold); padding-right: 20px; background: rgba(255,255,255,0.03); }
 
         .main-wrapper { 
-            margin-right: var(--sidebar-width); width: 100%; 
+            margin-right: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); 
             transition: var(--transition); display: flex; flex-direction: column;
         }
 
@@ -108,12 +106,11 @@
             justify-content: space-between; padding: 0 2.5rem;
             box-shadow: 0 4px 25px rgba(0,0,0,0.04);
             position: sticky; top: 0; z-index: 1000;
-            border-bottom: 2px solid var(--polished-stone); /* خط الحجر المصقول */
+            border-bottom: 2px solid var(--polished-stone);
         }
 
-        /* تنسيق ميزان العدل في الشارة */
         .admin-badge {
-            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); /* ملمس الحجر المصقول */
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             padding: 8px 20px; border-radius: 50px;
             border: 1.5px solid var(--mahjoub-gold); display: flex; align-items: center; gap: 10px;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
@@ -133,7 +130,7 @@
         @media (max-width: 992px) {
             .sidebar { width: var(--sidebar-mini); }
             .sidebar-header h2, .platform-desc, .nav-link span, .chevron, .dropdown-content { display: none !important; }
-            .main-wrapper { margin-right: var(--sidebar-mini); }
+            .main-wrapper { margin-right: var(--sidebar-mini); width: calc(100% - var(--sidebar-mini)); }
         }
     </style>
 </head>
@@ -164,7 +161,11 @@
                             <i class="fas fa-user-plus"></i> تعميد مورد جديد
                         </a>
                     </li>
-                    <li><a href="{{ url_for('admin.manage_suppliers') }}"><i class="fas fa-list-check"></i> إدارة الموردين المعتمدين</a></li>
+                    <li>
+                        <a href="{{ url_for('admin.manage_suppliers') }}" style="{% if request.endpoint == 'admin.manage_suppliers' %}color: var(--mahjoub-gold); font-weight: 800;{% endif %}">
+                            <i class="fas fa-list-check"></i> إدارة الموردين المعتمدين
+                        </a>
+                    </li>
                     <li><a href="#"><i class="fas fa-user-clock"></i> طلبات اعتماد معلقة</a></li>
                 </ul>
             </div>
@@ -181,7 +182,11 @@
                             <i class="fas fa-wallet"></i> إدارة المحافظ السيادية
                         </a>
                     </li>
-                    <li><a href="{{ url_for('admin.withdraw_requests') }}"><i class="fas fa-money-bill-transfer"></i> طلبات السحب</a></li>
+                    <li>
+                        <a href="{{ url_for('admin.withdraw_requests') }}" style="{% if request.endpoint == 'admin.withdraw_requests' %}color: var(--mahjoub-gold); font-weight: 800;{% endif %}">
+                            <i class="fas fa-money-bill-transfer"></i> طلبات السحب
+                        </a>
+                    </li>
                     <li><a href="#"><i class="fas fa-chart-pie"></i> تقارير الأرباح</a></li>
                 </ul>
             </div>
@@ -213,13 +218,12 @@
                 </div>
                 <div>
                     <div style="font-weight: 900; color: var(--royal-purple); line-height: 1.2;">
-                        {{ current_user.username if current_user.is_authenticated else 'القائد علي' }}
+                        {{ current_user.username if current_user.is_authenticated else 'علي محجوب' }}
                     </div>
                     <small style="color: #888; font-size: 0.75rem; font-weight: 600;">المسؤول الأعلى للقرار</small>
                 </div>
             </div>
 
-            <!-- إضافة ميزان العدل هنا ليرمز لدقة الحوكمة -->
             <div class="admin-badge d-none d-md-flex">
                 <i class="fas fa-scale-balanced" style="color: var(--mahjoub-gold); font-size: 1.1rem;"></i>
                 <strong style="color: var(--royal-purple); font-size: 0.9rem;">نظام الحوكمة المركزية</strong>
@@ -247,7 +251,6 @@
         function toggleDropdown(element) {
             const content = element.nextElementSibling;
             const chevron = element.querySelector('.chevron');
-            
             const isOpen = content.style.display === "block";
             
             document.querySelectorAll('.dropdown-content').forEach(el => {
