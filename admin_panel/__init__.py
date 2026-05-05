@@ -14,7 +14,7 @@ def create_app():
     app = Flask(__name__)
     
     # --- 1. إعدادات السيادة ---
-    # ملاحظة: يفضل جلب DATABASE_URL من متغيرات البيئة في Railway
+    # ملاحظة: سيتم جلب DATABASE_URL تلقائياً من Railway إذا استخدمت Config
     app.config['SECRET_KEY'] = 'mahjoub_sovereign_secret_2026'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://...' 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -34,7 +34,7 @@ def create_app():
         from core.models.user import User
         from core.models.vendor import Vendor
         
-        # 🛡️ تصحيح الترسانة: محاولة إنشاء الجداول المفقودة تلقائياً
+        # 🛡️ تصحيح الترسانة: محاولة إنشاء الجداول المفقودة تلقائياً عند التشغيل
         try:
             db.create_all()
         except Exception as e:
@@ -65,13 +65,13 @@ def create_app():
             return dict(next_id=sov_data['id'], next_wallet=sov_data['wallet'])
 
         # --- 5. تسجيل الـ Blueprints (مركز القيادة) ---
-        # يتم الاستيراد هنا حصراً لمنع خطأ ImportError الملاحظ في سجلات Railway
+        # الاستيراد داخل app_context يحل خطأ ImportError الذي ظهر في Railway
         from admin_panel import admin_bp
         app.register_blueprint(admin_bp, url_prefix='/admin')
 
     return app
 
-# --- 6. إدارة جلسات المستخدمين ---
+# --- 6. إدارة جلسات المستخدمين (User Loader) ---
 @login_manager.user_loader
 def load_user(user_id):
     from core.models.user import User
