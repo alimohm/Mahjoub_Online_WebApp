@@ -1,28 +1,35 @@
-# core/models/__init__.py
-from core import db 
+# core/__init__.py
+from flask import Flask
+from flask_login import LoginManager
+from .extensions import db  # استدعاء db من الملف الجديد
 
-# 1. استيراد الهوية الأساسية (نواة النظام)
-from .user import User
+login_manager = LoginManager()
 
-# 2. استيراد الموردين (الموديل الجديد والسيادي لـ محجوب أونلاين)
-# هذا الاستيراد ضروري لضمان ظهور جدول الموردين في Railway
-try:
-    from .supplier import Supplier
-except ImportError:
-    Supplier = None
+def create_app():
+    app = Flask(__name__, 
+                static_folder='../static', 
+                template_folder='../templates')
+    
+    app.config.from_object('config.Config')
+    
+    # ربط الإضافات بالتطبيق
+    db.init_app(app)
+    login_manager.init_app(app)
 
-# 3. استيراد المكونات الإضافية (المنتجات والعمليات التجارية)
-try:
-    from .product import Product
-except ImportError:
-    Product = None
+    with app.app_context():
+        # استدعاء الموديلات باستخدام الاستيراد النسبي
+        from .models.user import User
+        from .models.supplier import Supplier
+        
+        # تسجيل لوحة التحكم
+        try:
+            from admin_panel import admin_bp
+            app.register_blueprint(admin_bp, url_prefix='/admin')
+        except ImportError:
+            pass
 
-try:
-    # قراءة Order من ملف business.py
-    from .business import Order
-except ImportError:
-    Order = None
+        @login_manager.user_loader
+        def load_user(user_id):
+            return User.query.get(int(user_id))
 
-# 4. تعريف المكونات المتاحة للنظام (الشرعية الرقمية الموحدة)
-# أضفنا Supplier هنا لضمان استدعائه عند كتابة: from core.models import *
-__all__ = ['db', 'User', 'Supplier', 'Product', 'Order']
+    return app
