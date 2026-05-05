@@ -47,14 +47,16 @@
     <div class="row mb-5 align-items-center">
         <div class="col-md-12 text-end">
             <h1 style="font-weight: 900; color: var(--deep-space); font-size: 2.8rem; margin-bottom: 0.5rem;">نظام الرقابة العليا</h1>
-            <p class="text-muted mb-0">
-                <span class="status-indicator"></span>
-                مرحباً بك يا <strong>علي محجوب</strong> | المحرك الرقمي يعمل بكفاءة
-            </p>
+            <div class="p-3 bg-white shadow-sm border-right border-primary" style="border-radius: 15px; border-right: 5px solid var(--royal-purple) !important;">
+                <p class="mb-0">
+                    <span class="status-indicator"></span>
+                    مرحباً بك يا <strong>علي محجوب</strong> | المحرك الرقمي يعمل بكفاءة
+                </p>
+            </div>
         </div>
     </div>
 
-    <!-- بطاقات الإحصائيات السيادية -->
+    <!-- بطاقات الإحصائيات -->
     <div class="row g-4">
         <div class="col-md-4">
             <div class="stat-card card-purple shadow">
@@ -103,9 +105,9 @@
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-4" style="color: var(--royal-purple);">العمليات المتاحة</h5>
                     <div class="d-flex gap-3 flex-wrap">
-                        <!-- تم تعطيل الروابط المسببة للخطأ مؤقتاً لضمان فتح الصفحة -->
-                        <a href="{{ url_for('admin.add_supplier') }}" class="btn btn-outline-primary px-4 py-2 fw-bold" style="border-radius: 10px;">
-                            <i class="fas fa-plus-circle me-2"></i> إضافة مورد (قيد التحديث)
+                        <!-- نستخدم try/except في jinja أو نتأكد من الروابط -->
+                        <a href="{{ url_for('admin.add_supplier') if 'admin.add_supplier' else '#' }}" class="btn btn-outline-primary px-4 py-2 fw-bold" style="border-radius: 10px;">
+                            <i class="fas fa-plus-circle me-2"></i> إضافة مورد 
                         </a>
                         <a href="{{ url_for('admin.logout') }}" class="btn btn-outline-danger px-4 py-2" style="border-radius: 10px;">
                             <i class="fas fa-sign-out-alt me-2"></i> تسجيل الخروج الآمن
