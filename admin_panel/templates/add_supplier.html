@@ -3,7 +3,6 @@
 {% block title %}التعميد السيادي للموردين | محجوب أونلاين{% endblock %}
 
 {% block content %}
-<!-- المكتبات السيادية للتنبيهات والأيقونات -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -177,7 +176,6 @@
     </div>
 
     <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data">
-        <!-- الحقول المخفية للقيم المولدة تلقائياً -->
         <input type="hidden" name="next_id" value="{{ next_id }}">
         <input type="hidden" name="e_wallet" value="{{ next_wallet }}">
         <input type="hidden" name="fin_type" id="fin_type_hidden" value="banks">
@@ -338,40 +336,44 @@
         bSelect.add(new Option("أخرى (إدخال يدوي)...", "manual"));
     }
 
-    // معالجة الإرسال عبر AJAX
+    // معالجة الإرسال عبر AJAX الذكي
     document.getElementById('sovereignForm').onsubmit = async function(e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
         const container = document.getElementById('mainContainer');
         const formData = new FormData(this);
         
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ في الترسانة...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الأرشفة في الترسانة...';
         submitBtn.disabled = true;
         container.classList.add('processing');
 
         try {
             const response = await fetch(this.action, { 
                 method: 'POST', 
-                body: formData 
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
             
             const result = await response.json();
-            if (result.status === 'success') {
+            
+            if (response.ok && result.status === 'success') {
                 Swal.fire({
                     title: '✅ تم التعميد بنجاح',
                     text: result.message,
                     icon: 'success',
                     confirmButtonColor: '#632C8F',
-                    confirmButtonText: 'حسناً'
+                    confirmButtonText: 'فتح القائمة العامة'
                 }).then(() => {
                     window.location.href = "{{ url_for('admin.manage_suppliers') }}";
                 });
             } else {
-                throw new Error(result.message);
+                throw new Error(result.message || 'حدث خطأ في النظام السيادي');
             }
         } catch (err) {
             Swal.fire({ 
-                title: '❌ فشل التعميد', 
+                title: '❌ فشل التعميد السيادي', 
                 text: err.message, 
                 icon: 'error',
                 confirmButtonColor: '#C5A021'
@@ -383,8 +385,10 @@
     };
 
     window.onload = () => {
+        // تحميل المحافظات
         const pSelect = document.getElementById('prov_select');
         Object.keys(geoData).sort().forEach(p => pSelect.add(new Option(p, p)));
+        // إعداد البنوك افتراضياً
         setFinance('banks');
     }
 </script>
