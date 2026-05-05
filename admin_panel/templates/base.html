@@ -151,7 +151,8 @@
         </div>
 
         <nav class="nav-menu">
-            <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin.admin_dashboard' %}active{% endif %}">
+            <!-- تم تصحيح الرابط هنا من admin_dashboard إلى dashboard -->
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
                 <i class="fas fa-tower-observation"></i>
                 <span>مركز المراقبة</span>
             </a>
