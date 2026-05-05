@@ -3,9 +3,7 @@ import random
 from flask import render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import logout_user, login_required, current_user
 from sqlalchemy import text
-from sqlalchemy.orm import joinedload
 from core import db 
-from werkzeug.security import generate_password_hash
 from . import admin_bp
 from .auth import handle_admin_login
 
@@ -27,34 +25,28 @@ def generate_vendor_wallet():
 def get_next_sovereign_id():
     """توليد المعرف السيادي MAH-963 بناءً على عدد الموردين الحاليين"""
     try:
-        db.session.rollback()
         # حساب العدد الإجمالي للموردين المسجلين في القاعدة
         count = db.session.query(Vendor).count()
         return f"MAH-963{count + 1}"
     except Exception:
-        # حل احتياطي في حال فشل الاتصال المؤقت بالقاعدة
+        db.session.rollback()
         return f"MAH-963{random.randint(100, 999)}"
 
-# --- 3. مسار الترميم الهيكلي (الطوارئ) ---
-@admin_bp.route('/force-repair-now')
+# --- 3. تأمين الوصول والمصادقة ---
+@admin_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        if getattr(current_user, 'role', '') == 'admin':
+            return redirect(url_for('admin.admin_dashboard'))
+    # استدعاء المنطق من auth.py
+    return handle_admin_login()
+
+@admin_bp.route('/logout')
 @login_required
-def force_repair():
-    if getattr(current_user, 'role', '') != 'admin':
-        return "Unauthorized", 403
-    try:
-        db.session.rollback() 
-        # تحديث الجداول برمجياً لضمان وجود الحقول السيادية
-        db.session.execute(text("ALTER TABLE vendors ADD COLUMN IF NOT EXISTS supplier_id VARCHAR(50) UNIQUE;"))
-        db.session.execute(text("ALTER TABLE vendors ADD COLUMN IF NOT EXISTS e_wallet VARCHAR(100) UNIQUE;"))
-        db.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'vendor';"))
-        
-        db.session.commit()
-        session['repair_done'] = True
-        flash("تم ترميم هيكل الترسانة وتحديث المعرفات بنجاح", "success")
-        return redirect(url_for('admin.admin_dashboard'))
-    except Exception as e:
-        db.session.rollback()
-        return f"Repair Error: {str(e)}"
+def logout():
+    logout_user()
+    flash("تم تأمين النظام وتسجيل الخروج بنجاح", "info")
+    return redirect(url_for('admin.login'))
 
 # --- 4. لوحة التحكم (مركز المراقبة) ---
 @admin_bp.route('/')
@@ -62,6 +54,7 @@ def force_repair():
 @login_required
 def admin_dashboard():
     if getattr(current_user, 'role', '') != 'admin':
+        flash("عذراً، لا تمتلك صلاحيات الوصول للترسانة الإدارية", "danger")
         return redirect(url_for('main.index'))
     
     stats = {
@@ -75,29 +68,27 @@ def admin_dashboard():
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
+    if getattr(current_user, 'role', '') != 'admin':
+        return "Unauthorized", 403
+
     if request.method == 'POST':
         try:
-            db.session.rollback()
             username = request.form.get('username')
             password = request.form.get('password')
             
-            # التحقق من عدم تكرار المستخدم
             if User.query.filter_by(username=username).first():
                 return jsonify({"status": "error", "message": "اسم المستخدم مسجل مسبقاً"}), 400
 
-            # 1. إنشاء حساب الدخول (User)
-            new_user = User(
-                username=username,
-                role='vendor'
-            )
-            new_user.set_password(password) # استخدام الدالة الآمنة من الموديل
+            # 1. إنشاء حساب الدخول
+            new_user = User(username=username, role='vendor')
+            new_user.set_password(password)
             db.session.add(new_user)
             db.session.flush() 
 
-            # 2. إنشاء بروفايل المورد السيادي (Vendor)
+            # 2. إنشاء بروفايل المورد بربط الهوية السيادية
             new_vendor = Vendor(
                 user_id=new_user.id,
-                supplier_id=request.form.get('next_id'), # حفظ المعرف السيادي
+                supplier_id=request.form.get('next_id'),
                 trade_name=request.form.get('trade_name'),
                 owner_name=request.form.get('owner_name'),
                 phone=request.form.get('phone'),
@@ -105,7 +96,6 @@ def add_supplier():
                 activity_type=request.form.get('activity_type'),
                 province=request.form.get('province'),
                 district=request.form.get('district'),
-                # تصفير الأرصدة السيادية الثلاثة
                 balance_yer=0.0, balance_sar=0.0, balance_usd=0.0
             )
             
@@ -121,29 +111,21 @@ def add_supplier():
                            next_id=get_next_sovereign_id(), 
                            next_wallet=generate_vendor_wallet())
 
-# --- 6. الإدارة والمراقبة المالية ---
-@admin_bp.route('/suppliers')
+# --- 6. مسار الترميم الهيكلي (الطوارئ) ---
+@admin_bp.route('/force-repair-now')
 @login_required
-def manage_suppliers():
-    suppliers_list = Vendor.query.all()
-    return render_template('manage_suppliers.html', suppliers=suppliers_list)
-
-@admin_bp.route('/withdraw-requests')
-@login_required
-def withdraw_requests():
-    requests_list = WithdrawRequest.query.order_by(WithdrawRequest.id.desc()).all()
-    return render_template('withdraw_requests.html', requests=requests_list)
-
-# --- 7. تأمين الوصول ---
-@admin_bp.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated and getattr(current_user, 'role', '') == 'admin':
+def force_repair():
+    if getattr(current_user, 'role', '') != 'admin':
+        return "Unauthorized", 403
+    try:
+        # تنفيذ أوامر SQL مباشرة لضمان مطابقة الهيكل لمتطلبات المرحلة الثانية
+        db.session.execute(text("ALTER TABLE vendors ADD COLUMN IF NOT EXISTS balance_yer FLOAT DEFAULT 0.0;"))
+        db.session.execute(text("ALTER TABLE vendors ADD COLUMN IF NOT EXISTS balance_sar FLOAT DEFAULT 0.0;"))
+        db.session.execute(text("ALTER TABLE vendors ADD COLUMN IF NOT EXISTS balance_usd FLOAT DEFAULT 0.0;"))
+        db.session.commit()
+        session['repair_done'] = True
+        flash("تم تحديث الأرصدة السيادية الثلاثة بنجاح", "success")
         return redirect(url_for('admin.admin_dashboard'))
-    return handle_admin_login()
-
-@admin_bp.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash("تم تأمين النظام بنجاح", "info")
-    return redirect(url_for('admin.login'))
+    except Exception as e:
+        db.session.rollback()
+        return f"Repair Error: {str(e)}"
