@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import logout_user, login_required, current_user
 from sqlalchemy import text
 
-# الاستيراد الصحيح من الهيكلية الجديدة
+# الاستيراد من الهيكلية المعتمدة
 from core.extensions import db 
 from core.models.supplier import Supplier
 from core.models.user import User
@@ -12,10 +12,10 @@ from core.models.user import User
 from . import admin_bp
 from .auth import handle_admin_login
 
-# --- 1. بروتوكول التحقق السيادي (علي محجوب فقط) ---
+# --- 1. بروتوكول التحقق السيادي (حماية مركز القيادة) ---
 def is_admin_sovereign():
     """
-    التحقق من أن المستخدم يمتلك رتبة 'admin' لضمان أمان مركز القيادة.
+    يضمن أن علي محجوب فقط (أو من يحمل رتبة admin) يمكنه الوصول.
     """
     return current_user.is_authenticated and getattr(current_user, 'role', '').lower() == 'admin'
 
@@ -31,16 +31,14 @@ def login():
 @admin_bp.route('/dashboard')
 @login_required
 def admin_dashboard():
+    # تأمين صارم: إذا لم يكن الأدمن، اطرده لصفحة تسجيل الدخول
     if not is_admin_sovereign():
-        return redirect(url_for('main.index'))
+        return redirect(url_for('admin.login'))
     
     try:
-        # إحصائيات من الموديلات الجديدة
-        # نستخدم حساب الموردين من جدول Supplier المخصص
         suppliers_count = Supplier.query.count()
         total_users = User.query.count()
         
-        # حماية إضافية لجدول الطلبات (Orders)
         try:
             from core.models.business import Order
             total_orders = Order.query.count()
@@ -53,52 +51,63 @@ def admin_dashboard():
             'users_count': total_users,
             'pending_withdrawals': 0 
         }
-        
         return render_template('dashboard.html', **stats)
-        
     except Exception as e:
-        print(f"⚠️ Dashboard Crash Avoided: {str(e)}")
+        print(f"⚠️ Dashboard Error: {str(e)}")
         return render_template('dashboard.html', suppliers_count=0, orders_count=0, users_count=0, pending_withdrawals=0)
 
 # --- 4. إدارة الموردين (Supplier Management) ---
 @admin_bp.route('/manage-suppliers')
 @login_required
 def manage_suppliers():
-    """
-    عرض الموردين النشطين في المنظومة (مثل موردين المعاز والإلكترونيات).
-    """
     if not is_admin_sovereign(): 
-        return redirect(url_for('main.index'))
+        return redirect(url_for('admin.login'))
     
     try:
-        # جلب الموردين من الموديل السيادي الجديد
         suppliers = Supplier.query.order_by(Supplier.created_at.desc()).all()
         return render_template('manage_suppliers.html', suppliers=suppliers)
     except Exception as e:
         flash(f"خلل في الوصول للموردين: {str(e)}", "danger")
         return redirect(url_for('admin.admin_dashboard'))
 
-# --- 5. إنهاء الجلسة (Logout) ---
+# --- 5. إضافة مورد جديد (Executing Protocol) ---
+@admin_bp.route('/add-supplier', methods=['GET', 'POST'])
+@login_required
+def add_supplier():
+    if not is_admin_sovereign(): 
+        return redirect(url_for('admin.login'))
+    
+    if request.method == 'POST':
+        try:
+            # استخراج البيانات من الترسانة (النموذج)
+            trade_name = request.form.get('trade_name')
+            phone = request.form.get('phone')
+            location = request.form.get('location') # مثل عدن أو الخوخة
+            
+            # إنشاء سجل المورد الجديد
+            new_supplier = Supplier(
+                trade_name=trade_name,
+                phone=phone,
+                location=location,
+                status='active'
+            )
+            
+            db.session.add(new_supplier)
+            db.session.commit()
+            
+            flash(f"✅ تم تفعيل المورد {trade_name} بنجاح في المنظومة", "success")
+            return redirect(url_for('admin.manage_suppliers'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"❌ فشل بروتوكول الإضافة: {str(e)}", "danger")
+
+    return render_template('add_supplier.html')
+
+# --- 6. إنهاء الجلسة (Safe Logout) ---
 @admin_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash("تم الخروج الآمن من نظام الإدارة", "info")
     return redirect(url_for('admin.login'))
-
-# --- 6. إضافة مورد جديد (Expanding the Network) ---
-@admin_bp.route('/add-supplier', methods=['GET', 'POST'])
-@login_required
-def add_supplier():
-    if not is_admin_sovereign(): 
-        return redirect(url_for('main.index'))
-    
-    if request.method == 'POST':
-        try:
-            # منطق إضافة المورد (يمكن توسيعه لاحقاً لاستقبال البيانات من Form)
-            flash("بروتوكول إضافة الموردين قيد التفعيل حالياً", "success")
-            return redirect(url_for('admin.manage_suppliers'))
-        except Exception as e:
-            flash(f"فشل في إضافة المورد: {str(e)}", "danger")
-
-    return render_template('add_supplier.html')
