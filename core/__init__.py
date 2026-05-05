@@ -1,14 +1,23 @@
-from flask import Blueprint
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
-# 1. تعريف الـ Blueprint الخاص بلوحة الإدارة (مركز القيادة السيادي)
-# نحدد مجلد القوالب 'templates' لضمان قراءة ملفات مثل dashboard.html و manage_suppliers.html
-admin_bp = Blueprint(
-    'admin', 
-    __name__, 
-    template_folder='templates',
-    static_folder='static'
-)
+db = SQLAlchemy()
+login_manager = LoginManager()
 
-# 2. استيراد المسارات (Routes) في النهاية لتجنب مشكلة "التداخل الدائري" (Circular Import)
-# هذا السطر هو الذي يربط الملف بالمسارات التي كتبناها (dashboard, manage-suppliers, الخ)
-from . import routes
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config.Config')
+
+    db.init_app(app)
+    login_manager.init_app(app)
+
+    with app.app_context():
+        # تسجيل الـ Blueprints هنا فقط لمنع الاستيراد الدائري
+        from admin_panel import admin_bp
+        app.register_blueprint(admin_bp, url_prefix='/admin')
+        
+        # إذا كان هناك ملف routes رئيسي للموقع (خارج الإدارة):
+        # from . import routes 
+
+    return app
