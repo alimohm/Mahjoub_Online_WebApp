@@ -77,10 +77,11 @@
                             <div class="tab-pane fade show active" id="tab-main">
                                 <h5 class="fw-bold mb-4 border-bottom pb-2">تحديث التردد الميداني</h5>
                                 <form id="editForm">
+                                    <input type="hidden" id="currentSupplierId">
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label small text-muted">رقم الهاتف</label>
-                                            <input type="text" id="phone" class="form-control rounded-3" placeholder="000-000-000">
+                                            <input type="text" id="phone" class="form-control rounded-3">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label small text-muted">نوع النشاط</label>
@@ -106,11 +107,9 @@
                                         <div class="col-md-4">
                                             <label class="form-label small text-muted">الحالة الإدارية</label>
                                             <select id="status" class="form-select border-primary rounded-3">
-                                                <option value="معتمد">معتمد</option>
-                                                <option value="غير معتمد">غير معتمد</option>
-                                                <option value="رقابة">رقابة</option>
-                                                <option value="موقف">موقف</option>
-                                                <option value="محظور">محظور</option>
+                                                <option value="active">نشط</option>
+                                                <option value="suspended">موقف</option>
+                                                <option value="blocked">محظور</option>
                                             </select>
                                         </div>
                                     </div>
@@ -124,24 +123,8 @@
                             <!-- 2. المستخدمين الفرعيين -->
                             <div class="tab-pane fade" id="tab-users">
                                 <h5 class="fw-bold mb-4">إدارة الصلاحيات التابعة</h5>
-                                <div class="bg-light p-3 rounded-3 mb-4">
-                                    <div class="row g-2">
-                                        <div class="col-md-5">
-                                            <input type="text" id="subName" class="form-control" placeholder="اسم الموظف">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select id="subRole" class="form-select">
-                                                <option value="محاسب">محاسب</option>
-                                                <option value="مخازن">مدير مخازن</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <button class="btn btn-dark w-100" onclick="addSubUser()">إضافة</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="subUsersList" class="list-group list-group-flush shadow-sm rounded-3">
-                                    <!-- قائمة المستخدمين تظهر هنا -->
+                                <div class="bg-light p-3 rounded-3 mb-4 text-center">
+                                    <p class="text-muted small">هذه الميزة ستكون متاحة في المرحلة الثانية من التحديث.</p>
                                 </div>
                             </div>
 
@@ -149,12 +132,8 @@
                             <div class="tab-pane fade" id="tab-wallet">
                                 <div class="p-4 rounded-3 text-center" style="background: #f3e5f5; border: 2px dashed #4a148c;">
                                     <i class="fas fa-wallet fa-3x mb-3 text-primary"></i>
-                                    <h4 class="fw-bold" id="displayWalletID">WAL_MAH-963x</h4>
+                                    <h4 class="fw-bold" id="displayWalletID">--</h4>
                                     <p class="text-muted">الربط المالي السيادي للمورد</p>
-                                    <div class="mt-3">
-                                        <button class="btn btn-outline-primary btn-sm px-4">سجل العمليات</button>
-                                        <button class="btn btn-outline-dark btn-sm px-4 ms-2">تحديث الرصيد</button>
-                                    </div>
                                 </div>
                             </div>
 
@@ -166,9 +145,6 @@
                                     <div class="d-flex flex-wrap gap-2 mt-3">
                                         <button class="btn btn-warning fw-bold" onclick="resetPassword()">
                                             <i class="fas fa-key me-1"></i> تصفير كلمة المرور
-                                        </button>
-                                        <button class="btn btn-danger fw-bold" onclick="banSupplier()">
-                                            <i class="fas fa-user-slash me-1"></i> حظر نهائي
                                         </button>
                                     </div>
                                 </div>
@@ -183,21 +159,82 @@
 </div>
 
 <style>
-    /* لمسات جمالية للمحرك السيادي */
     .nav-pills .nav-link { color: #555; border-radius: 8px; font-weight: 500; transition: 0.3s; }
     .nav-pills .nav-link.active { background-color: #4a148c !important; color: white !important; box-shadow: 0 4px 10px rgba(74, 20, 140, 0.3); }
-    .form-control:focus, .form-select:focus { border-color: #7b1fa2; box-shadow: 0 0 0 0.25rem rgba(123, 31, 162, 0.15); }
     .animate__animated { --animate-duration: 0.6s; }
 </style>
 
 <script>
-// سيتم ربط هذا الجزء بملفات الـ Python التي جهزناها في الخطوة السابقة
+// وظيفة استدعاء بيانات المورد من قاعدة البيانات
 function searchSupplier() {
-    let q = document.getElementById('supplierSearch').value;
-    // AJAX call to /api/search-supplier
-    console.log("استدعاء المورد: " + q);
-    // كود وهمي لإظهار البطاقة للتجربة
-    document.getElementById('controlCard').classList.remove('d-none');
+    let query = document.getElementById('supplierSearch').value;
+    let feedback = document.getElementById('searchFeedback');
+    
+    if(!query) return;
+
+    feedback.innerHTML = '<span class="text-primary animate__animated animate__flash animate__infinite">جاري البحث في القاعدة السيادية...</span>';
+
+    fetch(`/admin/api/search-supplier?q=${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            feedback.innerHTML = '<span class="text-success">✅ تم العثور على المورد</span>';
+            fillSupplierData(data.supplier);
+            document.getElementById('controlCard').classList.remove('d-none');
+        } else {
+            feedback.innerHTML = '<span class="text-danger">❌ المورد غير مسجل في النظام</span>';
+            document.getElementById('controlCard').classList.add('d-none');
+        }
+    })
+    .catch(err => {
+        feedback.innerHTML = '<span class="text-danger">⚠️ خطأ في الاتصال بالسيرفر</span>';
+    });
+}
+
+function fillSupplierData(s) {
+    document.getElementById('currentSupplierId').value = s.id;
+    document.getElementById('displayTradeName').innerText = s.trade_name;
+    document.getElementById('displaySupID').innerText = `المعرف: SUP-MAH-963${s.id}`;
+    document.getElementById('displayTier').innerText = s.tier || 'مبتدئ';
+    document.getElementById('displayWalletID').innerText = `WAL_MAH-963${s.id}`;
+    
+    // تعبئة الفورم
+    document.getElementById('phone').value = s.phone;
+    document.getElementById('activity').value = s.activity_type;
+    document.getElementById('province').value = s.province;
+    document.getElementById('tier').value = s.tier || 'مبتدئ';
+    document.getElementById('status').value = s.status;
+
+    // حالة الشارة
+    let badge = document.getElementById('displayStatusBadge');
+    badge.innerText = s.status === 'active' ? 'نشط' : 'موقف';
+    badge.className = `badge rounded-pill px-3 py-2 ms-2 shadow-sm ${s.status === 'active' ? 'bg-success' : 'bg-danger'}`;
+}
+
+function saveChanges() {
+    let id = document.getElementById('currentSupplierId').value;
+    let data = {
+        phone: document.getElementById('phone').value,
+        activity_type: document.getElementById('activity').value,
+        province: document.getElementById('province').value,
+        tier: document.getElementById('tier').value,
+        status: document.getElementById('status').value
+    };
+
+    fetch(`/admin/api/update-supplier/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(resData => {
+        if(resData.status === 'success') {
+            alert('✅ تم تحديث بيانات المورد بنجاح');
+            searchSupplier(); // إعادة تحميل البيانات
+        } else {
+            alert('❌ فشل التحديث: ' + resData.message);
+        }
+    });
 }
 </script>
 {% endblock %}
