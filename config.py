@@ -2,44 +2,55 @@
 import os
 
 class Config:
-    # --- إعدادات قاعدة البيانات (Database Configuration) ---
-    # الأولوية دائماً لمتغيرات البيئة في Railway لضمان الاتصال السحابي
+    """
+    إعدادات الترسانة السيادية لمنصة محجوب أونلاين.
+    تم ضبط هذا الملف ليتوافق مع بيئة Railway السحابية.
+    """
+
+    # --- 1. إعدادات قاعدة البيانات (Database Configuration) ---
+    # الأولوية دائماً لمتغير DATABASE_URL الذي يوفره Railway تلقائياً
     uri = os.environ.get('DATABASE_URL')
     
-    # إذا لم يجد DATABASE_URL (أثناء التطوير المحلي)، استخدم الرابط الاحتياطي
+    # في حال عدم وجود DATABASE_URL (أو عند العمل محلياً)، نستخدم رابط Railway التفصيلي
+    # لاحظ استخدام f-string لدمج المتغيرات البرمجية داخل الرابط
     if not uri:
-        uri = 'postgresql://mahjoub_online_1_db_user:S7dxtVGcKwrsM1QEzGOuPPcRL8dKxgXk@dpg-d79tuthr0fns73epej4g-a.oregon-postgres.render.com/mahjoub_online_1_db'
+        # الربط السيادي المعتمد لبيئة Railway
+        uri = f"postgresql://{os.environ.get('PGUSER', 'postgres')}:{os.environ.get('POSTGRES_PASSWORD')}@{os.environ.get('RAILWAY_PRIVATE_DOMAIN', 'localhost')}:5432/{os.environ.get('PGDATABASE', 'railway')}"
     
-    # معالجة اختلاف تسمية البروتوكول (خاصة عند التحويل من Heroku/Render إلى Railway)
-    # SQLAlchemy يتطلب 'postgresql://' بدلاً من 'postgres://'
+    # معالجة اختلاف تسمية البروتوكول لضمان توافق SQLAlchemy
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
         
     SQLALCHEMY_DATABASE_URI = uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # --- إعدادات الأمان والجلسات ---
-    # سر الأمان السيادي لـ محجوب أونلاين
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'Ali_Mahjoub_High_Energy_2026'
+    # --- 2. إعدادات الأمان والسيادة ---
+    # سر الأمان السيادي لـ محجوب أونلاين - يفضل دائماً وضعه في Environment Variables
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'Ali_Mahjoub_High_Energy_2026_Resonance'
 
-    # --- إعدادات الأرشفة والاتصال بـ GitHub (Sovereign Assets) ---
-    # يتم سحب هذه القيم من إعدادات (Variables) في مشروع Railway الخاص بك
+    # --- 3. إعدادات الأرشفة والاتصال بـ GitHub (Sovereign Assets) ---
+    # سحب التوكن والمستودع من متغيرات البيئة لضمان الخصوصية
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN') 
     GITHUB_REPO = os.environ.get('GITHUB_REPO')
     
-    # القيم الاحتياطية في حال لم تكن المتغيرات مهيأة في السيرفر بعد
+    # قيم احتياطية (Fallback) لضمان عدم توقف النظام أثناء التطوير
     if not GITHUB_TOKEN:
         GITHUB_TOKEN = "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"
     
     if not GITHUB_REPO:
         GITHUB_REPO = "alimohm/Mahjoub-Sovereign-Assets"
     
-    # مسار المجلد الرئيسي للأرشفة الرقمية
+    # مسار المجلد الرئيسي للأرشفة الرقمية للترسانة
     GITHUB_MAIN_PATH = "Main_Archive"
 
-    # --- إعدادات إضافية للإنتاج (Production Settings) ---
-    # لضمان عدم حدوث مهلة زمنية (Timeout) في العمليات الكبيرة
+    # --- 4. إعدادات الأداء والإنتاج (Production Stability) ---
+    # لضمان استقرار الاتصال ومنع حدوث المهلة الزمنية (Timeout) في Railway
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
+        "pool_pre_ping": True,  # التحقق من سلامة الاتصال قبل كل استعلام
+        "pool_recycle": 280,    # إعادة تدوير الاتصالات قبل انتهاء مهلة السيرفر
+        "pool_size": 10,        # عدد الاتصالات المفتوحة المتزامنة
+        "max_overflow": 20,     # أقصى عدد اتصالات إضافية عند الضغط العالي
     }
+
+    # رسالة تشغيل داخلية (يمكن إلغاؤها في الإنتاج)
+    # print(f"🚀 Sovereign Database URI Initialized Successfully.")
