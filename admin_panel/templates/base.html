@@ -28,6 +28,7 @@
             overflow-x: hidden;
         }
 
+        /* أنيميشن النبض للشعار */
         @keyframes logo-pulse {
             0% { filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(212, 175, 55, 0.3)); transform: scale(1); }
             50% { filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(212, 175, 55, 0.6)); transform: scale(1.05); }
@@ -183,8 +184,8 @@
                 </div>
                 <div>
                     <div style="font-weight: 900; color: var(--royal-purple); font-size: 1.1rem;">
-                        {# تم تعديل هذا السطر لضمان التوافق التام مع Jinja2 #}
-                        {% if current_user.is_authenticated and current_user.username %}
+                        {# تم تعديل السطر أدناه لإزالة hasattr وحل مشكلة الـ UndefinedError #}
+                        {% if current_user.is_authenticated %}
                             {{ current_user.username }}
                         {% else %}
                             علي محجوب
