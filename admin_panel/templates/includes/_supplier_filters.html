@@ -1,1 +1,29 @@
+<div class="card border-0 shadow-sm p-4 mb-4 bg-white" style="border-radius: 15px;">
+    <form method="GET" class="row g-3" id="filterForm">
+        <div class="col-lg-4">
+            <label class="small fw-bold mb-1"><i class="fas fa-search me-1 text-royal"></i> البحث السيادي الشامل</label>
+            <input type="text" name="q" class="form-control border-2" placeholder="اسم، هاتف، محفظة..." value="{{ request.args.get('q', '') }}">
+        </div>
+        
+        <div class="col-lg-3">
+            <label class="small fw-bold mb-1"><i class="fas fa-map-marker-alt me-1 text-royal"></i> المحافظة</label>
+            <select name="province" id="provinceSelect" class="form-select border-2">
+                <option value="">كل المحافظات</option>
+                <option value="الحديدة">الحديدة</option>
+                <option value="صنعاء">صنعاء</option>
+                <option value="تعز">تعز</option>
+            </select>
+        </div>
 
+        <div class="col-lg-3">
+            <label class="small fw-bold mb-1"><i class="fas fa-location-arrow me-1 text-royal"></i> المديرية</label>
+            <select name="district" id="districtSelect" class="form-select border-2">
+                <option value="">كل المديريات</option>
+                </select>
+        </div>
+
+        <div class="col-lg-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-royal w-100">استدعاء النتائج</button>
+        </div>
+    </form>
+</div>
