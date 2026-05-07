@@ -1,17 +1,15 @@
-# core/models/supplier.py
 import os
 import sys
 from datetime import datetime
 
 # --- بروتوكول تثبيت المسارات (Railway Patch) ---
-# هذا الجزء يضمن إخبار السيرفر بمكان وجود المجلد الرئيسي للمشروع لضمان استقرار التردد البرمجي
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
 
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# استيراد db باستخدام مسار مرن يتكيف مع السيرفر لضمان العمل على Railway
+# استيراد db باستخدام مسارات مرنة لضمان الاستقرار على Railway
 try:
     from core.extensions import db
 except (ImportError, ModuleNotFoundError):
@@ -31,36 +29,46 @@ class Supplier(db.Model):
     # المعرف (ID) المولد من واجهة التعميد والمرتبط ببروتوكول 963
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False) # كلمة المرور المؤمنة
+    password = db.Column(db.String(128), nullable=False) 
     
     # --- البيانات الشخصية والتجارية ---
-    owner_name = db.Column(db.String(150), nullable=False) # اسم مالك النشاط
-    trade_name = db.Column(db.String(150), nullable=False) # الاسم التجاري للمنشأة
-    activity_type = db.Column(db.String(100), nullable=False) # نوع النشاط التجاري
+    owner_name = db.Column(db.String(150), nullable=False) 
+    trade_name = db.Column(db.String(150), nullable=False) 
+    activity_type = db.Column(db.String(100), nullable=False) 
     
-    # --- الرتبة الإدارية (مضافة للتوافق مع النافذة الأفقية) ---
-    # تسحب هذه القيمة لتظهر في خانة "الرتبة" داخل واجهة الإدارة
+    # --- الرتبة الإدارية والانتشار الجغرافي ---
     tier = db.Column(db.String(50), default='مبتدئ') 
-    
-    # --- بيانات التوثيق الرسمية ---
-    id_type = db.Column(db.String(50), nullable=False) # نوع الهوية (شخصية/جواز/عائلية)
-    id_card_number = db.Column(db.String(50), nullable=False) # رقم الهوية المعتمد
-    
-    # --- الجغرافيا وقنوات الاتصال ---
-    phone = db.Column(db.String(20), nullable=False) # رقم التواصل الأساسي
     province = db.Column(db.String(100), nullable=False) # المحافظة (النطاق الجغرافي)
     district = db.Column(db.String(100), nullable=False) # المديرية
-    address_detail = db.Column(db.Text, nullable=False) # العنوان التفصيلي (شارع/حي)
+    address_detail = db.Column(db.Text, nullable=False) 
+    
+    # --- بيانات التوثيق والاتصال ---
+    id_type = db.Column(db.String(50), nullable=False) 
+    id_card_number = db.Column(db.String(50), nullable=False) 
+    phone = db.Column(db.String(20), nullable=False) 
     
     # --- الربط المالي (التعميد المالي السيادي) ---
-    # رقم المحفظة (e_wallet) المولد لربط المستحقات المالية بذكاء
     e_wallet = db.Column(db.String(100), unique=True, nullable=False)
-    bank_name = db.Column(db.String(100), nullable=False) # اسم البنك أو شركة الصرافة
-    bank_acc = db.Column(db.String(100), nullable=False) # رقم الحساب المالي
+    bank_name = db.Column(db.String(100), nullable=False) 
+    bank_acc = db.Column(db.String(100), nullable=False) 
     
     # --- حالة الحساب السحابي ---
-    status = db.Column(db.String(20), default='active') # حالة الحساب (نشط/معلق)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) # تاريخ التعميد الزمني
+    status = db.Column(db.String(20), default='active') 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        """تحويل سجل المورد إلى قاموس لتمكين محرك البحث من عرض النتائج"""
+        return {
+            "id": self.id,
+            "trade_name": self.trade_name,
+            "phone": self.phone,
+            "province": self.province,
+            "district": self.district,
+            "activity_type": self.activity_type,
+            "tier": self.tier,
+            "status": self.status,
+            "e_wallet": self.e_wallet
+        }
 
     def __repr__(self):
         return f'<Supplier {self.trade_name} - {self.e_wallet} - {self.tier}>'
