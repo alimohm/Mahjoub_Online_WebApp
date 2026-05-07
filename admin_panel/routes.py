@@ -4,6 +4,7 @@ from flask_login import logout_user, login_required, current_user
 from sqlalchemy import or_
 from datetime import datetime
 from functools import wraps
+from werkzeug.security import generate_password_hash
 
 # الاستيراد من الهيكلية المعتمدة لترسانة محجوب أونلاين
 from core.extensions import db 
@@ -43,131 +44,124 @@ def admin_dashboard():
         return redirect(url_for('admin.login'))
     
     try:
+        # إحصائيات سريعة للوحة القيادة
         stats = {
             'suppliers_count': Supplier.query.count(),
-            'users_count': User.query.count(),
+            'users_count': User.query.count(), # يشمل الأدمن والموظفين
+            'staff_count': User.query.filter_by(role='vendor_staff').count(),
             'now': datetime.now().strftime("%H:%M:%S")
         }
-        # جلب الطلبات إن وجدت
-        try:
-            from core.models.business import Order
-            stats['orders_count'] = Order.query.count()
-        except:
-            stats['orders_count'] = 0
-
         return render_template('dashboard.html', **stats)
     except Exception as e:
         return render_template('dashboard.html', suppliers_count=0, now=datetime.now().strftime("%H:%M:%S"))
 
-# --- 4. إدارة الموردين (الكيانات المعتمدة) ---
+# --- 4. إدارة الموردين (واجهة التحكم الرئيسية) ---
 @admin_bp.route('/manage-suppliers')
 @login_required
 def admin_manage_suppliers():
-    """ عرض قائمة الكيانات السيادية وإدارتها """
+    """ عرض واجهة الإدارة - البيانات لا تظهر إلا عند البحث أو استخدام # """
     if not is_admin_sovereign():
         return redirect(url_for('admin.login'))
+    return render_template('manage_suppliers.html')
+
+# --- 5. بروتوكولات الـ API السيادية (البحث، التعديل، الموظفين) ---
+
+@admin_bp.route('/api/search-suppliers')
+@admin_api_required
+def api_search_suppliers():
+    """ محرك البحث المطور: يدعم اليوزرنيت ورمز (#) """
+    q = request.args.get('q', '').strip()
+    province = request.args.get('province', '').strip()
+    tier = request.args.get('tier', '').strip()
+    status = request.args.get('status', '').strip()
+
+    if not q and not province and not tier and not status:
+        return jsonify({"status": "success", "suppliers": []})
+
+    query_obj = Supplier.query
     
-    all_suppliers = Supplier.query.order_by(Supplier.id.desc()).all()
-    return render_template('manage_suppliers.html', suppliers=all_suppliers)
+    # بروتوكول الرمز (#) لاستدعاء الجميع
+    if q == "#":
+        pass 
+    elif q:
+        query_obj = query_obj.filter(
+            or_(
+                Supplier.username.ilike(f"%{q}%"),
+                Supplier.trade_name.ilike(f"%{q}%"),
+                Supplier.owner_name.ilike(f"%{q}%"),
+                Supplier.phone.ilike(f"%{q}%")
+            )
+        )
 
-# --- 5. بروتوكولات الـ API السيادية (التحكم الفوري) ---
+    if province: query_obj = query_obj.filter_by(province=province)
+    if tier: query_obj = query_obj.filter_by(tier=tier)
+    if status: query_obj = query_obj.filter_by(status=status)
 
-@admin_bp.route('/api/supplier-details/<int:sup_id>')
+    suppliers = query_obj.order_by(Supplier.id.desc()).all()
+    return jsonify({"status": "success", "suppliers": [s.to_dict() for s in suppliers]})
+
+@admin_bp.route('/api/get-supplier-full-details/<int:s_id>')
 @admin_api_required
-def api_supplier_details(sup_id):
-    """ جلب بيانات المورد التفصيلية للنافذة الجانبية """
-    supplier = Supplier.query.get_or_404(sup_id)
-    # نرسل البيانات التي يحتاجها المودال (المالك، الهاتف، المحفظة)
-    return jsonify({
-        "id": supplier.id,
-        "owner_name": supplier.owner_name,
-        "trade_name": supplier.trade_name,
-        "phone": supplier.phone,
-        "e_wallet": supplier.e_wallet or f"WAL_MAH_{supplier.id}",
-        "province": supplier.province,
-        "district": supplier.district,
-        "balance_yer": float(supplier.balance_yer or 0),
-        "status": supplier.status
-    })
+def api_get_full_details(s_id):
+    """ جلب بيانات المورد الكاملة مع طاقم موظفيه """
+    supplier = Supplier.query.get_or_404(s_id)
+    # جلب الموظفين المرتبطين بهذا المورد عبر اليوزرنيت (أو معرف الربط)
+    staff = User.query.filter_by(role='vendor_staff').filter(User.username.like(f"{supplier.username}_%")).all()
+    
+    data = supplier.to_dict()
+    data['staff'] = [{"id": u.id, "username": u.username} for u in staff]
+    return jsonify(data)
 
-@admin_bp.route('/api/update-supplier-password/<int:sup_id>', methods=['POST'])
+@admin_bp.route('/api/update-sovereign-data/<int:s_id>', methods=['POST'])
 @admin_api_required
-def update_supplier_password(sup_id):
-    """ إعادة تعيين كلمة مرور المورد """
-    supplier = Supplier.query.get_or_404(sup_id)
+def api_update_supplier(s_id):
+    """ تعميد تحديث البيانات، الأرصدة الثلاثة، وكلمة المرور اليدوية """
+    supplier = Supplier.query.get_or_404(s_id)
     data = request.get_json()
-    new_pass = data.get('password')
-    
-    if new_pass and len(new_pass) >= 6:
-        supplier.set_password(new_pass) # افترضنا وجود هذه الدالة في الموديل
-        db.session.commit()
-        return jsonify({"status": "success", "message": "تم تحديث كلمة المرور بنجاح"})
-    return jsonify({"status": "error", "message": "كلمة المرور قصيرة جداً"}), 400
 
-@admin_bp.route('/api/toggle-supplier-status/<int:sup_id>', methods=['POST'])
-@admin_api_required
-def toggle_supplier_status(sup_id):
-    """ تفعيل أو تعليق نشاط كيان معين """
-    supplier = Supplier.query.get_or_404(sup_id)
-    data = request.get_json()
-    new_status = data.get('status')
-    
-    if new_status in ['active', 'suspended']:
-        supplier.status = new_status
-        db.session.commit()
-        return jsonify({"status": "success", "message": f"تم تحديث حالة الكيان إلى {new_status}"})
-    return jsonify({"status": "error", "message": "حالة غير صالحة"}), 400
-
-@admin_bp.route('/api/delete-supplier/<int:sup_id>', methods=['DELETE'])
-@admin_api_required
-def delete_supplier(sup_id):
-    """ شطب الكيان نهائياً من الترسانة المركزية """
     try:
-        supplier = Supplier.query.get_or_404(sup_id)
-        db.session.delete(supplier)
+        supplier.owner_name = data.get('owner_name', supplier.owner_name)
+        supplier.province = data.get('province', supplier.province)
+        supplier.district = data.get('district', supplier.district)
+        supplier.tier = data.get('tier', supplier.tier)
+        
+        # تحديث الخزينة الثلاثية
+        supplier.balance_yer = data.get('balance_yer', supplier.balance_yer)
+        supplier.balance_sar = data.get('balance_sar', supplier.balance_sar)
+        supplier.balance_usd = data.get('balance_usd', supplier.balance_usd)
+
+        # إعادة تعيين كلمة المرور يدوياً
+        new_pass = data.get('new_password')
+        if new_pass:
+            supplier.password = generate_password_hash(new_pass)
+
         db.session.commit()
-        return jsonify({"status": "success", "message": "تم شطب الكيان بنجاح"})
+        return jsonify({"status": "success", "message": "تم تعميد التعديلات في الترسانة"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# --- 6. تعميد مورد جديد ---
-@admin_bp.route('/add-supplier', methods=['GET', 'POST'])
-@login_required
-def add_supplier():
-    if not is_admin_sovereign(): 
-        return redirect(url_for('admin.login'))
+@admin_bp.route('/api/add-supplier-staff/<int:s_id>', methods=['POST'])
+@admin_api_required
+def api_add_staff(s_id):
+    """ إضافة موظف جديد للمورد بصلاحيات محددة (لا حذف ولا سحب) """
+    supplier = Supplier.query.get_or_404(s_id)
+    data = request.get_json()
     
-    if request.method == 'POST':
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-        try:
-            new_supplier = Supplier(
-                username=request.form.get('username'),
-                owner_name=request.form.get('owner_name'),
-                trade_name=request.form.get('trade_name'),
-                phone=request.form.get('phone'),
-                province=request.form.get('province'),
-                district=request.form.get('district'),
-                status='active'
-            )
-            new_supplier.set_password(request.form.get('password', '123456'))
-            db.session.add(new_supplier)
-            db.session.flush() 
-            new_supplier.mint_sovereign_id() # نقش المعرف WAL_MAH
-            db.session.commit()
-            
-            if is_ajax: 
-                return jsonify({'status': 'success', 'message': 'تم التعميد بنجاح'})
-            return redirect(url_for('admin.admin_manage_suppliers'))
-            
-        except Exception as e:
-            db.session.rollback()
-            if is_ajax: return jsonify({'status': 'error', 'message': str(e)}), 400
-            flash(f"خطأ: {str(e)}", "danger")
+    username = data.get('username')
+    password = data.get('password')
 
-    return render_template('add_supplier.html')
+    if User.query.filter_by(username=username).first():
+        return jsonify({"status": "error", "message": "اسم المستخدم محجوز مسبقاً"}), 400
 
-# --- 7. إنهاء الجلسة الآمنة ---
+    new_staff = User(username=username, role='vendor_staff', is_active_account=True)
+    new_staff.set_password(password)
+    
+    db.session.add(new_staff)
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"تم تعيين الموظف {username} بنجاح"})
+
+# --- 6. إنهاء الجلسة الآمنة ---
 @admin_bp.route('/logout')
 @login_required
 def logout():
