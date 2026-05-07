@@ -1,67 +1,75 @@
-<div class="table-responsive shadow-sm" style="border-radius: 15px; overflow: hidden;">
-    <table class="table table-hover align-middle mb-0 text-center bg-white">
-        <thead style="background-color: #4a148c; color: #ffd700;">
+<div class="table-responsive" style="border-radius: 0 0 20px 20px; overflow: hidden;">
+    <table class="table table-hover align-middle mb-0 text-center bg-white border-0">
+        <thead style="background-color: var(--royal); color: var(--gold); border: none;">
             <tr>
-                <th class="py-3 px-4">المعرف السيادي</th>
-                <th>المتجر / المورد</th>
-                <th>النطاق الجغرافي</th>
-                <th>الرصيد التقديري</th>
-                <th>حالة السيادة</th>
-                <th>إجراء سريع</th>
+                <th class="py-4 px-4 border-0">المعرف السيادي</th>
+                <th class="border-0 text-end">المتجر / المورد</th>
+                <th class="border-0">النطاق الجغرافي</th>
+                <th class="border-0">الرصيد التقديري</th>
+                <th class="border-0">حالة السيادة</th>
+                <th class="border-0 text-start px-4">إجراء</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="border-0">
             {% for s in suppliers %}
-            <tr class="supplier-row" 
+            <tr class="supplier-row border-bottom" 
+                id="row-{{ s.id }}"
                 onclick="inspectSupplier('{{ s.id }}')" 
-                style="cursor: pointer; transition: all 0.2s;">
+                style="cursor: pointer; transition: all 0.3s ease;">
                 
                 <td class="fw-bold">
-                    <span class="badge rounded-pill bg-light text-royal border px-3">
-                        {{ s.e_wallet if s.e_wallet else "SUP-MAH-963" ~ s.id }}
+                    <span class="badge rounded-pill bg-light text-royal border px-3 py-2 shadow-xs">
+                        {{ s.e_wallet if s.e_wallet else "WAL_MAH_" ~ s.id }}
                     </span>
                 </td>
                 
-                <td class="text-end fw-bold text-royal">
-                    <i class="fas fa-store ms-2 opacity-50"></i>
-                    {{ s.trade_name }}
+                <td class="text-end fw-bold text-dark">
+                    <div class="d-flex align-items-center justify-content-end">
+                        <span class="trade-name-text">{{ s.trade_name }}</span>
+                        <div class="avatar-sm-table ms-2 bg-soft-royal text-royal">
+                            <i class="fas fa-store"></i>
+                        </div>
+                    </div>
                 </td>
                 
                 <td>
-                    <small class="text-muted">
-                        <i class="fas fa-map-marker-alt ms-1 text-danger"></i>
-                        {{ s.province }} - {{ s.district }}
-                    </small>
+                    <div class="d-flex flex-column align-items-center">
+                        <span class="small fw-bold text-dark">{{ s.province }}</span>
+                        <small class="text-muted" style="font-size: 0.7rem;">{{ s.district }}</small>
+                    </div>
                 </td>
 
                 <td class="fw-bold">
-                    <span class="text-success">{{ "{:,.0f}".format(s.balance_yer) if s.balance_yer else '0' }}</span>
-                    <small class="text-muted">ر.ي</small>
+                    <span class="text-success fs-6">{{ "{:,.0f}".format(s.balance_yer) if s.balance_yer else '0' }}</span>
+                    <small class="text-muted" style="font-size: 0.65rem;">ر.ي</small>
                 </td>
                 
                 <td>
                     {% if s.status == 'active' %}
-                        <span class="badge bg-soft-success text-success px-3 py-2">
+                        <span class="badge status-badge-active px-3 py-2">
                             <i class="fas fa-check-circle ms-1"></i> نشط
                         </span>
                     {% else %}
-                        <span class="badge bg-soft-danger text-danger px-3 py-2">
-                            <i class="fas fa-times-circle ms-1"></i> موقوف
+                        <span class="badge status-badge-suspended px-3 py-2">
+                            <i class="fas fa-pause-circle ms-1"></i> معلق
                         </span>
                     {% endif %}
                 </td>
 
-                <td>
-                    <button class="btn btn-sm btn-outline-royal rounded-circle btn-arrow-pulse">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
+                <td class="text-start px-4">
+                    <div class="action-arrow-container">
+                        <i class="fas fa-chevron-left text-royal animate-arrow"></i>
+                    </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="py-5 text-muted">
-                    <i class="fas fa-ghost fa-3x mb-3 opacity-20"></i>
-                    <p>لا يوجد موردين يطابقون معايير البحث الحالية في الترسانة</p>
+                <td colspan="6" class="py-5 text-muted bg-light">
+                    <div class="py-4">
+                        <i class="fas fa-database fa-3x mb-3 opacity-25"></i>
+                        <p class="fw-bold">لا يوجد كيانات مسجلة حالياً في الترسانة</p>
+                        <a href="{{ url_for('admin.add_supplier') }}" class="btn btn-sm btn-royal mt-2">تعميد أول مورد</a>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -70,37 +78,72 @@
 </div>
 
 <style>
-    /* تنسيقات الجدول السيادية */
-    .bg-soft-success { background-color: rgba(40, 167, 69, 0.1); }
-    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); }
+    /* تحسينات الجدول السيادية */
+    .supplier-row { border-color: #f1f1f1 !important; }
     
+    /* تأثير عند اختيار الصف */
+    .supplier-row.active-selection {
+        background-color: rgba(74, 20, 140, 0.08) !important;
+        border-right: 5px solid var(--royal) !important;
+    }
+
     .supplier-row:hover {
-        background-color: rgba(74, 20, 140, 0.04) !important;
+        background-color: rgba(74, 20, 140, 0.03) !important;
+        transform: scale(1.002);
     }
 
-    .btn-outline-royal {
-        color: #4a148c;
-        border-color: #4a148c;
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+    /* أيقونة المتجر في الجدول */
+    .avatar-sm-table {
+        width: 32px; height: 32px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem;
     }
 
-    .supplier-row:hover .btn-arrow-pulse {
-        background-color: #4a148c;
-        color: #ffd700;
-        transform: translateX(-3px); /* حركة خفيفة للسهم عند التمرير على الصف */
+    /* شارات الحالة الملونة */
+    .status-badge-active { background-color: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2); }
+    .status-badge-suspended { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.2); }
+
+    /* أنيميشن السهم */
+    .animate-arrow { transition: transform 0.3s ease; }
+    .supplier-row:hover .animate-arrow {
+        transform: translateX(-5px);
+        color: var(--gold) !important;
     }
 
-    .text-royal { color: #4a148c; }
-
-    /* تحسين اتجاه النص للعربية */
-    .table thead th {
-        font-weight: 600;
-        font-size: 0.85rem;
-        letter-spacing: 0.5px;
+    .action-arrow-container {
+        width: 30px; height: 30px;
+        background: #f8f9fa;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        transition: 0.3s;
     }
+    
+    .supplier-row:hover .action-arrow-container {
+        background: var(--royal);
+    }
+
+    .shadow-xs { box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 </style>
+
+<script>
+    // إضافة تأثير بصري للصف المختار
+    function highlightRow(supId) {
+        // إزالة التحديد من جميع الصفوف
+        document.querySelectorAll('.supplier-row').forEach(row => {
+            row.classList.remove('active-selection');
+        });
+        // إضافة التحديد للصف الحالي
+        const selectedRow = document.getElementById('row-' + supId);
+        if (selectedRow) selectedRow.classList.add('active-selection');
+    }
+
+    // تعديل الدالة الأصلية لتشمل التحديد البصري
+    const originalInspectSupplier = window.inspectSupplier;
+    window.inspectSupplier = function(supId) {
+        highlightRow(supId);
+        if (typeof originalInspectSupplier === "function") {
+            originalInspectSupplier(supId);
+        }
+    };
+</script>
