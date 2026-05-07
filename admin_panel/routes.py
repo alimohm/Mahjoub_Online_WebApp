@@ -3,6 +3,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import logout_user, login_required, current_user
 from sqlalchemy import or_, cast, String
 from datetime import datetime
+from functools import wraps
 
 # الاستيراد من الهيكلية المعتمدة لترسانة محجوب أونلاين
 from core.extensions import db 
@@ -12,14 +13,12 @@ from core.models.user import User
 from . import admin_bp
 from .auth import handle_admin_login
 
-# --- 1. بروتوكول التحقق السيادي (حماية مركز القيادة) ---
+# --- 1. بروتوكول التحقق السيادي ---
 def is_admin_sovereign():
     """ يضمن أن المؤسس علي محجوب فقط يمكنه الوصول. """
     return current_user.is_authenticated and getattr(current_user, 'role', '').lower() == 'admin'
 
-# دالة مساعدة لتأمين الـ APIs (تمنع إعادة التوجيه وتكتفي بالرد التقني)
 def admin_api_required(f):
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not is_admin_sovereign():
@@ -27,7 +26,7 @@ def admin_api_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- 2. بوابة الدخول (The Gateway) ---
+# --- 2. بوابة الدخول ---
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if is_admin_sovereign(): 
@@ -43,47 +42,35 @@ def admin_dashboard():
         return redirect(url_for('admin.login'))
     
     try:
-        suppliers_count = Supplier.query.count()
-        users_count = User.query.count()
-        
-        try:
-            from core.models.business import Order
-            orders_count = Order.query.count()
-        except Exception:
-            orders_count = 0
-
         stats = {
-            'suppliers_count': suppliers_count,
-            'orders_count': orders_count,
-            'users_count': users_count,
+            'suppliers_count': Supplier.query.count(),
+            'users_count': User.query.count(),
             'now': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         return render_template('dashboard.html', **stats)
-        
     except Exception as e:
-        return render_template('dashboard.html', suppliers_count=0, orders_count=0, users_count=0, now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        return render_template('dashboard.html', suppliers_count=0, now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-# --- 4. إدارة الموردين (الصفحة الرئيسية) ---
+# --- 4. إدارة الموردين (تم تغيير الاسم لمنع التضارب) ---
 @admin_bp.route('/manage-suppliers')
 @login_required
-def manage_suppliers():
+def admin_manage_suppliers(): # تغيير الاسم من manage_suppliers لمنع AssertionError
     if not is_admin_sovereign():
         return redirect(url_for('admin.login'))
     
-    # جلب قائمة الموردين لمركز القيادة
     all_suppliers = Supplier.query.order_by(Supplier.id.desc()).all()
     return render_template('manage_suppliers.html', suppliers=all_suppliers)
 
-# --- 5. بروتوكولات الـ API (تأمين سيادي كامل) ---
+# --- 5. بروتوكولات الـ API السيادية ---
 
 @admin_bp.route('/api/supplier-details/<int:sup_id>')
-@admin_api_required # تأمين API
+@admin_api_required
 def api_supplier_details(sup_id):
     supplier = Supplier.query.get_or_404(sup_id)
     return jsonify(supplier.to_dict())
 
 @admin_bp.route('/api/toggle-supplier-status/<int:sup_id>', methods=['POST'])
-@admin_api_required # تأمين API التحكم
+@admin_api_required
 def toggle_supplier_status(sup_id):
     supplier = Supplier.query.get_or_404(sup_id)
     data = request.get_json()
@@ -92,14 +79,10 @@ def toggle_supplier_status(sup_id):
     if new_status in ['active', 'suspended']:
         supplier.status = new_status
         db.session.commit()
-        return jsonify({
-            "status": "success", 
-            "message": f"تم تحديث حالة المورد {supplier.trade_name} إلى {new_status}"
-        })
-    
+        return jsonify({"status": "success", "message": f"تم تحديث حالة المورد إلى {new_status}"})
     return jsonify({"status": "error", "message": "حالة غير صالحة"}), 400
 
-# --- 6. بروتوكول تعميد مورد جديد ---
+# --- 6. تعميد مورد جديد ---
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
 def add_supplier():
@@ -114,43 +97,31 @@ def add_supplier():
                 password=request.form.get('password', '123456'),
                 owner_name=request.form.get('owner_name'),
                 trade_name=request.form.get('trade_name'),
-                activity_type=request.form.get('activity_type'),
                 phone=request.form.get('phone'),
                 province=request.form.get('province'),
                 district=request.form.get('district'),
-                id_type=request.form.get('id_type'),
-                id_card_number=request.form.get('id_card_number'),
-                address_detail=request.form.get('address_detail'),
-                bank_name=request.form.get('bank_name'),
-                bank_acc=request.form.get('bank_acc'),
-                status='active',
-                tier='مبتدئ'
+                status='active'
             )
-            
             db.session.add(new_supplier)
             db.session.flush() 
             new_supplier.mint_sovereign_id()
             db.session.commit()
             
             if is_ajax: 
-                return jsonify({'status': 'success', 'message': f'تم تعميد المورد بالمحفظة: {new_supplier.e_wallet}'})
-            
-            flash(f"تم إضافة المورد {new_supplier.trade_name} بنجاح", "success")
-            return redirect(url_for('admin.manage_suppliers'))
+                return jsonify({'status': 'success', 'message': 'تم التعميد بنجاح'})
+            return redirect(url_for('admin.admin_manage_suppliers'))
             
         except Exception as e:
             db.session.rollback()
             if is_ajax: return jsonify({'status': 'error', 'message': str(e)}), 400
             flash(f"خطأ: {str(e)}", "danger")
 
-    last_s = Supplier.query.order_by(Supplier.id.desc()).first()
-    next_id_val = (last_s.id + 1) if last_s else 1
-    return render_template('add_supplier.html', next_id=f"963{next_id_val}")
+    return render_template('add_supplier.html')
 
-# --- 7. تسجيل الخروج ---
+# --- 7. إنهاء الجلسة ---
 @admin_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash("تم إنهاء الجلسة السيادية بنجاح", "info")
+    flash("تم إنهاء الجلسة السيادية", "info")
     return redirect(url_for('admin.login'))
