@@ -1,45 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}إدارة الموردين المعتمدين | محجوب أونلاين{% endblock %}
+{% block title %}الرقابة السيادية على الموردين | محجوب أونلاين{% endblock %}
 
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-<div class="container-fluid py-4" style="direction: rtl; text-align: right; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<div class="container-fluid py-4 sovereign-theme" style="direction: rtl; text-align: right;">
     
     <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
         <div>
-            <h2 class="fw-bold" style="color: #4a148c; border-right: 5px solid #ffd700; padding-right: 15px;">🛡️ إدارة الموردين المعتمدين</h2>
-            <p class="text-muted small">نظام الحوكمة المركزية والرقابة - <span class="text-royal fw-bold">سوقك الذكي</span></p>
+            <h2 class="fw-bold sovereign-title">🛡️ مركز قيادة الموردين</h2>
+            <p class="text-muted small">نظام الحوكمة المركزية - <span class="text-royal fw-bold">سوقك الذكي</span></p>
         </div>
         <a href="{{ url_for('admin.add_supplier') }}" class="btn shadow-lg btn-royal px-4 py-2">
-            <i class="fas fa-user-plus me-2"></i> تعميد مورد جديد
+            <i class="fas fa-plus-circle me-2"></i> تعميد مورد سيادي جديد
         </a>
     </div>
 
-    <div class="row g-3 mb-4 justify-content-center animate__animated animate__fadeInUp">
-        <div class="col-lg-4">
-            <div class="search-box position-relative shadow-sm rounded-pill overflow-hidden bg-white border border-2 border-primary">
+    <div class="card border-0 shadow-sm p-4 mb-4 animate__animated animate__fadeInUp" style="border-radius: 15px; background: #f8f9fa;">
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <label class="small fw-bold mb-1"><i class="fas fa-search me-1"></i> البحث الشامل (اسم، هاتف، محفظة، ID)</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-0 px-3"><i class="fas fa-search text-primary"></i></span>
-                    <input type="text" id="supplierSearch" class="form-control border-0 py-2 shadow-none" placeholder="ابحث بالاسم، الهاتف، أو المعرف...">
-                    <button class="btn btn-primary px-4 fw-bold" type="button" onclick="handleSearch()">استدعاء</button>
+                    <input type="text" id="supplierSearch" class="form-control border-2 rounded-end" placeholder="ادخل المعرف أو الكلمة المفتاحية..." onkeyup="if(event.key === 'Enter') handleSearch()">
+                    <button class="btn btn-royal" onclick="handleSearch()">استدعاء</button>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2">
-            <select id="filterProvince" class="form-select border-2 rounded-pill shadow-sm h-100" onchange="handleSearch()">
-                <option value="">كل المحافظات</option>
-                <option value="الحديدة">الحديدة</option>
-                <option value="أمانة العاصمة">أمانة العاصمة</option>
-                <option value="عدن">عدن</option>
-            </select>
-        </div>
-        <div class="col-lg-2">
-            <button class="btn btn-outline-secondary w-100 rounded-pill h-100" onclick="resetFilters()">
-                <i class="fas fa-sync-alt"></i> إعادة ضبط
-            </button>
+            <div class="col-lg-3">
+                <label class="small fw-bold mb-1"><i class="fas fa-map-marker-alt me-1"></i> تصفية بالمحافظة</label>
+                <select id="filterProvince" class="form-select border-2" onchange="handleSearch()">
+                    <option value="">كل المحافظات</option>
+                    <option value="الحديدة">الحديدة</option>
+                    <option value="صنعاء">صنعاء</option>
+                    <option value="عدن">عدن</option>
+                    <option value="تعز">تعز</option>
+                </select>
+            </div>
+            <div class="col-lg-3">
+                <label class="small fw-bold mb-1"><i class="fas fa-crown me-1"></i> مستوى الثقة (الرتبة)</label>
+                <select id="filterTier" class="form-select border-2" onchange="handleSearch()">
+                    <option value="">كل الرتب</option>
+                    <option value="مبتدئ">مورد مبتدئ</option>
+                    <option value="موثوق">مورد موثوق</option>
+                    <option value="ملكي">مورد ملكي</option>
+                </select>
+            </div>
+            <div class="col-lg-2 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100 fw-bold" onclick="resetFilters()">
+                    <i class="fas fa-sync-alt"></i> إعادة ضبط
+                </button>
+            </div>
         </div>
     </div>
 
@@ -49,125 +61,143 @@
                 <thead class="bg-royal text-white">
                     <tr>
                         <th class="py-3">المعرف السيادي</th>
-                        <th>الاسم التجاري</th>
-                        <th>الهاتف</th>
-                        <th>الرتبة</th>
-                        <th>المحفظة</th>
+                        <th>المتجر والنشاط</th>
+                        <th>الموقع</th>
+                        <th>المحفظة الرقمية</th>
+                        <th>الرصيد (YER)</th>
                         <th>الحالة</th>
-                        <th>الإجراء</th>
+                        <th>الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody id="suppliersTableBody"></tbody>
+                <tbody id="suppliersTableBody">
+                    </tbody>
             </table>
         </div>
         <div id="tableLoader" class="text-center py-5 d-none">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2">جاري استدعاء البيانات من الترسانة...</p>
+            <div class="spinner-grow text-primary" role="status"></div>
+            <p class="mt-2 fw-bold">جاري استدعاء سجلات الترسانة...</p>
         </div>
     </div>
 
     <div id="controlCard" class="d-none animate__animated animate__zoomIn">
         <div class="card border-0 shadow-lg overflow-hidden" style="border-radius: 25px;">
-            <div class="card-header border-0 py-4 d-flex justify-content-between align-items-center" 
-                 style="background: linear-gradient(135deg, #4a148c 0%, #1a237e 100%); color: #ffd700;">
+            <div class="card-header border-0 py-4 d-flex justify-content-between align-items-center bg-royal-dark text-gold">
                 <div class="d-flex align-items-center">
-                    <div class="avatar-circle me-3"><i class="fas fa-store-alt fa-2x"></i></div>
+                    <div class="avatar-circle"><i class="fas fa-store-alt fa-2x"></i></div>
                     <div class="ms-3">
                         <h3 class="mb-0 fw-bold" id="displayTradeName">...</h3>
                         <span class="badge bg-warning text-dark" id="displaySupID">SUP_MAH_963</span>
                     </div>
                 </div>
-                <button class="btn btn-light rounded-circle shadow" onclick="closeControlCard()"><i class="fas fa-times"></i></button>
+                <button class="btn btn-outline-light rounded-circle shadow" onclick="closeControlCard()"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="card-body p-0">
                 <div class="row g-0">
                     <div class="col-md-3 bg-light border-end">
                         <div class="nav flex-column nav-pills p-4">
-                            <button class="nav-link active mb-3 text-end shadow-sm" data-bs-toggle="pill" data-bs-target="#tab-main">
-                                <i class="fas fa-id-card ms-2"></i> الهوية والنشاط
+                            <button class="nav-link active mb-3 text-end" data-bs-toggle="pill" data-bs-target="#tab-main">
+                                <i class="fas fa-info-circle ms-2"></i> البيانات الكاملة
                             </button>
-                            <button class="nav-link mb-3 text-end shadow-sm" data-bs-toggle="pill" data-bs-target="#tab-wallet">
-                                <i class="fas fa-wallet ms-2"></i> المركز المالي (الخزنة)
+                            <button class="nav-link mb-3 text-end" data-bs-toggle="pill" data-bs-target="#tab-financial">
+                                <i class="fas fa-university ms-2"></i> الربط البنكي والمحفظة
                             </button>
-                            <button class="nav-link mb-3 text-end shadow-sm text-danger" data-bs-toggle="pill" data-bs-target="#tab-security">
-                                <i class="fas fa-shield-alt ms-2"></i> الأمن والعمليات
+                            <button class="nav-link mb-3 text-end" data-bs-toggle="pill" data-bs-target="#tab-identity">
+                                <i class="fas fa-id-card ms-2"></i> وثائق الهوية
+                            </button>
+                            <button class="nav-link mb-3 text-end text-danger" data-bs-toggle="pill" data-bs-target="#tab-security">
+                                <i class="fas fa-user-shield ms-2"></i> الأمان والتحكم
                             </button>
                         </div>
                     </div>
+
                     <div class="col-md-9 p-4 bg-white">
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="tab-main">
-                                <form id="editForm" class="row g-4">
-                                    <input type="hidden" id="currentSupplierId">
+                                <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold">الهاتف المعتمد</label>
-                                        <input type="text" id="phone" class="form-control form-control-lg border-2">
+                                        <label class="fw-bold small">الاسم التجاري</label>
+                                        <input type="text" id="edit_trade_name" class="form-control border-2">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold">الرتبة</label>
-                                        <select id="tier" class="form-select form-select-lg border-2">
-                                            <option value="مبتدئ">مورد مبتدئ</option>
-                                            <option value="موثوق">مورد موثوق</option>
-                                            <option value="ملكي">مورد ملكي</option>
+                                        <label class="fw-bold small">رقم الهاتف السيادي</label>
+                                        <input type="text" id="edit_phone" class="form-control border-2 text-ltr">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="fw-bold small">المحافظة</label>
+                                        <input type="text" id="edit_province" class="form-control border-2">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="fw-bold small">المديرية</label>
+                                        <input type="text" id="edit_district" class="form-control border-2">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="fw-bold small">الحالة</label>
+                                        <select id="edit_status" class="form-select border-2 fw-bold">
+                                            <option value="active" class="text-success">نشط (Active)</option>
+                                            <option value="suspended" class="text-danger">موقوف (Suspended)</option>
                                         </select>
                                     </div>
-                                    <div class="col-12"><button type="button" onclick="saveChanges()" class="btn btn-primary btn-lg px-5">حفظ التغييرات</button></div>
-                                </form>
+                                    <div class="col-12 mt-4">
+                                        <button onclick="saveChanges()" class="btn btn-royal px-5">تحديث البيانات العظيمة</button>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="tab-pane fade" id="tab-wallet">
-                                <div class="p-4 rounded-4 bg-light border border-2 border-dashed mb-4 text-center">
-                                    <small class="text-muted">المحفظة الموحدة</small>
-                                    <h2 class="fw-bold text-primary text-ltr" id="displayWalletID">WAL_MAH_...</h2>
-                                </div>
-                                
-                                <div class="row g-3 mb-4">
-                                    <div class="col-md-4">
-                                        <div class="card bg-success text-white p-3 border-0 shadow-sm">
-                                            <small>الريال اليمني</small>
-                                            <h4 class="mb-0 fw-bold" id="bal_yer">0.00</h4>
+                            <div class="tab-pane fade" id="tab-financial">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded shadow-sm border-start border-primary border-4">
+                                            <label class="small text-muted">رقم الحساب البنكي (القطيبي/أخرى)</label>
+                                            <h5 class="fw-bold mb-0" id="display_bank_acc">...</h5>
+                                            <small id="display_bank_name" class="text-primary fw-bold">...</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="card bg-primary text-white p-3 border-0 shadow-sm">
-                                            <small>الريال السعودي</small>
-                                            <h4 class="mb-0 fw-bold" id="bal_sar">0.00</h4>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="card bg-dark text-warning p-3 border-0 shadow-sm">
-                                            <small>الدولار الأمريكي</small>
-                                            <h4 class="mb-0 fw-bold" id="bal_usd">0.00</h4>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-light rounded shadow-sm border-start border-warning border-4">
+                                            <label class="small text-muted">رقم المحفظة (E-Wallet)</label>
+                                            <h5 class="fw-bold mb-0 text-ltr" id="display_e_wallet">...</h5>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="card border-primary">
-                                    <div class="card-header bg-primary text-white fw-bold">إجراء عملية سحب (Cash Out)</div>
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-5">
-                                                <input type="number" id="withdrawAmount" class="form-control" placeholder="المبلغ">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <select id="withdrawCurrency" class="form-select">
-                                                    <option value="YER">ريال يمني</option>
-                                                    <option value="SAR">ريال سعودي</option>
-                                                    <option value="USD">دولار أمريكي</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <button class="btn btn-danger w-100 fw-bold" onclick="handleWithdraw()">تنفيذ السحب</button>
-                                            </div>
+                                <hr class="my-4">
+                                <div class="row g-3 text-center">
+                                    <div class="col-md-4">
+                                        <div class="p-3 bg-success text-white rounded-4">
+                                            <small>رصيد يمني (YER)</small>
+                                            <h3 class="mb-0 fw-bold" id="bal_yer">0</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-3 bg-primary text-white rounded-4">
+                                            <small>رصيد سعودي (SAR)</small>
+                                            <h3 class="mb-0 fw-bold" id="bal_sar">0</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-3 bg-dark text-warning rounded-4">
+                                            <small>رصيد دولار (USD)</small>
+                                            <h3 class="mb-0 fw-bold" id="bal_usd">0</h3>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="tab-pane fade" id="tab-security">
-                                <div class="alert alert-warning">إعادة تعيين كلمة المرور ترسل رسالة للمورد تلقائياً.</div>
-                                <button class="btn btn-danger" onclick="resetPassword()">توليد كلمة سر جديدة</button>
+                            <div class="tab-pane fade" id="tab-identity">
+                                <div class="row g-4 text-center">
+                                    <div class="col-md-6">
+                                        <p class="fw-bold small">صورة الهوية (وجه)</p>
+                                        <div class="border rounded-3 p-2 bg-light">
+                                            <img id="id_card_front" src="" class="img-fluid rounded" alt="ID Front" onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="fw-bold small">تفاصيل العنوان الشخصي</p>
+                                        <div class="p-3 bg-light text-end rounded">
+                                            <p id="display_address_detail" class="mb-0">...</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -178,14 +208,18 @@
 </div>
 
 <style>
-    :root { --royal-purple: #4a148c; --mahjoub-gold: #ffd700; }
-    .bg-royal { background: linear-gradient(45deg, var(--royal-purple), #6a1b9a) !important; }
-    .btn-royal { background: var(--royal-purple); color: var(--mahjoub-gold); border: 2px solid var(--mahjoub-gold); font-weight: 700; border-radius: 12px; }
-    .nav-pills .nav-link.active { background: var(--royal-purple) !important; color: gold !important; }
-    .avatar-circle { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    :root { --royal: #4a148c; --royal-dark: #1a237e; --gold: #ffd700; }
+    .bg-royal { background: linear-gradient(135deg, var(--royal), #6a1b9a) !important; }
+    .bg-royal-dark { background: linear-gradient(135deg, var(--royal-dark), var(--royal)) !important; }
+    .btn-royal { background: var(--royal); color: var(--gold); border: 2px solid var(--gold); font-weight: 700; border-radius: 10px; }
+    .btn-royal:hover { background: var(--royal-dark); color: white; }
+    .text-gold { color: var(--gold) !important; }
+    .sovereign-title { color: var(--royal); border-right: 6px solid var(--gold); padding-right: 15px; }
+    .avatar-circle { width: 60px; height: 60px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .nav-pills .nav-link.active { background: var(--royal) !important; color: var(--gold) !important; font-weight: bold; }
+    .supplier-row { cursor: pointer; transition: all 0.3s ease; }
+    .supplier-row:hover { background: #f3e5f5 !important; transform: translateY(-3px); }
     .text-ltr { direction: ltr; display: inline-block; }
-    .supplier-row { cursor: pointer; transition: 0.2s; }
-    .supplier-row:hover { background-color: #f3e5f5 !important; transform: scale(1.01); }
 </style>
 
 <script>
@@ -193,13 +227,19 @@ document.addEventListener('DOMContentLoaded', () => handleSearch());
 
 function handleSearch() {
     const q = document.getElementById('supplierSearch').value.trim();
+    const province = document.getElementById('filterProvince').value;
+    const tier = document.getElementById('filterTier').value;
     const tableBody = document.getElementById('suppliersTableBody');
     const loader = document.getElementById('tableLoader');
     
     tableBody.innerHTML = '';
     loader.classList.remove('d-none');
 
-    fetch(`/admin/api/search-supplier?q=${encodeURIComponent(q || '#')}`)
+    let url = `/admin/api/search-supplier?q=${encodeURIComponent(q || '#')}`;
+    if(province) url += `&province=${encodeURIComponent(province)}`;
+    if(tier) url += `&tier=${encodeURIComponent(tier)}`;
+
+    fetch(url)
     .then(res => res.json())
     .then(data => {
         loader.classList.add('d-none');
@@ -207,15 +247,20 @@ function handleSearch() {
             data.suppliers.forEach(s => {
                 tableBody.innerHTML += `
                     <tr class="supplier-row animate__animated animate__fadeIn" onclick="fetchSingleSupplier('${s.id}')">
-                        <td><span class="badge bg-light text-dark border">SUP_MAH_963${s.id}</span></td>
-                        <td class="fw-bold text-primary">${s.trade_name}</td>
-                        <td class="text-ltr">${s.phone}</td>
-                        <td><span class="badge bg-info">${s.tier || 'مبتدئ'}</span></td>
-                        <td class="text-ltr small">${s.e_wallet}</td>
+                        <td><span class="badge bg-royal text-gold px-3">SUP_MAH_963${s.id}</span></td>
+                        <td class="text-end">
+                            <div class="fw-bold text-royal">${s.trade_name}</div>
+                            <small class="text-muted">${s.activity_type || 'نشاط تجاري'}</small>
+                        </td>
+                        <td><i class="fas fa-map-marker-alt text-danger me-1"></i> ${s.province}</td>
+                        <td class="text-ltr small fw-bold text-primary">${s.e_wallet}</td>
+                        <td class="fw-bold text-success">${(s.balances?.YER || 0).toLocaleString()}</td>
                         <td><span class="badge ${s.status === 'active' ? 'bg-success' : 'bg-danger'}">${s.status === 'active' ? 'نشط' : 'موقف'}</span></td>
-                        <td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></button></td>
+                        <td><button class="btn btn-sm btn-royal"><i class="fas fa-cog"></i></button></td>
                     </tr>`;
             });
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="7" class="py-5 text-muted">لا توجد سجلات مطابقة في الترسانة</td></tr>`;
         }
     });
 }
@@ -229,46 +274,27 @@ function fetchSingleSupplier(id) {
             document.getElementById('fullTableContainer').classList.add('d-none');
             document.getElementById('controlCard').classList.remove('d-none');
             
+            // ملء البيانات الأساسية
             document.getElementById('displayTradeName').innerText = s.trade_name;
             document.getElementById('displaySupID').innerText = `SUP_MAH_963${s.id}`;
-            document.getElementById('displayWalletID').innerText = s.e_wallet;
-            document.getElementById('phone').value = s.phone;
-            document.getElementById('tier').value = s.tier || 'مبتدئ';
-            document.getElementById('currentSupplierId').value = s.id;
-            
-            // تحديث الأرصدة (تأكد أن API يرسل balances)
-            if(s.balances) {
-                document.getElementById('bal_yer').innerText = s.balances.YER.toLocaleString();
-                document.getElementById('bal_sar').innerText = s.balances.SAR.toLocaleString();
-                document.getElementById('bal_usd').innerText = s.balances.USD.toLocaleString();
-            }
-        }
-    });
-}
+            document.getElementById('edit_trade_name').value = s.trade_name;
+            document.getElementById('edit_phone').value = s.phone;
+            document.getElementById('edit_province').value = s.province;
+            document.getElementById('edit_district').value = s.district || '';
+            document.getElementById('edit_status').value = s.status;
 
-function handleWithdraw() {
-    const id = document.getElementById('currentSupplierId').value;
-    const amount = document.getElementById('withdrawAmount').value;
-    const currency = document.getElementById('withdrawCurrency').value;
+            // البيانات المالية
+            document.getElementById('display_bank_name').innerText = s.bank_name || 'غير محدد';
+            document.getElementById('display_bank_acc').innerText = s.bank_acc || '0000000000';
+            document.getElementById('display_e_wallet').innerText = s.e_wallet;
+            document.getElementById('bal_yer').innerText = (s.balances?.YER || 0).toLocaleString();
+            document.getElementById('bal_sar').innerText = (s.balances?.SAR || 0).toLocaleString();
+            document.getElementById('bal_usd').innerText = (s.balances?.USD || 0).toLocaleString();
 
-    if(!amount || amount <= 0) return Swal.fire('خطأ', 'يرجى إدخال مبلغ صحيح', 'error');
-
-    Swal.fire({
-        title: 'تأكيد عملية السحب',
-        text: `هل تريد سحب مبلغ ${amount} ${currency} من محفظة المورد؟`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'تأكيد السحب'
-    }).then(result => {
-        if(result.isConfirmed) {
-            fetch(`/admin/api/supplier-action/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'withdraw', amount, currency })
-            }).then(res => res.json()).then(data => {
-                Swal.fire('تم العملية', data.message, 'success');
-                fetchSingleSupplier(id); // تحديث الأرصدة المعروضة
-            });
+            // الهوية والعنوان
+            document.getElementById('display_address_detail').innerText = s.address_detail || 'لا يوجد عنوان تفصيلي مسجل';
+            // إذا كان لديك مسار للصور
+            if(s.id_image) document.getElementById('id_card_front').src = `/static/uploads/ids/${s.id_image}`;
         }
     });
 }
@@ -278,19 +304,11 @@ function closeControlCard() {
     document.getElementById('fullTableContainer').classList.remove('d-none');
 }
 
-function saveChanges() {
-    const id = document.getElementById('currentSupplierId').value;
-    const payload = { phone: document.getElementById('phone').value, tier: document.getElementById('tier').value };
-
-    fetch(`/admin/api/update-supplier/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    }).then(res => res.json()).then(() => {
-        Swal.fire('تم الحفظ', 'تم تحديث بيانات الترسانة', 'success');
-        closeControlCard();
-        handleSearch();
-    });
+function resetFilters() {
+    document.getElementById('supplierSearch').value = '';
+    document.getElementById('filterProvince').value = '';
+    document.getElementById('filterTier').value = '';
+    handleSearch();
 }
 </script>
 {% endblock %}
