@@ -61,7 +61,7 @@ def manage_suppliers():
         return redirect(url_for('admin.login'))
     return render_template('manage_suppliers.html')
 
-# --- 5. بروتوكول البحث الميداني المحدث (حل مشكلة Casting) ---
+# --- 5. بروتوكول البحث الميداني المطور (API) ---
 @admin_bp.route('/api/search-supplier', methods=['GET'])
 @login_required
 def api_search_supplier():
@@ -72,13 +72,14 @@ def api_search_supplier():
     province = request.args.get('province', '').strip()
     district = request.args.get('district', '').strip()
 
-    # القاعدة الأساسية: إذا كان الاستعلام نجمة (*)، نجلب الكل
-    if query == '*':
-        suppliers_query = Supplier.query
-    else:
-        # إصلاح جذري لخطأ image_848c92.png: تحويل المعرف الرقمي إلى نص للمقارنة السليمة
+    # إنشاء الاستعلام الأساسي
+    suppliers_query = Supplier.query
+
+    # أ) منطق البحث النصي أو النجمة
+    if query and query != '*':
+        # تنظيف المدخلات للبحث في المعرف الرقمي
         clean_query = query.replace('963', '').replace('SUP-MAH-', '')
-        suppliers_query = Supplier.query.filter(
+        suppliers_query = suppliers_query.filter(
             or_(
                 Supplier.trade_name.ilike(f"%{query}%"),
                 Supplier.phone.ilike(f"%{query}%"),
@@ -86,7 +87,7 @@ def api_search_supplier():
             )
         )
 
-    # تطبيق فلاتر الموقع الجغرافي
+    # ب) تطبيق فلاتر الموقع الجغرافي (إذا تم اختيار محافظة أو مديرية محددة)
     if province:
         suppliers_query = suppliers_query.filter(Supplier.province == province)
     if district:
@@ -95,23 +96,13 @@ def api_search_supplier():
     try:
         suppliers = suppliers_query.all()
         if suppliers:
-            results = []
-            for s in suppliers:
-                results.append({
-                    "id": s.id,
-                    "trade_name": s.trade_name,
-                    "phone": s.phone,
-                    "province": s.province,
-                    "district": s.district,
-                    "activity_type": s.activity_type,
-                    "tier": getattr(s, 'tier', 'مبتدئ'),
-                    "status": getattr(s, 'status', 'active')
-                })
+            # استخدام دالة to_dict من الموديل لتحويل البيانات لـ JSON
+            results = [s.to_dict() for s in suppliers]
             return jsonify({"status": "success", "suppliers": results})
         
-        return jsonify({"status": "error", "message": "لم يتم العثور على نتائج"}), 404
+        return jsonify({"status": "error", "message": "لم يتم العثور على نتائج تطابق هذه الفلاتر"}), 404
     except Exception as e:
-        return jsonify({"status": "error", "message": f"خطأ في قاعدة البيانات: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": f"فشل الاتصال بالقاعدة: {str(e)}"}), 500
 
 # --- 6. بروتوكول تحديث بيانات المورد (Update API) ---
 @admin_bp.route('/api/update-supplier/<int:sup_id>', methods=['POST'])
@@ -124,12 +115,13 @@ def api_update_supplier(sup_id):
     data = request.get_json()
 
     try:
-        supplier.phone = data.get('phone', supplier.phone)
-        supplier.activity_type = data.get('activity_type', supplier.activity_type)
-        supplier.province = data.get('province', supplier.province)
-        supplier.district = data.get('district', supplier.district)
-        supplier.tier = data.get('tier', supplier.tier)
-        supplier.status = data.get('status', supplier.status)
+        # تحديث الحقول الأساسية
+        if 'phone' in data: supplier.phone = data['phone']
+        if 'activity_type' in data: supplier.activity_type = data['activity_type']
+        if 'province' in data: supplier.province = data['province']
+        if 'district' in data: supplier.district = data['district']
+        if 'tier' in data: supplier.tier = data['tier']
+        if 'status' in data: supplier.status = data['status']
 
         db.session.commit()
         return jsonify({"status": "success", "message": "تم تحديث بيانات المورد بنجاح"})
@@ -149,12 +141,18 @@ def add_supplier():
         try:
             new_supplier = Supplier(
                 username=request.form.get('username'),
-                password=request.form.get('password'),
+                password=request.form.get('password'), # يفضل تشفيرها لاحقاً
                 owner_name=request.form.get('owner_name'),
                 trade_name=request.form.get('trade_name'),
                 phone=request.form.get('phone'),
                 province=request.form.get('province'),
                 district=request.form.get('district'),
+                id_type=request.form.get('id_type', 'شخصية'),
+                id_card_number=request.form.get('id_card_number', '000'),
+                address_detail=request.form.get('address_detail', 'غير محدد'),
+                e_wallet=f"WAL_MAH_{datetime.now().timestamp()}", # توليد مؤقت
+                bank_name=request.form.get('bank_name', 'غير محدد'),
+                bank_acc=request.form.get('bank_acc', '000'),
                 status='active',
                 tier='مبتدئ'
             )
