@@ -1,62 +1,102 @@
-<div class="offcanvas offcanvas-start border-0 shadow-lg" tabindex="-1" id="supplierInspector" 
-     style="width: 450px; background: #f8fafc; direction: rtl;">
-    
-    <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, #632C8F 0%, #4a1d6d 100%); border-bottom: 4px solid #C5A021;">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-user-shield fs-4 me-2 text-gold"></i>
-            <h5 class="offcanvas-title fw-bold" id="inspectorTitle">فحص بيانات الترسانة</h5>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-
-    <div class="offcanvas-body p-0">
-        <div id="inspectorContent" class="p-4">
-            <div class="text-center py-5">
-                <div class="spinner-border text-royal" role="status"></div>
-                <p class="mt-3 text-muted">جاري استدعاء السجل الرقمي...</p>
-            </div>
-        </div>
-
-        <div class="p-4 bg-white border-top shadow-sm mt-auto">
-            <div class="d-grid gap-3">
-                <a id="walletLink" href="#" class="btn btn-gold-action py-3 fw-bold rounded-4 shadow-sm">
-                    <i class="fas fa-wallet me-2"></i> الانتقال للمحفظة المالية
-                </a>
-                
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-danger flex-grow-1 py-2 fw-bold" onclick="updateStatus('suspended')">
-                        <i class="fas fa-ban me-1"></i> إيقاف
-                    </button>
-                    <button class="btn btn-outline-success flex-grow-1 py-2 fw-bold" onclick="updateStatus('active')">
-                        <i class="fas fa-check me-1"></i> تفعيل
-                    </button>
+<div class="card border-0 shadow-sm mb-3 animate__animated animate__fadeInDown" style="border-radius: 15px;">
+    <div class="card-body p-3">
+        <form id="filterForm" class="row g-2 align-items-center">
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="input-group bg-light rounded-3 overflow-hidden border">
+                    <span class="input-group-text bg-transparent border-0 text-royal">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="searchInput" 
+                           class="form-control border-0 bg-transparent py-2" 
+                           placeholder="ابحث بالمتجر، المالك، أو المعرف السيادي..."
+                           onkeyup="runSovereignSearch()">
                 </div>
             </div>
-        </div>
+
+            <div class="col-lg-2 col-md-3">
+                <select id="provinceFilter" class="form-select border shadow-none rounded-3" onchange="runSovereignSearch()">
+                    <option value="">كل المحافظات</option>
+                    <option value="الحديدة">الحديدة</option>
+                    <option value="صنعاء">صنعاء</option>
+                    <option value="تعز">تعز</option>
+                    <option value="عدن">عدن</option>
+                </select>
+            </div>
+
+            <div class="col-lg-2 col-md-3">
+                <select id="districtFilter" class="form-select border shadow-none rounded-3" onchange="runSovereignSearch()">
+                    <option value="">كل المديريات</option>
+                    <option value="الخوخة">مديرية الخوخة</option>
+                    <option value="الحالي">مديرية الحالي</option>
+                    <option value="الميناء">مديرية الميناء</option>
+                </select>
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+                <div class="d-flex gap-1 bg-light p-1 rounded-3 border">
+                    <input type="radio" class="btn-check" name="status" id="all" value="" checked onchange="runSovereignSearch()">
+                    <label class="btn btn-sm btn-outline-royal border-0 flex-fill rounded-2" for="all">الكل</label>
+
+                    <input type="radio" class="btn-check" name="status" id="active" value="active" onchange="runSovereignSearch()">
+                    <label class="btn btn-sm btn-outline-success border-0 flex-fill rounded-2" for="active">نشط</label>
+
+                    <input type="radio" class="btn-check" name="status" id="suspended" value="suspended" onchange="runSovereignSearch()">
+                    <label class="btn btn-sm btn-outline-danger border-0 flex-fill rounded-2" for="suspended">معلق</label>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+                <button type="button" class="btn btn-royal w-100 rounded-3 shadow-xs" onclick="resetSovereignFilters()">
+                    <i class="fas fa-sync-alt ms-1"></i> تحديث الترسانة
+                </button>
+            </div>
+
+        </form>
     </div>
 </div>
 
 <style>
-    /* تنسيقات اللوحة الجانبية */
-    .text-gold { color: #C5A021 !important; }
-    .btn-gold-action { 
-        background-color: #C5A021; 
-        color: #4a1d6d; 
-        border: none;
-        transition: 0.3s;
+    /* لمسات ملكية للفلاتر */
+    .btn-outline-royal { color: var(--royal); }
+    .btn-outline-royal:hover, .btn-check:checked + .btn-outline-royal {
+        background-color: var(--royal) !important;
+        color: var(--gold) !important;
     }
-    .btn-gold-action:hover { 
-        background-color: #d4af37; 
-        transform: scale(1.02);
-    }
-    .bg-royal { background-color: #632C8F !important; }
-    
-    /* تنسيق الوثائق (صورة الهوية) */
-    .id-card-preview {
-        width: 100%;
-        border-radius: 12px;
-        border: 2px dashed #cbd5e1;
-        margin-top: 10px;
-        cursor: zoom-in;
-    }
+    .form-select, .form-control { font-size: 0.9rem; font-weight: 500; }
+    .shadow-xs { box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 </style>
+
+<script>
+    function runSovereignSearch() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const province = document.getElementById('provinceFilter').value;
+        const district = document.getElementById('districtFilter').value;
+        const status = document.querySelector('input[name="status"]:checked').value;
+
+        const rows = document.querySelectorAll('.supplier-row');
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const rowStatus = row.getAttribute('data-status') || ''; // تأكد من إضافة هذا السمة في الـ TR بالجدول
+            const rowProvince = row.getAttribute('data-province') || '';
+            const rowDistrict = row.getAttribute('data-district') || '';
+
+            const matchesQuery = text.includes(query);
+            const matchesProvince = province === "" || rowProvince === province;
+            const matchesDistrict = district === "" || rowDistrict === district;
+            const matchesStatus = status === "" || rowStatus === status;
+
+            if (matchesQuery && matchesProvince && matchesDistrict && matchesStatus) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+
+    function resetSovereignFilters() {
+        document.getElementById('filterForm').reset();
+        runSovereignSearch();
+    }
+</script>
