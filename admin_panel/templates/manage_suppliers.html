@@ -22,11 +22,8 @@
         <div class="col-lg-4">
             <div class="search-box position-relative shadow-sm rounded-pill overflow-hidden bg-white border border-2 border-primary">
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-0 px-3">
-                        <i class="fas fa-search text-primary"></i>
-                    </span>
-                    <input type="text" id="supplierSearch" class="form-control border-0 py-2 shadow-none" 
-                           placeholder="ابحث بالاسم، الهاتف، المحفظة، أو # للكل...">
+                    <span class="input-group-text bg-white border-0 px-3"><i class="fas fa-search text-primary"></i></span>
+                    <input type="text" id="supplierSearch" class="form-control border-0 py-2 shadow-none" placeholder="ابحث بالاسم، الهاتف، أو المعرف...">
                     <button class="btn btn-primary px-4 fw-bold" type="button" onclick="handleSearch()">استدعاء</button>
                 </div>
             </div>
@@ -37,15 +34,6 @@
                 <option value="الحديدة">الحديدة</option>
                 <option value="أمانة العاصمة">أمانة العاصمة</option>
                 <option value="عدن">عدن</option>
-                <option value="تعز">تعز</option>
-            </select>
-        </div>
-        <div class="col-lg-2">
-            <select id="filterTier" class="form-select border-2 rounded-pill shadow-sm h-100" onchange="handleSearch()">
-                <option value="">كل الرتب</option>
-                <option value="مبتدئ">مورد مبتدئ</option>
-                <option value="موثوق">مورد موثوق</option>
-                <option value="ملكي">مورد ملكي</option>
             </select>
         </div>
         <div class="col-lg-2">
@@ -55,25 +43,21 @@
         </div>
     </div>
 
-    <div id="searchFeedback" class="text-center mb-3 fw-medium"></div>
-
     <div id="fullTableContainer" class="card border-0 shadow-lg mb-5 animate__animated animate__fadeIn" style="border-radius: 20px; overflow: hidden;">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 text-center">
                 <thead class="bg-royal text-white">
                     <tr>
-                        <th class="py-3">المعرف</th>
+                        <th class="py-3">المعرف السيادي</th>
                         <th>الاسم التجاري</th>
-                        <th>المسؤول (المالك)</th>
                         <th>الهاتف</th>
-                        <th>المكان</th>
                         <th>الرتبة</th>
+                        <th>المحفظة</th>
                         <th>الحالة</th>
                         <th>الإجراء</th>
                     </tr>
                 </thead>
-                <tbody id="suppliersTableBody">
-                    </tbody>
+                <tbody id="suppliersTableBody"></tbody>
             </table>
         </div>
         <div id="tableLoader" class="text-center py-5 d-none">
@@ -87,17 +71,13 @@
             <div class="card-header border-0 py-4 d-flex justify-content-between align-items-center" 
                  style="background: linear-gradient(135deg, #4a148c 0%, #1a237e 100%); color: #ffd700;">
                 <div class="d-flex align-items-center">
-                    <div class="avatar-circle me-3">
-                        <i class="fas fa-store-alt fa-2x"></i>
-                    </div>
+                    <div class="avatar-circle me-3"><i class="fas fa-store-alt fa-2x"></i></div>
                     <div class="ms-3">
                         <h3 class="mb-0 fw-bold" id="displayTradeName">...</h3>
-                        <span class="badge bg-warning text-dark" id="displaySupID">--</span>
+                        <span class="badge bg-warning text-dark" id="displaySupID">SUP_MAH_963</span>
                     </div>
                 </div>
-                <button class="btn btn-close-white btn-light rounded-circle shadow" onclick="closeControlCard()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button class="btn btn-light rounded-circle shadow" onclick="closeControlCard()"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="card-body p-0">
@@ -108,63 +88,77 @@
                                 <i class="fas fa-id-card ms-2"></i> الهوية والنشاط
                             </button>
                             <button class="nav-link mb-3 text-end shadow-sm" data-bs-toggle="pill" data-bs-target="#tab-wallet">
-                                <i class="fas fa-wallet ms-2"></i> المركز المالي
+                                <i class="fas fa-wallet ms-2"></i> المركز المالي (الخزنة)
                             </button>
                             <button class="nav-link mb-3 text-end shadow-sm text-danger" data-bs-toggle="pill" data-bs-target="#tab-security">
-                                <i class="fas fa-shield-alt ms-2"></i> الأمن السيادي
+                                <i class="fas fa-shield-alt ms-2"></i> الأمن والعمليات
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-9 p-5 bg-white">
+                    <div class="col-md-9 p-4 bg-white">
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="tab-main">
                                 <form id="editForm" class="row g-4">
                                     <input type="hidden" id="currentSupplierId">
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold">رقم التواصل المعتمد</label>
+                                        <label class="form-label fw-bold">الهاتف المعتمد</label>
                                         <input type="text" id="phone" class="form-control form-control-lg border-2">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold">الحالة الإدارية</label>
-                                        <select id="status" class="form-select form-select-lg border-2">
-                                            <option value="active">نشط (مصرح له)</option>
-                                            <option value="suspended">موقف مؤقتاً</option>
-                                            <option value="banned">محظور نهائياً</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold">الرتبة السيادية</label>
+                                        <label class="form-label fw-bold">الرتبة</label>
                                         <select id="tier" class="form-select form-select-lg border-2">
                                             <option value="مبتدئ">مورد مبتدئ</option>
                                             <option value="موثوق">مورد موثوق</option>
-                                            <option value="ملكي">مورد ملكي (VIP)</option>
+                                            <option value="ملكي">مورد ملكي</option>
                                         </select>
                                     </div>
-                                    <div class="col-12 mt-5">
-                                        <button type="button" onclick="saveChanges()" class="btn btn-primary btn-lg px-5 shadow">
-                                            <i class="fas fa-save me-2"></i> حفظ التحديثات في الترسانة
-                                        </button>
-                                    </div>
+                                    <div class="col-12"><button type="button" onclick="saveChanges()" class="btn btn-primary btn-lg px-5">حفظ التغييرات</button></div>
                                 </form>
                             </div>
 
                             <div class="tab-pane fade" id="tab-wallet">
-                                <div class="text-center">
-                                    <div class="p-5 rounded-4 bg-light border-dashed border-2 mb-4">
-                                        <h5 class="text-muted mb-3">رقم المحفظة المالية الموحد</h5>
-                                        <h2 class="fw-bold text-primary display-6 text-ltr" id="displayWalletID">--</h2>
-                                    </div>
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="card bg-success text-white p-3 border-0">
-                                                <small>إجمالي المبيعات</small>
-                                                <h4 class="mb-0">0.00 ر.ي</h4>
-                                            </div>
+                                <div class="p-4 rounded-4 bg-light border border-2 border-dashed mb-4 text-center">
+                                    <small class="text-muted">المحفظة الموحدة</small>
+                                    <h2 class="fw-bold text-primary text-ltr" id="displayWalletID">WAL_MAH_...</h2>
+                                </div>
+                                
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-4">
+                                        <div class="card bg-success text-white p-3 border-0 shadow-sm">
+                                            <small>الريال اليمني</small>
+                                            <h4 class="mb-0 fw-bold" id="bal_yer">0.00</h4>
                                         </div>
-                                        <div class="col-6">
-                                            <div class="card bg-purple text-white p-3 border-0" style="background: #632c8f;">
-                                                <small>المستحقات الحالية</small>
-                                                <h4 class="mb-0">0.00 ر.ي</h4>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-primary text-white p-3 border-0 shadow-sm">
+                                            <small>الريال السعودي</small>
+                                            <h4 class="mb-0 fw-bold" id="bal_sar">0.00</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-dark text-warning p-3 border-0 shadow-sm">
+                                            <small>الدولار الأمريكي</small>
+                                            <h4 class="mb-0 fw-bold" id="bal_usd">0.00</h4>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white fw-bold">إجراء عملية سحب (Cash Out)</div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-5">
+                                                <input type="number" id="withdrawAmount" class="form-control" placeholder="المبلغ">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <select id="withdrawCurrency" class="form-select">
+                                                    <option value="YER">ريال يمني</option>
+                                                    <option value="SAR">ريال سعودي</option>
+                                                    <option value="USD">دولار أمريكي</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button class="btn btn-danger w-100 fw-bold" onclick="handleWithdraw()">تنفيذ السحب</button>
                                             </div>
                                         </div>
                                     </div>
@@ -172,13 +166,8 @@
                             </div>
 
                             <div class="tab-pane fade" id="tab-security">
-                                <div class="alert alert-danger border-0 shadow-sm p-4 rounded-4">
-                                    <h5 class="fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> إجراءات أمنية حساسة</h5>
-                                    <p>سيتم تصفير كلمة المرور وتوليد مفتاح دخول جديد للمورد. هل أنت متأكد؟</p>
-                                    <button class="btn btn-danger btn-lg mt-3" onclick="resetPassword()">
-                                        توليد كلمة مرور جديدة <i class="fas fa-key ms-2"></i>
-                                    </button>
-                                </div>
+                                <div class="alert alert-warning">إعادة تعيين كلمة المرور ترسل رسالة للمورد تلقائياً.</div>
+                                <button class="btn btn-danger" onclick="resetPassword()">توليد كلمة سر جديدة</button>
                             </div>
                         </div>
                     </div>
@@ -189,62 +178,44 @@
 </div>
 
 <style>
-    :root { --royal-purple: #4a148c; --mahjoub-gold: #ffd700; --soft-purple: #f3e5f5; }
+    :root { --royal-purple: #4a148c; --mahjoub-gold: #ffd700; }
     .bg-royal { background: linear-gradient(45deg, var(--royal-purple), #6a1b9a) !important; }
     .btn-royal { background: var(--royal-purple); color: var(--mahjoub-gold); border: 2px solid var(--mahjoub-gold); font-weight: 700; border-radius: 12px; }
-    .btn-royal:hover { background: #310d5e; color: white; transform: translateY(-2px); }
-    .nav-pills .nav-link.active { background: var(--royal-purple) !important; color: gold !important; font-weight: bold; }
-    .nav-link { color: #555; font-weight: 600; border-radius: 10px !important; transition: 0.3s; }
+    .nav-pills .nav-link.active { background: var(--royal-purple) !important; color: gold !important; }
     .avatar-circle { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .text-ltr { direction: ltr; display: inline-block; }
-    .supplier-row { cursor: pointer; transition: 0.3s; border-bottom: 1px solid #eee; }
-    .supplier-row:hover { background-color: var(--soft-purple) !important; transform: scale(1.005); }
-    .border-dashed { border-style: dashed !important; }
+    .supplier-row { cursor: pointer; transition: 0.2s; }
+    .supplier-row:hover { background-color: #f3e5f5 !important; transform: scale(1.01); }
 </style>
 
 <script>
-// استدعاء البيانات عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => handleSearch());
 
 function handleSearch() {
     const q = document.getElementById('supplierSearch').value.trim();
-    const province = document.getElementById('filterProvince').value;
-    const tier = document.getElementById('filterTier').value;
     const tableBody = document.getElementById('suppliersTableBody');
     const loader = document.getElementById('tableLoader');
-
+    
     tableBody.innerHTML = '';
     loader.classList.remove('d-none');
 
-    // بناء الرابط مع الفلاتر
-    let url = `/admin/api/search-supplier?q=${encodeURIComponent(q || '#')}`;
-    if (province) url += `&province=${encodeURIComponent(province)}`;
-    if (tier) url += `&tier=${encodeURIComponent(tier)}`;
-
-    fetch(url)
+    fetch(`/admin/api/search-supplier?q=${encodeURIComponent(q || '#')}`)
     .then(res => res.json())
     .then(data => {
         loader.classList.add('d-none');
         if(data.status === 'success') {
             data.suppliers.forEach(s => {
-                const statusBadge = s.status === 'active' ? 'bg-success' : 'bg-danger';
-                const tierBadge = s.tier === 'ملكي' ? 'bg-warning text-dark' : 'bg-info text-white';
-                
                 tableBody.innerHTML += `
                     <tr class="supplier-row animate__animated animate__fadeIn" onclick="fetchSingleSupplier('${s.id}')">
-                        <td><span class="badge bg-light text-dark border">963${s.id}</span></td>
+                        <td><span class="badge bg-light text-dark border">SUP_MAH_963${s.id}</span></td>
                         <td class="fw-bold text-primary">${s.trade_name}</td>
-                        <td>${s.owner_name}</td>
                         <td class="text-ltr">${s.phone}</td>
-                        <td>${s.province} / ${s.district}</td>
-                        <td><span class="badge ${tierBadge} rounded-pill px-3">${s.tier || 'مبتدئ'}</span></td>
-                        <td><span class="badge ${statusBadge} rounded-pill">${s.status === 'active' ? 'نشط' : 'موقف'}</span></td>
-                        <td><button class="btn btn-sm btn-outline-royal rounded-pill"><i class="fas fa-edit"></i></button></td>
-                    </tr>
-                `;
+                        <td><span class="badge bg-info">${s.tier || 'مبتدئ'}</span></td>
+                        <td class="text-ltr small">${s.e_wallet}</td>
+                        <td><span class="badge ${s.status === 'active' ? 'bg-success' : 'bg-danger'}">${s.status === 'active' ? 'نشط' : 'موقف'}</span></td>
+                        <td><button class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></button></td>
+                    </tr>`;
             });
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="8" class="py-5 text-muted">لا توجد نتائج تطابق التردد الحالي</td></tr>`;
         }
     });
 }
@@ -259,59 +230,44 @@ function fetchSingleSupplier(id) {
             document.getElementById('controlCard').classList.remove('d-none');
             
             document.getElementById('displayTradeName').innerText = s.trade_name;
-            document.getElementById('displaySupID').innerText = `المعرف السيادي: 963${s.id}`;
+            document.getElementById('displaySupID').innerText = `SUP_MAH_963${s.id}`;
             document.getElementById('displayWalletID').innerText = s.e_wallet;
             document.getElementById('phone').value = s.phone;
-            document.getElementById('status').value = s.status;
             document.getElementById('tier').value = s.tier || 'مبتدئ';
             document.getElementById('currentSupplierId').value = s.id;
+            
+            // تحديث الأرصدة (تأكد أن API يرسل balances)
+            if(s.balances) {
+                document.getElementById('bal_yer').innerText = s.balances.YER.toLocaleString();
+                document.getElementById('bal_sar').innerText = s.balances.SAR.toLocaleString();
+                document.getElementById('bal_usd').innerText = s.balances.USD.toLocaleString();
+            }
         }
     });
 }
 
-function saveChanges() {
+function handleWithdraw() {
     const id = document.getElementById('currentSupplierId').value;
-    const payload = {
-        phone: document.getElementById('phone').value,
-        status: document.getElementById('status').value,
-        tier: document.getElementById('tier').value
-    };
+    const amount = document.getElementById('withdrawAmount').value;
+    const currency = document.getElementById('withdrawCurrency').value;
 
-    fetch(`/admin/api/update-supplier/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.status === 'success') {
-            Swal.fire('تم التحديث', 'تم حفظ البيانات في الترسانة بنجاح', 'success');
-            closeControlCard();
-            handleSearch();
-        }
-    });
-}
+    if(!amount || amount <= 0) return Swal.fire('خطأ', 'يرجى إدخال مبلغ صحيح', 'error');
 
-function resetPassword() {
-    const id = document.getElementById('currentSupplierId').value;
     Swal.fire({
-        title: 'هل أنت متأكد؟',
-        text: "سيتم توليد كلمة مرور جديدة للمورد فوراً!",
+        title: 'تأكيد عملية السحب',
+        text: `هل تريد سحب مبلغ ${amount} ${currency} من محفظة المورد؟`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#4a148c',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'نعم، قم بالتوليد'
-    }).then((result) => {
-        if (result.isConfirmed) {
+        confirmButtonText: 'تأكيد السحب'
+    }).then(result => {
+        if(result.isConfirmed) {
             fetch(`/admin/api/supplier-action/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'reset_password' })
-            })
-            .then(res => res.json())
-            .then(data => {
-                Swal.fire('تم بنجاح!', `كلمة السر الجديدة هي: ${data.message.split(': ')[1]}`, 'success');
+                body: JSON.stringify({ action: 'withdraw', amount, currency })
+            }).then(res => res.json()).then(data => {
+                Swal.fire('تم العملية', data.message, 'success');
+                fetchSingleSupplier(id); // تحديث الأرصدة المعروضة
             });
         }
     });
@@ -322,16 +278,19 @@ function closeControlCard() {
     document.getElementById('fullTableContainer').classList.remove('d-none');
 }
 
-function resetFilters() {
-    document.getElementById('supplierSearch').value = '';
-    document.getElementById('filterProvince').value = '';
-    document.getElementById('filterTier').value = '';
-    handleSearch();
-}
+function saveChanges() {
+    const id = document.getElementById('currentSupplierId').value;
+    const payload = { phone: document.getElementById('phone').value, tier: document.getElementById('tier').value };
 
-// تشغيل البحث بضغط Enter
-document.getElementById('supplierSearch').addEventListener('keypress', (e) => {
-    if(e.key === 'Enter') handleSearch();
-});
+    fetch(`/admin/api/update-supplier/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(res => res.json()).then(() => {
+        Swal.fire('تم الحفظ', 'تم تحديث بيانات الترسانة', 'success');
+        closeControlCard();
+        handleSearch();
+    });
+}
 </script>
 {% endblock %}
