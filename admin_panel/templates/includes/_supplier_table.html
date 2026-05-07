@@ -1,1 +1,30 @@
-
+<div class="table-responsive" style="border-radius: 20px;">
+    <table class="table table-hover align-middle mb-0 text-center">
+        <thead class="bg-royal text-white">
+            <tr>
+                <th class="py-3">المعرف</th>
+                <th>المتجر</th>
+                <th>الموقع الجغرافي</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in suppliers %}
+            <tr class="supplier-row" onclick="openSovereignInspector('{{ s.id }}')">
+                <td><span class="badge bg-warning text-dark">ID: {{ s.id }}</span></td>
+                <td class="text-end fw-bold text-royal">{{ s.trade_name }}</td>
+                <td>{{ s.province }} - {{ s.district }}</td>
+                <td>
+                    {% if s.status == 'active' %}
+                    <span class="badge bg-success">نشط</span>
+                    {% else %}
+                    <span class="badge bg-danger">موقوف</span>
+                    {% endif %}
+                </td>
+                <td><i class="fas fa-chevron-left text-muted"></i></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
