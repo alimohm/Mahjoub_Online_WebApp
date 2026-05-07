@@ -176,14 +176,10 @@
     </div>
 
     <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="next_id" value="{{ next_id }}">
-        <input type="hidden" name="e_wallet" value="{{ next_wallet }}">
-        <input type="hidden" name="fin_type" id="fin_type_hidden" value="banks">
-
         <div class="section-banner"><i class="fas fa-user-shield"></i> بيانات الهوية الرقمية والنشاط</div>
         <div class="grid-layout">
             <div class="input-box">
-                <label>اسم المستخدم (الدخول للنظـام)</label>
+                <label>اسم المستخدم (الدخول للنظام)</label>
                 <input type="text" name="username" class="form-control-gov" placeholder="مثال: store_963" required>
             </div>
             <div class="input-box">
@@ -192,14 +188,15 @@
             </div>
             <div class="input-box">
                 <label>تصنيف النشاط التجاري</label>
-                <select name="activity_type" id="activity_select" class="form-control-gov" onchange="toggleManualInput(this, 'manual_activity')" required>
+                <select name="activity_type_select" id="activity_select" class="form-control-gov" onchange="handleManualSelection(this, 'activity_type')" required>
                     <option value="مواد غذائية">مواد غذائية واستهلاكية</option>
                     <option value="إلكترونيات">إلكترونيات وتقنية</option>
                     <option value="ملابس">ملابس ومنسوجات</option>
                     <option value="أدوية">أدوية ومستلزمات طبية</option>
                     <option value="manual">أخرى (إدخال يدوي)...</option>
                 </select>
-                <input type="text" name="manual_activity" id="manual_activity" class="form-control-gov manual-input" placeholder="اكتب نوع النشاط هنا">
+                <input type="hidden" name="activity_type" id="activity_type">
+                <input type="text" id="manual_activity" class="form-control-gov manual-input" placeholder="اكتب نوع النشاط هنا">
             </div>
         </div>
 
@@ -211,13 +208,11 @@
             </div>
             <div class="input-box">
                 <label>نوع وثيقة الإثبات</label>
-                <select name="id_type" id="id_type_select" class="form-control-gov" onchange="toggleManualInput(this, 'manual_id_type')" required>
+                <select name="id_type" class="form-control-gov" required>
                     <option value="بطاقة شخصية">بطاقة شخصية (ذكية)</option>
                     <option value="جواز سفر">جواز سفر يمني</option>
                     <option value="سجل تجاري">سجل تجاري نافذ</option>
-                    <option value="manual">أخرى...</option>
                 </select>
-                <input type="text" name="manual_id_type" id="manual_id_type" class="form-control-gov manual-input" placeholder="نوع الهوية">
             </div>
             <div class="input-box">
                 <label>رقم الوثيقة / السجل</label>
@@ -241,10 +236,6 @@
 
         <div class="section-banner"><i class="fas fa-university"></i> الربط المالي والمحفظة السيادية</div>
         <div class="grid-layout">
-            <div class="input-box">
-                <label>كود المحفظة المولد</label>
-                <input type="text" value="{{ next_wallet }}" class="form-control-gov" readonly style="background:#f1f5f9; font-weight:900; color:var(--gov-purple);">
-            </div>
             <div class="input-box" style="grid-column: span 2;">
                 <label>بروتوكول الاستلام المالي</label>
                 <div style="display: flex; gap: 15px;">
@@ -260,10 +251,11 @@
             </div>
             <div class="input-box">
                 <label>اسم الجهة المالية</label>
-                <select name="bank_name" id="bank_select" class="form-control-gov" onchange="toggleManualInput(this, 'manual_bank')" required>
+                <select name="bank_name_select" id="bank_select" class="form-control-gov" onchange="handleManualSelection(this, 'bank_name')" required>
                     <option value="">اختر من القائمة...</option>
                 </select>
-                <input type="text" name="manual_bank" id="manual_bank" class="form-control-gov manual-input" placeholder="اسم البنك/الصراف يدوياً">
+                <input type="hidden" name="bank_name" id="bank_name">
+                <input type="text" id="manual_bank" class="form-control-gov manual-input" placeholder="اسم البنك/الصراف يدوياً">
             </div>
             <div class="input-box">
                 <label>رقم الحساب المعتمد</label>
@@ -310,11 +302,21 @@
         "exchange": ["شركة المريسي للصرافة", "شركة سويد", "شركة النجم"]
     };
 
-    function toggleManualInput(selectObj, inputId) {
-        const manualInput = document.getElementById(inputId);
-        const isManual = (selectObj.value === 'manual');
-        manualInput.style.display = isManual ? 'block' : 'none';
-        manualInput.required = isManual;
+    // وظيفة ذكية للتعامل مع الإدخال اليدوي أو الاختيار من القائمة
+    function handleManualSelection(selectObj, hiddenId) {
+        const manualInputId = (hiddenId === 'activity_type') ? 'manual_activity' : 'manual_bank';
+        const manualInput = document.getElementById(manualInputId);
+        const hiddenField = document.getElementById(hiddenId);
+
+        if (selectObj.value === 'manual') {
+            manualInput.style.display = 'block';
+            manualInput.required = true;
+            hiddenField.value = ""; // سيتم تعبئته عند الكتابة
+        } else {
+            manualInput.style.display = 'none';
+            manualInput.required = false;
+            hiddenField.value = selectObj.value;
+        }
     }
 
     function loadDistricts(prov) {
@@ -326,7 +328,6 @@
     }
 
     function setFinance(type) {
-        document.getElementById('fin_type_hidden').value = type;
         document.getElementById('btn_banks').classList.toggle('active', type === 'banks');
         document.getElementById('btn_exchange').classList.toggle('active', type === 'exchange');
         
@@ -336,9 +337,18 @@
         bSelect.add(new Option("أخرى (إدخال يدوي)...", "manual"));
     }
 
-    // معالجة الإرسال عبر AJAX الذكي
+    // مزامنة الحقول اليدوية قبل الإرسال
     document.getElementById('sovereignForm').onsubmit = async function(e) {
         e.preventDefault();
+        
+        // تحديث الحقول المخفية بالقيم المكتوبة يدوياً إذا لزم الأمر
+        if (document.getElementById('activity_select').value === 'manual') {
+            document.getElementById('activity_type').value = document.getElementById('manual_activity').value;
+        }
+        if (document.getElementById('bank_select').value === 'manual') {
+            document.getElementById('bank_name').value = document.getElementById('manual_bank').value;
+        }
+
         const submitBtn = document.getElementById('submitBtn');
         const container = document.getElementById('mainContainer');
         const formData = new FormData(this);
@@ -351,33 +361,24 @@
             const response = await fetch(this.action, { 
                 method: 'POST', 
                 body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             
             const result = await response.json();
-            
             if (response.ok && result.status === 'success') {
                 Swal.fire({
                     title: '✅ تم التعميد بنجاح',
                     text: result.message,
                     icon: 'success',
-                    confirmButtonColor: '#632C8F',
-                    confirmButtonText: 'فتح القائمة العامة'
+                    confirmButtonColor: '#632C8F'
                 }).then(() => {
                     window.location.href = "{{ url_for('admin.manage_suppliers') }}";
                 });
             } else {
-                throw new Error(result.message || 'حدث خطأ في النظام السيادي');
+                throw new Error(result.message || 'خطأ في النظام');
             }
         } catch (err) {
-            Swal.fire({ 
-                title: '❌ فشل التعميد السيادي', 
-                text: err.message, 
-                icon: 'error',
-                confirmButtonColor: '#C5A021'
-            });
+            Swal.fire({ title: '❌ فشل التعميد', text: err.message, icon: 'error' });
             submitBtn.disabled = false;
             submitBtn.innerHTML = '🛡️ إتمام التعميد والأرشفة';
             container.classList.remove('processing');
@@ -385,10 +386,8 @@
     };
 
     window.onload = () => {
-        // تحميل المحافظات
         const pSelect = document.getElementById('prov_select');
         Object.keys(geoData).sort().forEach(p => pSelect.add(new Option(p, p)));
-        // إعداد البنوك افتراضياً
         setFinance('banks');
     }
 </script>
