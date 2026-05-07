@@ -1,72 +1,60 @@
 from flask import render_template, request, jsonify
 from sqlalchemy import or_, cast, String
 from core.models.supplier import Supplier
+from core.models.user import User
 from core.extensions import db
 from . import admin_bp
 from flask_login import login_required, current_user
 from functools import wraps
+from werkzeug.security import generate_password_hash
 
-# --- 1. بروتوكول الحماية السيادي ---
+# --- 1. بروتوكول الحماية السيادية ---
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # التأكد أن المستخدم هو "علي محجوب" أو يحمل رتبة admin
-        if not current_user.is_authenticated or getattr(current_user, 'role', '').lower() != 'admin':
-            return jsonify({"status": "error", "message": "غير مسموح بالوصول لهذا المستوى"}), 403
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            return jsonify({"status": "error", "message": "صلاحيات غير كافية"}), 403
         return f(*args, **kwargs)
     return decorated_function
 
-# قائمة الجغرافيا المركزية لليمن (Sovereign Geography Registry)
-YEMEN_GEOGRAPHY = {
-    "الحديدة": ["الخوخة", "حيس", "الحوك", "الميناء", "زبيد", "بيت الفقيه"],
-    "أمانة العاصمة": ["السبعين", "التحرير", "الثورة", "صنعاء القديمة"],
-    "عدن": ["المنصورة", "كريتر", "الشيخ عثمان", "البريقة"],
-    "تعز": ["المخاء", "القاهرة", "المظفر"]
-}
-
-# --- 2. عرض الواجهة الرئيسية للإدارة ---
-@admin_bp.route('/manage-suppliers')
-@login_required
-def manage_suppliers():
-    """عرض صفحة الترسانة مع تحميل أولي للموردين"""
-    # جلب آخر 20 مورد لضمان سرعة الاستجابة عند الفتح
-    initial_suppliers = Supplier.query.order_by(Supplier.id.desc()).limit(20).all()
-    
-    return render_template(
-        'manage_suppliers.html', 
-        suppliers=initial_suppliers,
-        provinces_list=YEMEN_GEOGRAPHY.keys()
-    )
-
-# --- 3. محرك البحث الذكي (The Sovereign Search Engine) ---
+# --- 2. المحرك الرئيسي للبحث والاستدعاء (The Recall Engine) ---
 @admin_bp.route('/api/search-suppliers')
 @login_required
+@admin_required
 def api_search_suppliers():
-    """منطق البحث المتقدم بالفلاتر (AJAX) لربط القالب بالقاعدة"""
+    """البحث الذكي: يدعم الاسم، اليوزرنيت، الهاتف، ورمز (#) للكل"""
     q = request.args.get('q', '').strip()
     province = request.args.get('province', '').strip()
     district = request.args.get('district', '').strip()
+    tier = request.args.get('tier', '').strip()
+    status = request.args.get('status', '').strip()
+
+    # إذا لم يتم إدخال بحث ولا رمز #، نرجع قائمة فارغة (Zero-Load)
+    if not q:
+        return jsonify({"status": "success", "suppliers": [], "count": 0})
 
     query_obj = Supplier.query
 
-    # البحث النصي الشامل (اسم المتجر، اسم المالك، الهاتف، المعرف السيادي)
-    if q:
-        clean_q = q.replace('SUP-MAH-', '').replace('WAL-MAH-', '')
+    # منطق الرمز (#) لاستدعاء الجميع
+    if q == "#":
+        pass # استمر بدون فلتر نصي لجلب الكل
+    else:
+        # البحث في الموردين (اسم المستخدم، اسم المتجر، الهاتف)
         query_obj = query_obj.filter(
             or_(
+                Supplier.username.ilike(f"%{q}%"),
                 Supplier.trade_name.ilike(f"%{q}%"),
                 Supplier.owner_name.ilike(f"%{q}%"),
                 Supplier.phone.ilike(f"%{q}%"),
-                Supplier.e_wallet.ilike(f"%{q}%"),
-                cast(Supplier.id, String).ilike(f"%{clean_q}%")
+                Supplier.e_wallet.ilike(f"%{q}%")
             )
         )
 
-    # فلاتر الموقع الجغرافي
-    if province:
-        query_obj = query_obj.filter_by(province=province)
-    if district:
-        query_obj = query_obj.filter_by(district=district)
+    # تطبيق الفلاتر الإضافية
+    if province: query_obj = query_obj.filter_by(province=province)
+    if district: query_obj = query_obj.filter_by(district=district)
+    if tier: query_obj = query_obj.filter_by(tier=tier)
+    if status: query_obj = query_obj.filter_by(status=status)
 
     suppliers = query_obj.order_by(Supplier.id.desc()).all()
     
@@ -76,90 +64,97 @@ def api_search_suppliers():
         "suppliers": [s.to_dict() for s in suppliers]
     })
 
-# --- 4. جلب بيانات المورد التفصيلية (للمودال) ---
-@admin_bp.route('/api/supplier-details/<int:s_id>')
+# --- 3. جلب تفاصيل الكيان والموظفين (The Sync Point) ---
+@admin_bp.route('/api/get-supplier-full-details/<int:s_id>')
 @login_required
 @admin_required
-def get_supplier_details(s_id):
-    """سحب بيانات مورد واحد لملء قالب الإحصائيات"""
+def get_supplier_full_details(s_id):
     supplier = Supplier.query.get_or_404(s_id)
-    return jsonify({
-        "id": supplier.id,
-        "trade_name": supplier.trade_name,
-        "owner_name": supplier.owner_name,
-        "phone": supplier.phone,
-        "e_wallet": supplier.e_wallet or f"WAL-MAH-{supplier.id}",
-        "balance_yer": float(supplier.balance_yer or 0),
-        "status": supplier.status,
-        "province": supplier.province,
-        "district": supplier.district
-    })
+    
+    # جلب الموظفين المرتبطين بهذا المورد من جدول المستخدمين
+    # ملاحظة: نفترض وجود حقل supplier_reference يربط الموظف بمورده
+    staff_members = User.query.filter_by(role='vendor_staff', username=supplier.username).all()
+    
+    data = supplier.to_dict()
+    data['staff'] = [{
+        "id": user.id,
+        "username": user.username,
+        "is_active": user.is_active_account
+    } for user in staff_members]
+    
+    return jsonify(data)
 
-# --- 5. تحديث البيانات السيادية (إدارة المالك، الهاتف، وكلمة المرور) ---
-@admin_bp.route('/api/update-supplier-info/<int:s_id>', methods=['POST'])
+# --- 4. تعميد التعديلات السيادية (Update & Currency) ---
+@admin_bp.route('/api/update-sovereign-data/<int:s_id>', methods=['POST'])
 @login_required
 @admin_required
-def update_supplier_info(s_id):
-    """تعديل بيانات المورد من داخل القالب مباشرة"""
+def update_sovereign_data(s_id):
     supplier = Supplier.query.get_or_404(s_id)
     data = request.get_json()
 
-    # تحديث الحقول الأساسية
-    if 'owner_name' in data: supplier.owner_name = data['owner_name']
-    if 'phone' in data: supplier.phone = data['phone']
-    
-    # إعادة تعيين كلمة المرور في حال تم إدخال قيمة جديدة
-    password = data.get('password')
-    if password and len(password) >= 6:
-        supplier.set_password(password) # استخدام التشفير المعتمد في الموديل
-
     try:
+        # 1. تحديث البيانات الأساسية
+        supplier.owner_name = data.get('owner_name', supplier.owner_name)
+        supplier.province = data.get('province', supplier.province)
+        supplier.district = data.get('district', supplier.district)
+        supplier.tier = data.get('tier', supplier.tier)
+        
+        # 2. تحديث الخزينة الثلاثية
+        supplier.balance_yer = data.get('balance_yer', supplier.balance_yer)
+        supplier.balance_sar = data.get('balance_sar', supplier.balance_sar)
+        supplier.balance_usd = data.get('balance_usd', supplier.balance_usd)
+
+        # 3. إعادة تعيين كلمة المرور يدوياً (إذا أُرسلت)
+        new_pass = data.get('new_password')
+        if new_pass and len(new_pass) >= 4:
+            # تحديث كلمة المورد في جدول الموردين
+            supplier.password = generate_password_hash(new_pass) 
+
         db.session.commit()
-        return jsonify({"status": "success", "message": "تم تعميد البيانات الجديدة في الترسانة"})
+        return jsonify({"status": "success", "message": "تم تعميد كافة البيانات والأرصدة في القاعدة"})
+    
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# --- 6. بوابة التحكم في الحالة (تفعيل/تعليق) ---
-@admin_bp.route('/api/toggle-supplier-status/<int:s_id>', methods=['POST'])
+# --- 5. بوابة إضافة موظف جديد يدوياً (Staff Induction) ---
+@admin_bp.route('/api/add-supplier-staff/<int:s_id>', methods=['POST'])
 @login_required
 @admin_required
-def toggle_status(s_id):
-    """تغيير حالة المورد بين نشط ومعلق"""
+def add_supplier_staff(s_id):
     supplier = Supplier.query.get_or_404(s_id)
     data = request.get_json()
-    new_status = data.get('status')
-
-    if new_status in ['active', 'suspended']:
-        supplier.status = new_status
-        db.session.commit()
-        return jsonify({"status": "success", "message": f"تم تحديث حالة {supplier.trade_name}"})
     
-    return jsonify({"status": "error", "message": "حالة غير صالحة"}), 400
+    username = data.get('username')
+    password = data.get('password')
 
-# --- 7. بروتوكول الشطب (حذف المورد) ---
-@admin_bp.route('/api/delete-supplier/<int:s_id>', methods=['DELETE'])
+    if User.query.filter_by(username=username).first():
+        return jsonify({"status": "error", "message": "اسم المستخدم موجود مسبقاً"}), 400
+
+    new_staff = User(
+        username=username,
+        role='vendor_staff',
+        is_active_account=True
+    )
+    new_staff.set_password(password)
+    # هنا نربطه بالمورد برمجياً (يمكن إضافة حقل parent_supplier_id لموديل User)
+    
+    db.session.add(new_staff)
+    db.session.commit()
+    
+    return jsonify({"status": "success", "message": f"تم إضافة الموظف {username} بنجاح"})
+
+# --- 6. حذف أو تعطيل الكيان ---
+@admin_bp.route('/api/delete-sovereign-entity/<int:s_id>', methods=['DELETE'])
 @login_required
 @admin_required
-def delete_supplier(s_id):
-    """حذف المورد نهائياً من قاعدة البيانات"""
+def delete_entity(s_id):
+    # لا يُسمح للموظف بهذا الإجراء أبداً
     supplier = Supplier.query.get_or_404(s_id)
     
-    # إجراء وقائي: منع حذف المورد إذا كان لديه رصيد مالي
-    if (supplier.balance_yer or 0) > 0:
-        return jsonify({"status": "error", "message": "لا يمكن شطب كيان لديه رصيد مالي نشط"}), 400
+    if float(supplier.balance_yer) > 0 or float(supplier.balance_sar) > 0:
+        return jsonify({"status": "error", "message": "لا يمكن حذف كيان لديه أرصدة مالية"}), 400
 
-    try:
-        db.session.delete(supplier)
-        db.session.commit()
-        return jsonify({"status": "success", "message": "تم شطب الكيان بنجاح"})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"status": "error", "message": "خطأ في عملية الحذف"}), 500
-
-# --- 8. جلب المديريات ديناميكياً ---
-@admin_bp.route('/api/get-districts')
-def get_districts():
-    province = request.args.get('province')
-    districts = YEMEN_GEOGRAPHY.get(province, [])
-    return jsonify(districts)
+    db.session.delete(supplier)
+    db.session.commit()
+    return jsonify({"status": "success", "message": "تم شطب الكيان نهائياً"})
