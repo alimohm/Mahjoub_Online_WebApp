@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}القيادة المركزية | محجوب أونلاين{% endblock %}</title>
     
-    <!-- الخطوط والأيقونات السيادية -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -29,6 +28,7 @@
             overflow-x: hidden;
         }
 
+        /* أنيميشن النبض للشعار */
         @keyframes logo-pulse {
             0% { filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(212, 175, 55, 0.3)); transform: scale(1); }
             50% { filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(212, 175, 55, 0.6)); transform: scale(1.05); }
@@ -123,7 +123,7 @@
             font-size: 1.2rem;
         }
 
-        .content-area { padding: 3rem; min-height: calc(100vh - 85px); }
+        .content-area { padding: 2.5rem; min-height: calc(100vh - 85px); }
 
         .alert-mahjoub {
             border-radius: 15px; border: none; border-right: 6px solid var(--mahjoub-gold);
@@ -136,6 +136,7 @@
             .sidebar-header h2, .platform-desc, .nav-link span, .chevron, .dropdown-content { display: none !important; }
             .main-wrapper { margin-right: var(--sidebar-mini); width: calc(100% - var(--sidebar-mini)); }
             .top-bar { padding: 0 1.5rem; }
+            .content-area { padding: 1.5rem; }
         }
     </style>
 </head>
@@ -154,12 +155,11 @@
                 <span>مركز المراقبة</span>
             </a>
 
-            <!-- حوكمة الموردين -->
             <div class="nav-item">
                 <div class="nav-link {% if request.endpoint in ['admin.add_supplier', 'admin.manage_suppliers'] %}active{% endif %}" onclick="toggleDropdown(this)">
                     <i class="fas fa-handshake-angle"></i>
                     <span>حوكمة الموردين</span>
-                    <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.75rem; transition: 0.4s;"></i>
+                    <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.75rem; transition: 0.4s; {% if request.endpoint in ['admin.add_supplier', 'admin.manage_suppliers'] %}transform: rotate(180deg);{% endif %}"></i>
                 </div>
                 <ul class="dropdown-content" style="{% if request.endpoint in ['admin.add_supplier', 'admin.manage_suppliers'] %}display: block;{% endif %}">
                     <li>
@@ -175,7 +175,6 @@
                 </ul>
             </div>
 
-            <!-- الهندسة المالية (سيتم تفعيل الروابط عند جاهزيتها) -->
             <div class="nav-item">
                 <div class="nav-link" onclick="toggleDropdown(this)">
                     <i class="fas fa-vault"></i>
@@ -203,7 +202,7 @@
                 </div>
                 <div>
                     <div style="font-weight: 900; color: var(--royal-purple); font-size: 1.1rem;">
-                        {{ current_user.username if current_user.is_authenticated else 'علي محجوب' }}
+                        {{ current_user.owner_name if current_user.is_authenticated and hasattr(current_user, 'owner_name') else 'علي محجوب' }}
                     </div>
                     <div style="color: #6c757d; font-size: 0.75rem; font-weight: 700;">المؤسس والمدير الأعلى</div>
                 </div>
@@ -241,6 +240,7 @@
             const chevron = element.querySelector('.chevron');
             const isOpen = content.style.display === "block";
             
+            // إغلاق القوائم الأخرى
             document.querySelectorAll('.dropdown-content').forEach(el => {
                 if (el !== content) {
                     el.style.display = 'none';
@@ -250,6 +250,7 @@
                 }
             });
 
+            // فتح أو إغلاق الحالية
             content.style.display = isOpen ? "none" : "block";
             if(chevron) {
                 chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
