@@ -43,7 +43,6 @@ def admin_dashboard():
         return redirect(url_for('admin.login'))
     
     try:
-        # جلب الإحصائيات مع حماية ضد فشل الجداول
         users_count = User.query.count() if User else 1
         suppliers_count = Supplier.query.count() if Supplier else 0
         
@@ -53,7 +52,6 @@ def admin_dashboard():
             'now': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         
-        # جلب الطلبات إن وجدت في الموديل
         try:
             from core.models.business import Order
             stats['orders_count'] = Order.query.count()
@@ -62,27 +60,97 @@ def admin_dashboard():
 
         return render_template('dashboard.html', **stats)
     except Exception as e:
-        # في حال حدوث أي خطأ فني، يتم عرض صفحة آمنة
         return render_template('dashboard.html', users_count=1, suppliers_count=0, orders_count=0, now="إيقاع النظام مستقر")
 
-# --- 4. إدارة الموردين (الكيانات المعتمدة) ---
+# --- 4. إدارة الموردين (عرض الصفحة الرئيسية) ---
 @admin_bp.route('/manage-suppliers')
 @login_required
-def manage_suppliers(): # تم توحيد الاسم ليتوافق مع url_for في القوالب
-    """ عرض قائمة الكيانات السيادية وإدارتها """
+def manage_suppliers():
     if not is_admin_sovereign():
         return redirect(url_for('admin.login'))
-    
-    try:
-        all_suppliers = Supplier.query.order_by(Supplier.id.desc()).all()
-    except:
-        all_suppliers = []
-    return render_template('manage_suppliers.html', suppliers=all_suppliers)
+    return render_template('manage_suppliers.html')
 
-# --- 5. تعميد مورد جديد ---
+# --- 5. محرك البحث السيادي (الـ API المخصص للترسانة) ---
+@admin_bp.route('/api/suppliers/search')
+@admin_api_required
+def api_suppliers_search():
+    """ محرك البحث الديناميكي الذي يغذي واجهة الترسانة """
+    query_str = request.args.get('q', '').strip()
+    province = request.args.get('province', '')
+    district = request.args.get('district', '')
+    tier = request.args.get('tier', '')
+    status = request.args.get('status', '')
+
+    # بناء الاستعلام الأساسي
+    query = Supplier.query
+
+    # إذا تم إدخال #، جلب الكل دون التقيد بنص البحث
+    if query_str and query_str != '#':
+        search_filter = or_(
+            Supplier.owner_name.contains(query_str),
+            Supplier.trade_name.contains(query_str),
+            Supplier.username.contains(query_str),
+            Supplier.phone.contains(query_str)
+        )
+        query = query.filter(search_filter)
+
+    # تطبيق الفلاتر الإضافية
+    if province: query = query.filter(Supplier.province == province)
+    if district: query = query.filter(Supplier.district == district)
+    if tier: query = query.filter(Supplier.tier == tier)
+    if status: query = query.filter(Supplier.status == status)
+
+    suppliers = query.order_by(Supplier.id.desc()).all()
+    
+    results = []
+    for s in suppliers:
+        results.append({
+            "id": s.id,
+            "owner_name": s.owner_name,
+            "trade_name": s.trade_name,
+            "username": s.username,
+            "province": s.province,
+            "district": s.district,
+            "tier": getattr(s, 'tier', 'مبتدئ'),
+            "balance_yer": float(getattr(s, 'balance_yer', 0)),
+            "balance_sar": float(getattr(s, 'balance_sar', 0)),
+            "balance_usd": float(getattr(s, 'balance_usd', 0)),
+            "status": s.status
+        })
+    
+    return jsonify(results)
+
+# --- 6. جلب تفاصيل مورد واحد (للمودال) ---
+@admin_bp.route('/api/suppliers/<int:sup_id>')
+@admin_api_required
+def api_get_supplier(sup_id):
+    s = Supplier.query.get_or_404(sup_id)
+    
+    # جلب الموظفين إذا كان الموديل يدعم العلاقة
+    staff_data = []
+    if hasattr(s, 'staff_members'):
+        for member in s.staff_members:
+            staff_data.append({"id": member.id, "name": member.name, "role": member.role})
+
+    return jsonify({
+        "id": s.id,
+        "owner_name": s.owner_name,
+        "trade_name": s.trade_name,
+        "username": s.username,
+        "province": s.province,
+        "district": s.district,
+        "tier": getattr(s, 'tier', 'مبتدئ'),
+        "balance_yer": float(getattr(s, 'balance_yer', 0)),
+        "balance_sar": float(getattr(s, 'balance_sar', 0)),
+        "balance_usd": float(getattr(s, 'balance_usd', 0)),
+        "status": s.status,
+        "staff": staff_data
+    })
+
+# --- 7. تعميد مورد جديد ---
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
-def add_supplier(): # هذا هو الـ Endpoint الذي كان يسبب BuildError في Railway
+def add_supplier():
     if not is_admin_sovereign(): 
         return redirect(url_for('admin.login'))
     
@@ -98,13 +166,11 @@ def add_supplier(): # هذا هو الـ Endpoint الذي كان يسبب Build
                 district=request.form.get('district'),
                 status='active'
             )
-            # تعيين كلمة المرور الافتراضية
             new_supplier.set_password(request.form.get('password', '123456'))
             
             db.session.add(new_supplier)
             db.session.flush() 
             
-            # نقش المعرف الخاص WAL_MAH إذا كانت الدالة موجودة في الموديل
             if hasattr(new_supplier, 'mint_sovereign_id'):
                 new_supplier.mint_sovereign_id()
                 
@@ -122,24 +188,7 @@ def add_supplier(): # هذا هو الـ Endpoint الذي كان يسبب Build
 
     return render_template('add_supplier.html')
 
-# --- 6. بروتوكولات الـ API السيادية (التحكم الفوري) ---
-
-@admin_bp.route('/api/supplier-details/<int:sup_id>')
-@admin_api_required
-def api_supplier_details(sup_id):
-    supplier = Supplier.query.get_or_404(sup_id)
-    return jsonify({
-        "id": supplier.id,
-        "owner_name": supplier.owner_name,
-        "trade_name": supplier.trade_name,
-        "phone": supplier.phone,
-        "e_wallet": getattr(supplier, 'e_wallet', f"WAL_MAH_{supplier.id}"),
-        "province": supplier.province,
-        "district": supplier.district,
-        "balance_yer": float(getattr(supplier, 'balance_yer', 0)),
-        "status": supplier.status
-    })
-
+# --- 8. التحكم في الحالة وكلمة المرور ---
 @admin_bp.route('/api/update-supplier-password/<int:sup_id>', methods=['POST'])
 @admin_api_required
 def update_supplier_password(sup_id):
@@ -157,31 +206,15 @@ def update_supplier_password(sup_id):
 @admin_api_required
 def toggle_supplier_status(sup_id):
     supplier = Supplier.query.get_or_404(sup_id)
-    data = request.get_json()
-    new_status = data.get('status')
-    
-    if new_status in ['active', 'suspended']:
-        supplier.status = new_status
-        db.session.commit()
-        return jsonify({"status": "success", "message": f"تم تحديث حالة الكيان إلى {new_status}"})
-    return jsonify({"status": "error", "message": "حالة غير صالحة"}), 400
+    # تبديل الحالة تلقائياً
+    supplier.status = 'suspended' if supplier.status == 'active' else 'active'
+    db.session.commit()
+    return jsonify({"status": "success", "new_status": supplier.status})
 
-@admin_bp.route('/api/delete-supplier/<int:sup_id>', methods=['DELETE'])
-@admin_api_required
-def delete_supplier(sup_id):
-    try:
-        supplier = Supplier.query.get_or_404(sup_id)
-        db.session.delete(supplier)
-        db.session.commit()
-        return jsonify({"status": "success", "message": "تم شطب الكيان بنجاح"})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# --- 7. إنهاء الجلسة الآمنة ---
+# --- 9. إنهاء الجلسة ---
 @admin_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash("تم إنهاء الجلسة السيادية بنجاح. النظام في وضع الاستعداد.", "info")
+    flash("تم إنهاء الجلسة السيادية بنجاح.", "info")
     return redirect(url_for('admin.login'))
