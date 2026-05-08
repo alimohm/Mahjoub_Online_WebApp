@@ -1,49 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}التحكم السيادي | {{ supplier.trade_name }}{% endblock %}
+{% block title %}مركز القيادة | {{ supplier.trade_name }}{% endblock %}
 
 {% block content %}
-<div class="sovereign-control-panel">
+<div class="sovereign-control-panel animate__animated animate__fadeIn">
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-3">
-            <a href="{{ url_for('admin.manage_suppliers') }}" class="back-link">
+            <a href="{{ url_for('admin.manage_suppliers') }}" class="back-link shadow-sm">
                 <i class="fas fa-chevron-right"></i>
             </a>
-            <h4 class="m-0 fw-bold text-white">{{ supplier.trade_name }} <span class="text-gold small fs-6">#{{ supplier.id }}</span></h4>
+            <div>
+                <h4 class="m-0 fw-bold text-white">{{ supplier.trade_name }}</h4>
+                <span class="text-gold small opacity-75">المعرف السيادي: {{ supplier.sovereign_id }}</span>
+            </div>
         </div>
         <div class="system-tag">نظام الحوكمة v3.5</div>
     </div>
 
-    <div class="row g-3 mb-5">
+    <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="mini-card" onclick="showSection('identity')">
-                <div class="mini-icon bg-identity"><i class="fas fa-fingerprint"></i></div>
+            <div class="mini-card active-border" id="card-identity" onclick="showSection('identity')">
+                <div class="mini-icon bg-identity"><i class="fas fa-id-card-alt"></i></div>
                 <div class="mini-content">
                     <h6>الهوية والنشاط</h6>
-                    <span>البيانات الرسمية</span>
+                    <span>البيانات والرتبة الرسمية</span>
                 </div>
                 <i class="fas fa-angle-left ms-auto text-muted"></i>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="mini-card active-border" onclick="showSection('finance')">
+            <div class="mini-card" id="card-finance" onclick="showSection('finance')">
                 <div class="mini-icon bg-finance"><i class="fas fa-vault"></i></div>
                 <div class="mini-content">
                     <h6>المحفظة والربط</h6>
-                    <span>الأرصدة الثلاثية</span>
+                    <span>الأرصدة (YER/SAR/USD)</span>
                 </div>
                 <i class="fas fa-angle-left ms-auto text-muted"></i>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="mini-card" onclick="showSection('geo')">
-                <div class="mini-icon bg-geo"><i class="fas fa-map-location-dot"></i></div>
+            <div class="mini-card" id="card-geo" onclick="showSection('geo')">
+                <div class="mini-icon bg-geo"><i class="fas fa-map-marked-alt"></i></div>
                 <div class="mini-content">
                     <h6>النطاق الجغرافي</h6>
-                    <span>العنوان والمخازن</span>
+                    <span>الموقع والمخازن</span>
                 </div>
                 <i class="fas fa-angle-left ms-auto text-muted"></i>
             </div>
@@ -51,59 +54,152 @@
     </div>
 
     <div class="details-viewport shadow-lg">
-        <div id="identitySection" class="section-pane animate__animated animate__fadeIn" style="display:none;">
+        
+        <div id="identitySection" class="section-pane">
+            <h5 class="text-gold mb-4 border-bottom pb-2"><i class="fas fa-fingerprint me-2"></i> تعميد الهوية الرقمية</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="small text-muted">الاسم التجاري</label>
+                    <input type="text" id="trade_name" class="form-control sovereign-input" value="{{ supplier.trade_name }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="small text-muted">اسم المالك</label>
+                    <input type="text" id="owner_name" class="form-control sovereign-input" value="{{ supplier.owner_name }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="small text-muted">رقم الهاتف</label>
+                    <input type="text" id="phone" class="form-control sovereign-input" value="{{ supplier.phone }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="small text-muted">الرتبة السيادية</label>
+                    <select id="tier" class="form-select sovereign-input">
+                        <option value="مبتدئ" {% if supplier.tier == 'مبتدئ' %}selected{% endif %}>مبتدئ</option>
+                        <option value="فضي" {% if supplier.tier == 'فضي' %}selected{% endif %}>فضي</option>
+                        <option value="ذهبي" {% if supplier.tier == 'ذهبي' %}selected{% endif %}>ذهبي</option>
+                        <option value="سيادي" {% if supplier.tier == 'سيادي' %}selected{% endif %}>سيادي 👑</option>
+                    </select>
+                </div>
             </div>
-        <div id="financeSection" class="section-pane animate__animated animate__fadeIn">
-             </div>
-        <div id="geoSection" class="section-pane animate__animated animate__fadeIn" style="display:none;">
+        </div>
+
+        <div id="financeSection" class="section-pane" style="display:none;">
+            <h5 class="text-gold mb-4 border-bottom pb-2"><i class="fas fa-coins me-2"></i> إدارة الخزينة المركزية</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="currency-box border-success">
+                        <label class="text-success fw-bold">الريال اليمني (YER)</label>
+                        <input type="number" id="balance_yer" class="form-control currency-input" value="{{ supplier.balance_yer }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="currency-box border-primary">
+                        <label class="text-primary fw-bold">الريال السعودي (SAR)</label>
+                        <input type="number" id="balance_sar" class="form-control currency-input" value="{{ supplier.balance_sar }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="currency-box border-warning">
+                        <label class="text-warning fw-bold">الدولار الأمريكي (USD)</label>
+                        <input type="number" id="balance_usd" class="form-control currency-input" value="{{ supplier.balance_usd }}">
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <div id="geoSection" class="section-pane" style="display:none;">
+            <h5 class="text-gold mb-4 border-bottom pb-2"><i class="fas fa-map-pin me-2"></i> الموقع والانتشار</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="small text-muted">المحافظة</label>
+                    <input type="text" id="province" class="form-control sovereign-input" value="{{ supplier.province }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="small text-muted">المديرية / العنوان</label>
+                    <input type="text" id="district" class="form-control sovereign-input" value="{{ supplier.district }}">
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 border-top pt-4 text-center">
+            <button onclick="saveSovereignData()" class="btn btn-royal-lg px-5 py-3 shadow-lg">
+                <i class="fas fa-shield-alt ms-2"></i> تعميد وحفظ كافة التعديلات
+            </button>
+        </div>
+
     </div>
 </div>
 
 <style>
-    /* التنسيق الرشيق والملكي */
-    .sovereign-control-panel { background: #0b0114; min-height: 100vh; padding: 25px; direction: rtl; }
+    /* تنسيقات الترسانة الملكية */
+    :root { --royal-purple: #4a148c; --gold: #ffd700; --dark-bg: #0b0114; --card-bg: #1a0b2e; }
     
-    .back-link { width: 40px; height: 40px; background: #4a148c; color: #ffd700; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: 0.3s; }
-    .back-link:hover { background: #ffd700; color: #4a148c; }
+    .sovereign-control-panel { background: var(--dark-bg); min-height: 100vh; padding: 20px; direction: rtl; font-family: 'Tajawal', sans-serif; }
+    
+    .back-link { width: 45px; height: 45px; background: var(--royal-purple); color: var(--gold); border-radius: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: 0.3s; border: 1px solid var(--gold); }
+    .back-link:hover { transform: scale(1.1); background: var(--gold); color: var(--royal-purple); }
 
-    .system-tag { background: rgba(255, 215, 0, 0.1); color: #ffd700; padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(255, 215, 0, 0.2); }
+    .system-tag { background: rgba(255, 215, 0, 0.1); color: var(--gold); padding: 5px 15px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255, 215, 0, 0.2); }
 
-    /* تصميم البطاقة المصغر */
-    .mini-card {
-        background: #1a0b2e;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-        padding: 15px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        cursor: pointer;
-        transition: 0.3s ease;
-    }
-    .mini-card:hover { transform: translateY(-3px); background: #250f42; border-color: #ffd700; }
-    .active-border { border: 1px solid #4a148c; box-shadow: 0 0 15px rgba(74, 20, 140, 0.3); }
+    /* البطاقة المصغرة */
+    .mini-card { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 18px; padding: 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .mini-card:hover { transform: translateY(-5px); border-color: var(--gold); background: #250f42; }
+    .active-border { border: 2px solid var(--gold) !important; background: #250f42; box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
 
-    .mini-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .mini-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
     .bg-identity { background: rgba(156, 39, 176, 0.2); color: #ce93d8; }
-    .bg-finance { background: rgba(255, 215, 0, 0.15); color: #ffd700; }
+    .bg-finance { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
     .bg-geo { background: rgba(3, 169, 244, 0.2); color: #81d4fa; }
 
-    .mini-content h6 { color: white; margin: 0; font-weight: bold; font-size: 14px; }
-    .mini-content span { color: #888; font-size: 11px; }
+    .mini-content h6 { color: #fff; margin: 0; font-size: 14px; font-weight: 700; }
+    .mini-content span { color: #aaa; font-size: 10px; }
 
-    /* منطقة عرض البيانات */
-    .details-viewport { background: #1a0b2e; border-radius: 25px; padding: 30px; border: 1px solid rgba(255, 255, 255, 0.03); min-height: 400px; }
-    .text-gold { color: #ffd700; }
+    /* منطقة العرض */
+    .details-viewport { background: var(--card-bg); border-radius: 25px; padding: 35px; border: 1px solid rgba(255, 255, 255, 0.03); min-height: 450px; }
+    .sovereign-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px; padding: 12px; }
+    .sovereign-input:focus { background: rgba(0,0,0,0.5); border-color: var(--gold); color: white; box-shadow: none; }
+
+    /* الخزينة */
+    .currency-box { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; border-right: 4px solid; }
+    .currency-input { background: transparent; border: none; color: white; font-size: 22px; font-weight: bold; width: 100%; text-align: center; }
+
+    .btn-royal-lg { background: var(--royal-purple); color: var(--gold); border: 2px solid var(--gold); border-radius: 15px; font-weight: bold; transition: 0.4s; }
+    .btn-royal-lg:hover { background: var(--gold); color: var(--royal-purple); transform: translateY(-3px); }
 </style>
 
 <script>
-    function showSection(id) {
+    function showSection(sectionId) {
+        // إخفاء الكل
         document.querySelectorAll('.section-pane').forEach(s => s.style.display = 'none');
-        document.getElementById(id + 'Section').style.display = 'block';
-        // تغيير استايل البطاقة النشطة
+        // إظهار المطلوب
+        document.getElementById(sectionId + 'Section').style.display = 'block';
+        // تحديث استايل البطاقة
         document.querySelectorAll('.mini-card').forEach(c => c.classList.remove('active-border'));
-        event.currentTarget.classList.add('active-border');
+        document.getElementById('card-' + sectionId).classList.add('active-border');
+    }
+
+    function saveSovereignData() {
+        const data = {
+            trade_name: document.getElementById('trade_name').value,
+            owner_name: document.getElementById('owner_name').value,
+            phone: document.getElementById('phone').value,
+            tier: document.getElementById('tier').value,
+            balance_yer: document.getElementById('balance_yer').value,
+            balance_sar: document.getElementById('balance_sar').value,
+            balance_usd: document.getElementById('balance_usd').value,
+            province: document.getElementById('province').value,
+            district: document.getElementById('district').value
+        };
+
+        fetch(`/admin/api/supplier/{{ supplier.id }}/update-sovereign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === 'success') alert('✅ تم تعميد البيانات في الترسانة بنجاح');
+            else alert('❌ فشل التعميد: ' + res.message);
+        });
     }
 </script>
 {% endblock %}
