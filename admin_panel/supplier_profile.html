@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}التحكم السيادي | {{ supplier.trade_name }}{% endblock %}
+
+{% block content %}
+<div class="sovereign-control-panel">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ url_for('admin.manage_suppliers') }}" class="back-link">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            <h4 class="m-0 fw-bold text-white">{{ supplier.trade_name }} <span class="text-gold small fs-6">#{{ supplier.id }}</span></h4>
+        </div>
+        <div class="system-tag">نظام الحوكمة v3.5</div>
+    </div>
+
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="mini-card" onclick="showSection('identity')">
+                <div class="mini-icon bg-identity"><i class="fas fa-fingerprint"></i></div>
+                <div class="mini-content">
+                    <h6>الهوية والنشاط</h6>
+                    <span>البيانات الرسمية</span>
+                </div>
+                <i class="fas fa-angle-left ms-auto text-muted"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="mini-card active-border" onclick="showSection('finance')">
+                <div class="mini-icon bg-finance"><i class="fas fa-vault"></i></div>
+                <div class="mini-content">
+                    <h6>المحفظة والربط</h6>
+                    <span>الأرصدة الثلاثية</span>
+                </div>
+                <i class="fas fa-angle-left ms-auto text-muted"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="mini-card" onclick="showSection('geo')">
+                <div class="mini-icon bg-geo"><i class="fas fa-map-location-dot"></i></div>
+                <div class="mini-content">
+                    <h6>النطاق الجغرافي</h6>
+                    <span>العنوان والمخازن</span>
+                </div>
+                <i class="fas fa-angle-left ms-auto text-muted"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="details-viewport shadow-lg">
+        <div id="identitySection" class="section-pane animate__animated animate__fadeIn" style="display:none;">
+            </div>
+        <div id="financeSection" class="section-pane animate__animated animate__fadeIn">
+             </div>
+        <div id="geoSection" class="section-pane animate__animated animate__fadeIn" style="display:none;">
+            </div>
+    </div>
+</div>
+
+<style>
+    /* التنسيق الرشيق والملكي */
+    .sovereign-control-panel { background: #0b0114; min-height: 100vh; padding: 25px; direction: rtl; }
+    
+    .back-link { width: 40px; height: 40px; background: #4a148c; color: #ffd700; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: 0.3s; }
+    .back-link:hover { background: #ffd700; color: #4a148c; }
+
+    .system-tag { background: rgba(255, 215, 0, 0.1); color: #ffd700; padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(255, 215, 0, 0.2); }
+
+    /* تصميم البطاقة المصغر */
+    .mini-card {
+        background: #1a0b2e;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        cursor: pointer;
+        transition: 0.3s ease;
+    }
+    .mini-card:hover { transform: translateY(-3px); background: #250f42; border-color: #ffd700; }
+    .active-border { border: 1px solid #4a148c; box-shadow: 0 0 15px rgba(74, 20, 140, 0.3); }
+
+    .mini-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .bg-identity { background: rgba(156, 39, 176, 0.2); color: #ce93d8; }
+    .bg-finance { background: rgba(255, 215, 0, 0.15); color: #ffd700; }
+    .bg-geo { background: rgba(3, 169, 244, 0.2); color: #81d4fa; }
+
+    .mini-content h6 { color: white; margin: 0; font-weight: bold; font-size: 14px; }
+    .mini-content span { color: #888; font-size: 11px; }
+
+    /* منطقة عرض البيانات */
+    .details-viewport { background: #1a0b2e; border-radius: 25px; padding: 30px; border: 1px solid rgba(255, 255, 255, 0.03); min-height: 400px; }
+    .text-gold { color: #ffd700; }
+</style>
+
+<script>
+    function showSection(id) {
+        document.querySelectorAll('.section-pane').forEach(s => s.style.display = 'none');
+        document.getElementById(id + 'Section').style.display = 'block';
+        // تغيير استايل البطاقة النشطة
+        document.querySelectorAll('.mini-card').forEach(c => c.classList.remove('active-border'));
+        event.currentTarget.classList.add('active-border');
+    }
+</script>
+{% endblock %}
