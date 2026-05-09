@@ -103,7 +103,6 @@
         box-shadow: 0 0 0 4px rgba(99, 44, 143, 0.15);
     }
 
-    /* تحسين شكل رفع الملفات */
     .file-upload-wrapper {
         border: 2px dashed #cbd5e1;
         border-radius: 12px;
@@ -169,7 +168,7 @@
         </div>
         <div style="text-align:left; background: rgba(255,255,255,0.15); padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);">
             <small>المعرف السيادي القادم</small><br>
-            <strong id="sovereign_id_display" style="font-size:1.4rem; color:var(--gov-gold);">SUP_MAH_963{{ next_id }}</strong>
+            <strong id="sovereign_id_display" style="font-size:1.4rem; color:var(--gov-gold);">MAH-{{ next_id }}</strong>
         </div>
     </div>
 
@@ -179,7 +178,6 @@
         </a>
     </div>
 
-    <!-- إضافة enctype لإرسال الصور -->
     <form id="sovereignForm" action="{{ url_for('admin.add_supplier') }}" method="POST" enctype="multipart/form-data">
         
         <div class="section-banner"><i class="fas fa-user-shield"></i> بيانات الهوية الرقمية والنشاط</div>
@@ -313,7 +311,7 @@
     function updateFileName(input) {
         const display = document.getElementById('file-name-display');
         if (input.files && input.files[0]) {
-            display.innerText = "تم اختيار: " + input.files[0].name;
+            display.innerText = "✅ تم اختيار: " + input.files[0].name;
             display.style.color = "var(--accent-green)";
         }
     }
@@ -355,7 +353,7 @@
     document.getElementById('sovereignForm').onsubmit = async function(e) {
         e.preventDefault();
         
-        // مزامنة القيم اليدوية
+        // مزامنة القيم اليدوية قبل الإرسال
         const actSelect = document.getElementById('activity_select');
         document.getElementById('activity_type').value = (actSelect.value === 'manual') ? document.getElementById('manual_activity').value : actSelect.value;
 
@@ -363,7 +361,7 @@
         document.getElementById('bank_name').value = (bnkSelect.value === 'manual') ? document.getElementById('manual_bank').value : bnkSelect.value;
 
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحقق والأرشفة...';
+        submitBtn.innerHTML = '<i class="fas fa-shield-alt fa-spin"></i> جاري الأرشفة السيادية...';
         submitBtn.disabled = true;
 
         try {
@@ -381,16 +379,18 @@
                     title: '✅ تم التعميد بنجاح',
                     text: result.message,
                     icon: 'success',
+                    confirmButtonText: 'موافق',
                     confirmButtonColor: '#632C8F'
                 }).then(() => window.location.href = "{{ url_for('admin.manage_suppliers') }}");
             } else {
-                throw new Error(result.message || 'فشل الاتصال بنظام محجوب');
+                throw new Error(result.message || 'فشل في عملية الأرشفة');
             }
         } catch (err) {
             Swal.fire({
-                title: 'تنبيه',
+                title: 'خطأ في النظام',
                 text: err.message,
-                icon: 'warning',
+                icon: 'error',
+                confirmButtonText: 'محاولة أخرى',
                 confirmButtonColor: '#C5A021'
             });
             submitBtn.disabled = false;
