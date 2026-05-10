@@ -8,27 +8,29 @@ from werkzeug.security import generate_password_hash
 class SupplierLogic:
     @staticmethod
     def generate_temp_password(length=5):
-        """توليد كلمة مرور عشوائية مكونة من أرقام فقط"""
+        """توليد كلمة مرور عشوائية مكونة من أرقام فقط (Security Code)"""
         return ''.join(random.choices(string.digits, k=length))
 
     @staticmethod
     def register_supplier(form_data):
-        """محرك تعميد الموردين: تشفير الهوية وحفظها في الترسانة"""
+        """محرك تعميد الموردين: إنشاء الهوية الرقمية، التشفير، والتثبيت في القاعدة"""
         try:
-            # 1. توليد المعرف السيادي SUP_
+            # 1. توليد المعرف السيادي SUP_#
             last_id = db.session.query(db.func.max(Supplier.id)).scalar() or 0
-            new_sovereign_id = f"SUP_{last_id + 1}#"
+            new_id_int = last_id + 1
+            new_sovereign_id = f"SUP_{new_id_int}#"
 
-            # 2. إنشاء الهوية المؤقتة (أرقام فقط)
+            # 2. إنشاء الهوية الرقمية (أرقام فقط للسرية)
             temp_pass = SupplierLogic.generate_temp_password(5)
-            # اسم المستخدم يكون المعرف السيادي أو رقم الهاتف (حسب رغبتك)
-            username = form_data.get('username') or f"user_{last_id + 1}"
+            
+            # اسم المستخدم: إذا لم يدخله الأدمن، يتم توليده تلقائياً بناءً على الرقم التسلسلي
+            username = form_data.get('username') or f"m_user_{new_id_int}"
 
-            # 3. إنشاء الكيان الجديد مع تشفير كلمة المرور
+            # 3. إنشاء الكيان الجديد مع تعميد البيانات وتشفير البصمة الرقمية
             new_supplier = Supplier(
                 sovereign_id=new_sovereign_id,
                 username=username,
-                password_hash=generate_password_hash(temp_pass), # تشفير سيادي
+                password_hash=generate_password_hash(temp_pass), # تشفير عالي الطاقة
                 trade_name=form_data.get('trade_name'),
                 owner_name=form_data.get('owner_name'),
                 activity_type=form_data.get('activity_type'),
@@ -42,31 +44,33 @@ class SupplierLogic:
                 status='active'
             )
 
+            # 4. التثبيت في الخزينة الرقمية
             db.session.add(new_supplier)
             db.session.commit()
             
-            # إرجاع كلمة المرور في رسالة النجاح لكي تسلمها للمورد
-            return True, f"تم التعميد! اسم المستخدم: {username} | كلمة السر المؤقتة: {temp_pass}"
+            # إرجاع بيانات الدخول في رسالة النجاح (ليتم عرضها في الواجهة)
+            return True, f"تم التعميد بنجاح! اسم المستخدم: {username} | كلمة المرور: {temp_pass}"
 
         except Exception as e:
-            db.session.rollback()
-            return False, f"فشل في التعميد: {str(e)}"
+            db.session.rollback() # التراجع في حالة وجود أي عثرة تقنية
+            return False, f"تعثر بروتوكول التعميد: {str(e)}"
 
     @staticmethod
     def get_next_id():
-        """توليد المعرف التالي لإظهاره في الواجهة"""
+        """استباق المعرف التالي لعرضه في واجهة الإدخال الملكية"""
         last_id = db.session.query(db.func.max(Supplier.id)).scalar() or 0
         return f"SUP_{last_id + 1}#"
 
     @staticmethod
     def search_suppliers(query=None, status=None):
-        """محرك البحث في الرادار السيادي"""
+        """محرك رادار الموردين: البحث والفرز الذكي"""
         s_query = Supplier.query
         if query:
             s_query = s_query.filter(
                 (Supplier.trade_name.contains(query)) | 
                 (Supplier.sovereign_id.contains(query)) |
-                (Supplier.username.contains(query))
+                (Supplier.username.contains(query)) |
+                (Supplier.phone.contains(query))
             )
         if status:
             s_query = s_query.filter_by(status=status)
