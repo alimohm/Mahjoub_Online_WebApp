@@ -1,5 +1,5 @@
-# core/extensions.py
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
-# نحن هنا نجهز كائن قاعدة البيانات ليكون متاحاً لكل النظام
 db = SQLAlchemy()
+login_manager = LoginManager()
