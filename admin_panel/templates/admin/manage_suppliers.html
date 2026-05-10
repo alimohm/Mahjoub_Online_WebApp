@@ -21,47 +21,36 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-royal border-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="small text-muted">إجمالي الموردين</div>
-                        <h3 class="fw-bold mb-0" id="stat_total">0</h3>
+                        <h3 class="fw-bold mb-0" id="stat_total">{{ stats.total }}</h3>
                     </div>
                     <i class="fas fa-store-alt fa-2x text-royal opacity-25"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-success border-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="small text-muted">الحسابات النشطة</div>
-                        <h3 class="fw-bold mb-0 text-success" id="stat_active">0</h3>
+                        <h3 class="fw-bold mb-0 text-success" id="stat_active">{{ stats.active }}</h3>
                     </div>
                     <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-warning border-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="small text-muted">الموردين السياديين</div>
-                        <h3 class="fw-bold mb-0 text-warning" id="stat_sovereign">0</h3>
+                        <h3 class="fw-bold mb-0 text-warning" id="stat_sovereign">{{ stats.sovereign }}</h3>
                     </div>
                     <i class="fas fa-crown fa-2x text-warning opacity-25"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-danger border-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="small text-muted">إجمالي الموظفين</div>
-                        <h3 class="fw-bold mb-0 text-danger" id="stat_staff">0</h3>
-                    </div>
-                    <i class="fas fa-users-cog fa-2x text-danger opacity-25"></i>
                 </div>
             </div>
         </div>
@@ -100,7 +89,7 @@
             </div>
             <div id="searchLoader" class="text-center mt-2" style="display: none;">
                 <div class="spinner-border spinner-border-sm text-royal"></div>
-                <span class="small text-royal ms-2">جاري استدعاء البيانات السيادية...</span>
+                <span class="small text-royal ms-2">جاري استدعاء البيانات من المحرك...</span>
             </div>
         </div>
     </div>
@@ -121,7 +110,31 @@
                         </tr>
                     </thead>
                     <tbody id="suppliersTableBody">
-                        </tbody>
+                        {% for sup in suppliers %}
+                        <tr class="supplier-row" onclick="window.location.href='/admin/supplier/{{sup.id}}/profile'">
+                            <td class="fw-bold text-royal">{{ sup.sovereign_id or 'SUP_' ~ sup.id ~ '#' }}</td>
+                            <td>
+                                <div class="fw-bold">{{ sup.trade_name }}</div>
+                                <div class="small text-muted">{{ sup.owner_name }}</div>
+                            </td>
+                            <td>{{ sup.province or '-' }}</td>
+                            <td><span class="badge bg-soft-royal text-royal">{{ sup.tier or 'مبتدئ' }}</span></td>
+                            <td dir="ltr">
+                                <span class="text-success small fw-bold">{{ "{:,.0f}".format(sup.balance_yer or 0) }}</span> | 
+                                <span class="text-primary small fw-bold">{{ "{:,.0f}".format(sup.balance_sar or 0) }}</span> | 
+                                <span class="text-warning small fw-bold">{{ "{:,.0f}".format(sup.balance_usd or 0) }}</span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill bg-{{ 'success' if sup.status == 'active' else 'danger' }} px-3">
+                                    {{ 'نشط' if sup.status == 'active' else 'موقف' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="/admin/supplier/{{sup.id}}/profile" class="btn btn-sm btn-royal shadow-sm">إدارة</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -132,12 +145,11 @@
     :root { --royal: #4a148c; --gold: #ffd700; }
     .sovereign-theme { font-family: 'Tajawal', sans-serif; background: #f8f9fa; }
     .sovereign-title { color: var(--royal); border-right: 6px solid var(--gold); padding-right: 15px; }
-    .btn-royal { background: var(--royal); color: var(--gold); border: 2px solid var(--gold); font-weight: bold; transition: 0.3s; }
-    .btn-royal:hover { background: #310e5d; color: #fff; transform: translateY(-2px); }
+    .btn-royal { background: var(--royal); color: var(--gold); border: 2px solid var(--gold); font-weight: bold; }
+    .btn-royal:hover { background: #310e5d; color: #fff; transform: translateY(-2px); transition: 0.3s; }
     .sovereign-input { border-radius: 8px; border: 1px solid #ddd; }
     .bg-soft-royal { background-color: rgba(74, 20, 140, 0.08); }
     .text-royal { color: var(--royal); }
-    tr.supplier-row:hover { background-color: rgba(74, 20, 140, 0.03); cursor: pointer; }
 </style>
 
 <script>
@@ -164,21 +176,17 @@
                 const tbody = document.getElementById('suppliersTableBody');
                 tbody.innerHTML = '';
                 
-                updateStats(data);
-
                 data.forEach(sup => {
-                    // التعديل هنا: توجيه الرابط لمركز القيادة السيادي الجديد
                     const profileUrl = `/admin/supplier/${sup.id}/profile`;
-                    
                     tbody.innerHTML += `
                         <tr class="supplier-row" onclick="window.location.href='${profileUrl}'">
-                            <td class="fw-bold text-royal">${sup.sovereign_id || 'SUP_'+sup.id+'#'}</td>
+                            <td class="fw-bold text-royal">${sup.sovereign_id}</td>
                             <td>
                                 <div class="fw-bold">${sup.trade_name}</div>
                                 <div class="small text-muted">${sup.owner_name}</div>
                             </td>
-                            <td>${sup.province || '-'}</td>
-                            <td><span class="badge bg-soft-royal text-royal">${sup.tier || 'مبتدئ'}</span></td>
+                            <td>${sup.province}</td>
+                            <td><span class="badge bg-soft-royal text-royal">${sup.tier}</span></td>
                             <td dir="ltr">
                                 <span class="text-success small fw-bold">${Number(sup.balance_yer).toLocaleString()}</span> | 
                                 <span class="text-primary small fw-bold">${Number(sup.balance_sar).toLocaleString()}</span> | 
@@ -189,32 +197,12 @@
                                     ${sup.status === 'active' ? 'نشط' : 'موقف'}
                                 </span>
                             </td>
-                            <td>
-                                <a href="${profileUrl}" class="btn btn-sm btn-royal shadow-sm">
-                                    إدارة <i class="fas fa-arrow-left ms-1"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    `;
+                            <td><a href="${profileUrl}" class="btn btn-sm btn-royal shadow-sm">إدارة</a></td>
+                        </tr>`;
                 });
                 loader.style.display = 'none';
             })
-            .catch(err => { 
-                console.error(err); 
-                loader.style.display = 'none'; 
-            });
+            .catch(err => { console.error(err); loader.style.display = 'none'; });
     }
-
-    function updateStats(data) {
-        document.getElementById('stat_total').innerText = data.length;
-        document.getElementById('stat_active').innerText = data.filter(s => s.status === 'active').length;
-        document.getElementById('stat_sovereign').innerText = data.filter(s => s.tier === 'سيادي').length;
-        
-        let totalStaff = 0;
-        data.forEach(s => { if(s.staff_count) totalStaff += s.staff_count; });
-        document.getElementById('stat_staff').innerText = totalStaff;
-    }
-
-    window.onload = triggerSearch;
 </script>
 {% endblock %}
