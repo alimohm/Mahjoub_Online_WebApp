@@ -1,11 +1,11 @@
 # core/__init__.py
 from flask import Flask
 from .extensions import db, login_manager 
-# استيراد محرك الهوية من المجلد الجديد لضمان تفعيله
+# استيراد محرك الهوية (Auth Loaders) لضمان التعرف على الجلسات
 from .setup import auth_loaders 
 
 def create_app():
-    # 1. تهيئة التطبيق وتحديد مسارات الواجهة
+    # 1. تهيئة التطبيق وتحديد مسارات الواجهة (الترسانة الأم)
     app = Flask(__name__, 
                 static_folder='../static', 
                 template_folder='../templates')
@@ -17,26 +17,26 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     
-    # إعدادات حماية الوصول
+    # إعدادات حماية الوصول وبوابة الدخول السيادية
     login_manager.login_view = 'admin.login'
     login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى الترسانة السيادية"
     login_manager.login_message_category = "info"
 
     with app.app_context():
-        # 4. استيراد الموديلات لضمان تعريفها قبل إنشاء الجداول
-        from .models.user import User
-        from .models.supplier import Supplier
+        # 4. استيراد الموديلات من النقطة المركزية لضمان بناء الجداول
+        # نستخدم الاستيراد من .models لضمان تفعيل ملف __init__.py هناك
+        from .models import User, Supplier, SupplierStaff
         
-        # 5. تعميد الجداول (بناء قاعدة البيانات تلقائياً)
+        # 5. تعميد الجداول (بناء أو تحديث الهيكل في Railway)
         db.create_all()
         
-        # 6. تسجيل لوحة تحكم الإدارة (Blueprint) من مسارها الصحيح
+        # 6. تسجيل لوحة تحكم الإدارة (Blueprint)
         try:
-            from admin_panel.routes import admin_bp
-            # إضافة url_prefix='/admin' لضمان عمل الروابط بشكل سليم
-            app.register_blueprint(admin_bp, url_prefix='/admin') 
+            # نستورد البلوبرنت من مجلد admin_panel مباشرة
+            from admin_panel import admin_bp
+            app.register_blueprint(admin_bp) 
             print("✅ تم تسجيل لوحة التحكم بنجاح تحت مسار /admin")
-        except ImportError as e:
+        except Exception as e:
             print(f"⚠️ خطأ في تسجيل لوحة التحكم: {e}")
 
     return app
