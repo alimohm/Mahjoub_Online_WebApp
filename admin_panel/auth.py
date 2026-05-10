@@ -1,25 +1,24 @@
-# admin_panel/auth_logic.py
-from core.models.user import User
-from flask_login import login_user
+from flask import render_template, request, flash, redirect, url_for
+from .auth_logic import AdminAuthLogic
 
-class AdminAuthLogic:
-    @staticmethod
-    def authenticate_admin(username, password):
-        """المنطق السيادي للتحقق من هوية المدير"""
-        user = User.query.filter_by(username=username).first()
+def login_view():
+    """
+    محرك العرض (View Engine):
+    هذه هي الدالة التي يستدعيها السيرفر عند زيارة رابط /admin/login
+    """
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
         
-        if not user:
-            return False, "⚠️ عذراً، هذا المستخدم غير مسجل في النظام.", None
+        # استدعاء المنطق السيادي الذي كتبته أنت في AdminAuthLogic
+        success, message, user = AdminAuthLogic.authenticate_admin(username, password)
+        
+        if success:
+            # تم الدخول بنجاح
+            return redirect(url_for('admin.dashboard'))
+        else:
+            # فشل الدخول - إظهار رسالة الخطأ السيادية
+            flash(message, 'danger')
             
-        if not user.check_password(password):
-            return False, "❌ كلمة المرور غير صحيحة، حاول مجدداً.", None
-            
-        if getattr(user, 'role', '').lower() != 'admin':
-            return False, "🚫 الوصول مرفوض: الحساب لا يملك صلاحيات إدارية.", None
-
-        if not getattr(user, 'is_active_account', True):
-            return False, "🔒 الحساب موقوف حالياً، يرجى مراجعة الدعم.", None
-            
-        # إذا اجتاز كل الاختبارات
-        login_user(user)
-        return True, "تم فتح بوابة القيادة بنجاح.", user
+    # عرض واجهة الدخول الملكية (قالب HTML)
+    return render_template('admin/login.html')
