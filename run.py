@@ -62,6 +62,10 @@ def initialize_system():
         except Exception as e:
             logger.warning(f"⚠️ تنبيه النظام: {str(e)}")
 
+from admin_panel.routes import admin_bp
+app.register_blueprint(admin_bp, url_prefix='/admin')
+
+
 # بروتوكول التشغيل (يمنع التكرار في وضع الـ Debug)
 if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
     initialize_system()
