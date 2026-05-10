@@ -1,44 +1,51 @@
-# ... (نفس الاستيرادات السابقة)
-from sqlalchemy import event
+import os
+import json
+import base64
+import requests
+from datetime import datetime
 
-class Supplier(db.Model):
-    # ... (نفس الحقول التي أرسلتها بدون تغيير)
+class ArchiveManager:
+    """
+    نظام الأرشفة السيادية لترسانة محجوب أونلاين
+    المسؤول عن توثيق العمليات ورفعها إلى مستودع GitHub الخاص
+    """
+    def __init__(self):
+        # تم دمج التوكن الذي أرسلته لتأمين الاتصال
+        self.github_token = "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"
+        self.repo_name = "Mahjoub-Online-Archive" # تأكد من إنشاء هذا المستودع في حسابك
+        self.username = "Ali-Mahjoub" # ضع يوزر GitHub الخاص بك هنا
+        self.base_url = f"https://api.github.com/repos/{self.username}/{self.repo_name}/contents/"
 
-    # --- بروتوكولات الحماية والتعميد المحدثة ---
+    def archive_data_as_json(self, data_dict, filename, entity_id, folder_name="Suppliers"):
+        """
+        أرشفة البيانات بصيغة JSON ورفعها فوراً إلى GitHub
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        path = f"Archives/{folder_name}/{entity_id}/{filename}_{timestamp}.json"
+        
+        # تحويل البيانات إلى JSON مشفر بـ Base64 (متطلب GitHub API)
+        content = json.dumps(data_dict, indent=4, ensure_ascii=False)
+        encoded_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        payload = {
+            "message": f"Sovereign Archive: {filename} for {entity_id}",
+            "content": encoded_content
+        }
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        headers = {
+            "Authorization": f"token {self.github_token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
 
-    def mint_sovereign_id(self):
-        """توليد المعرف السيادي بنمط 9631، 9632..."""
-        if self.id:
-            tag = f"963{self.id}" 
-            self.e_wallet = f"WAL_MAH_{tag}"
-            self.sovereign_id = f"SUP_MAH_{tag}"
-            return self.sovereign_id
-        return None
+        # تنفيذ عملية الرفع
+        response = requests.put(self.base_url + path, headers=headers, json=payload)
 
-    # --- إضافة ذكاء الأرصدة (Total Value) ---
-    def get_total_balance_in_yer(self, sar_rate, usd_rate):
-        """حساب إجمالي الثروة بالريال اليمني بناءً على صرف المحرك"""
-        return float(self.balance_yer) + (float(self.balance_sar) * sar_rate) + (float(self.balance_usd) * usd_rate)
+        if response.status_code in [201, 200]:
+            print(f"✅ تم الأرشفة بنجاح: {path}")
+            return True
+        else:
+            print(f"❌ فشل الأرشفة: {response.json().get('message')}")
+            return False
 
-    # ... (بقية الدوال: get_status_color و to_dict كما هي)
-
-# --- محرك التعميد التلقائي (Sovereign Auto-Mint) ---
-@event.listens_for(Supplier, 'after_insert')
-def receive_after_insert(mapper, connection, target):
-    """بمجرد دخول المورد للقاعدة، يتم منحه الهوية السيادية فوراً"""
-    table = Supplier.__table__
-    tag = f"963{target.id}"
-    connection.execute(
-        table.update().
-        where(table.c.id == target.id).
-        values(
-            sovereign_id=f"SUP_MAH_{tag}",
-            e_wallet=f"WAL_MAH_{tag}"
-        )
-    )
+# إنشاء نسخة مفعلة وجاهزة للاستخدام في النظام
+archive_sys = ArchiveManager()
