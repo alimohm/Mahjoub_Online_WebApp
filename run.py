@@ -5,11 +5,21 @@ from sqlalchemy import text
 from core import create_app, db
 from core.models.user import User
 from core.models.supplier import Supplier
+# استيراد البلوبرنت الخاص بلوحة التحكم لربطه بالمحرك الرئيسي
+from admin_panel.routes import admin_bp 
 
+# إعداد السجلات السيادية لمركز العمليات
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Mahjoub_System")
 
+# 1. تهيئة التطبيق المركزي
 app = create_app()
+
+# 2. تسجيل لوحة التحكم (Blueprint) مع بادئة المسار السيادية
+# هذا السطر هو المفتاح لحل مشكلة 404
+if not app.blueprints.get('admin'):
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    logger.info("📡 تم تفعيل مسارات لوحة التحكم تحت /admin")
 
 def patch_database():
     """تحديث هيكل الجداول ليتوافق مع التعديلات السيادية الجديدة"""
@@ -43,13 +53,13 @@ def initialize_system():
     """تهيئة النظام السيادي عند الإقلاع"""
     with app.app_context():
         try:
-            # 1. إنشاء الجداول الأساسية
+            # 1. إنشاء الجداول الأساسية التي لم تُبنى بعد
             db.create_all()
             
             # 2. إصلاح الأعمدة المفقودة (الجسر البرمجي)
             patch_database()
             
-            # 3. تأمين حساب القائد علي محجوب
+            # 3. تأمين حساب القائد علي محجوب (Admin)
             admin_username = "علي محجوب"
             admin = User.query.filter_by(username=admin_username).first()
             if not admin:
@@ -64,12 +74,12 @@ def initialize_system():
         except Exception as e:
             logger.error(f"⚠️ خطأ فادح أثناء التهيئة: {str(e)}")
 
-# ملاحظة: تسجيل البلوبرنت يتم عادة داخل create_app() لمنع التكرار، 
-# ولكن بما أنك وضعته هنا، تأكد أنه غير مسجل مرتين.
-
+# بروتوكول التشغيل (يمنع التكرار في وضع الـ Debug)
 if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
     initialize_system()
 
 if __name__ == "__main__":
+    # تحديد المنفذ الخاص بـ Railway أو المنفذ الافتراضي 5000
     port = int(os.environ.get("PORT", 5000))
+    logger.info(f"🚀 انطلاق منصة محجوب أونلاين على المنفذ: {port}")
     app.run(host='0.0.0.0', port=port, debug=True)
