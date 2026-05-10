@@ -9,7 +9,7 @@ from datetime import datetime
 # استيراد البلوبرنت والمحركات
 from . import admin_bp
 from .auth import login_view 
-from .engines.supplier_engine import get_suppliers_by_filter # استدعاء المحرك هنا
+from .engines.supplier_engine import get_suppliers_by_filter # استدعاء المحرك المفلتر
 
 # ==========================================
 # 1. بوابة الولوج (The Login Gate)
@@ -44,11 +44,11 @@ def dashboard():
 @admin_bp.route('/suppliers')
 @login_required
 def manage_suppliers():
-    """هنا نعتمد على المحرك كلياً، ولن نحتاج لتعديل هذا المسار مستقبلاً"""
-    # نطلب من المحرك آخر 10 موردين فقط للتحميل الأولي
+    """عرض الرادار: جلب آخر 10 موردين فقط لضمان سرعة الاستجابة"""
+    # نعتمد على المحرك السيادي لجلب آخر 10 موردين فقط عند التحميل
     latest_suppliers = get_suppliers_by_filter(limit=10)
     
-    # إحصائيات سريعة للواجهة
+    # إحصائيات سريعة للبطاقات العلوية
     stats = {
         'total': Supplier.query.count(),
         'active': Supplier.query.filter_by(status='active').count(),
