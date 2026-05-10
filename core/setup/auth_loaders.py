@@ -1,33 +1,37 @@
 # core/setup/auth_loaders.py
 from core.extensions import login_manager
-from core.models.user import User
-from core.models.supplier import Supplier
+# نستخدم الاستيراد داخل الدالة أو من النقطة المركزية لتجنب الدوائر المغلقة
+from core.models import User, Supplier
 
 @login_manager.user_loader
 def load_user(user_id):
     """
-    محرك استعادة الهوية (Multi-Entity Loader):
-    يقوم بالتحقق من هوية المستخدم في كل من جداول المسؤولين والموردين
+    محرك استعادة الهوية السيادي:
+    يتحقق من الهوية في ترسانة المدراء أولاً، ثم الموردين.
     """
     
-    # التأكد من أن المعرف ليس فارغاً لتجنب أخطاء التحويل
-    if user_id is None or user_id == 'None' or not str(user_id).isdigit():
+    # حماية ضد القيم الفارغة أو غير الصالحة
+    if not user_id or user_id == 'None':
         return None
     
     try:
-        # 1. البحث أولاً في جدول المستخدمين (المدراء/الأدمن) - الأولوية للقيادة
-        user = User.query.get(int(user_id))
+        uid = int(user_id)
+        
+        # 1. فحص جدول المستخدمين (القيادة المركزية)
+        user = User.query.get(uid)
         if user:
+            # إضافة وسم لتمييز نوع المستخدم برمجياً إذا احتجنا لاحقاً
+            user.is_admin_account = True 
             return user
             
-        # 2. إذا لم يتم العثور عليه، يتم البحث في جدول الموردين (Suppliers)
-        # هذا يتيح للموردين تسجيل الدخول لحساباتهم الخاصة لاحقاً
-        supplier = Supplier.query.get(int(user_id))
+        # 2. فحص جدول الموردين (القاعدة التجارية)
+        supplier = Supplier.query.get(uid)
         if supplier:
+            supplier.is_admin_account = False
             return supplier
             
     except Exception as e:
-        # في حال حدوث خطأ مفاجئ في قاعدة البيانات، يتم إرجاع None لمنع انهيار السيرفر
+        # طباعة الخطأ في سجلات Railway للتشخيص الدقيق
         print(f"⚠️ خطأ في محرك استعادة الهوية: {e}")
         return None
 
