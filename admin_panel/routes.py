@@ -10,10 +10,6 @@ from datetime import datetime
 from . import admin_bp
 from .auth import login_view 
 
-# 2. استيراد المحركات (Engines) - تأكد من صحة مسارات الملفات
-from .engines.supplier_engine import get_suppliers_by_filter
-from .engines.logistics_engine import LogisticsEngine
-
 # ==========================================
 # 1. بوابة الولوج (The Login Gate)
 # ==========================================
@@ -22,33 +18,28 @@ def login():
     return login_view()
 
 # ==========================================
-# 2. غرفة القيادة والتحكم (The Dashboard)
+# 2. غرفة القيادة (Dashboard)
 # ==========================================
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """استدعاء الرادار المركزي وعرض كافة الإحصائيات السيادية"""
+    """عرض إحصائيات النظام الأساسية فقط"""
     try:
-        # جلب إحصائيات التوزع الجغرافي من محرك اللوجستيات
-        zone_stats = LogisticsEngine.get_zone_density()
-        
         data = {
             'users_count': User.query.count(),
             'suppliers_count': Supplier.query.count(),
-            'orders_count': 0, # سيتم ربطه لاحقاً
+            'orders_count': 0, # سيتم جلبه من API قمرة لاحقاً
             
-            # رصد السيولة المالية (المبالغ الإجمالية في الترسانة)
+            # رصد السيولة في قاعدة البيانات المحلية
             'total_yer': db.session.query(db.func.sum(Supplier.balance_yer)).scalar() or 0.0,
             'total_sar': db.session.query(db.func.sum(Supplier.balance_sar)).scalar() or 0.0,
             'total_usd': db.session.query(db.func.sum(Supplier.balance_usd)).scalar() or 0.0,
             
-            'zones': zone_stats, 
             'now': datetime.now()
         }
-        # استدعاء الواجهة وحقن البيانات فيها
         return render_template('admin/dashboard.html', **data)
     except Exception as e:
-        return f"⚠️ عطل في استدعاء بيانات الداشبورد: {str(e)}"
+        return f"⚠️ خطأ في الرادار: {e}"
 
 # ==========================================
 # 3. إدارة الموردين (Suppliers)
@@ -56,8 +47,9 @@ def dashboard():
 @admin_bp.route('/suppliers')
 @login_required
 def manage_suppliers():
-    """عرض رادار الموردين مع جلب آخر 10 سجلات لضمان السرعة"""
-    latest_suppliers = get_suppliers_by_filter(limit=10)
+    """عرض الموردين المسجلين في النظام المحلي"""
+    # جلب آخر 20 مورد مباشرة من القاعدة لضمان البساطة
+    suppliers = Supplier.query.order_by(Supplier.id.desc()).limit(20).all()
     
     stats = {
         'total': Supplier.query.count(),
@@ -66,11 +58,11 @@ def manage_suppliers():
     }
     
     return render_template('admin/manage_suppliers.html', 
-                           suppliers=latest_suppliers, 
+                           suppliers=suppliers, 
                            stats=stats)
 
 # ==========================================
-# 4. بروتوكول الخروج (Logout)
+# 4. بروتوكول الخروج الآمن (Logout)
 # ==========================================
 @admin_bp.route('/logout')
 @login_required
