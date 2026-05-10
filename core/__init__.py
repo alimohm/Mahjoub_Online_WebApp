@@ -1,7 +1,7 @@
 # core/__init__.py
 from flask import Flask
 from .extensions import db, login_manager 
-# استيراد محرك الهوية (Auth Loaders) لضمان التعرف على الجلسات
+# استيراد محرك الهوية لضمان التعرف على الجلسات (الموردين والموظفين)
 from .setup import auth_loaders 
 
 def create_app():
@@ -24,15 +24,28 @@ def create_app():
 
     with app.app_context():
         # 4. استيراد الموديلات من النقطة المركزية لضمان بناء الجداول
-        # نستخدم الاستيراد من .models لضمان تفعيل ملف __init__.py هناك
         from .models import User, Supplier, SupplierStaff
         
-        # 5. تعميد الجداول (بناء أو تحديث الهيكل في Railway)
-        db.create_all()
-        
+        # 5. بروتوكول تعميد وتحديث الجداول
+        try:
+            # بناء الجداول الجديدة إذا لم تكن موجودة
+            db.create_all()
+            
+            # إصلاح يدوي للأعمدة المفقودة في PostgreSQL (حل مشكلة is_active و email)
+            # هذا الكود يضمن استقرار السيرفر حتى لو كانت قاعدة Railway قديمة
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(150)"))
+            db.session.execute(db.text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email VARCHAR(150)"))
+            db.session.execute(db.text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS identity_image VARCHAR(255)"))
+            db.session.commit()
+            
+            print("✅ تم فحص وتحديث هيكل الجداول بنجاح (is_active & identities secured)")
+        except Exception as e:
+            print(f"⚠️ تنبيه أثناء تحديث الهيكل: {e}")
+            db.session.rollback()
+
         # 6. تسجيل لوحة تحكم الإدارة (Blueprint)
         try:
-            # نستورد البلوبرنت من مجلد admin_panel مباشرة
             from admin_panel import admin_bp
             app.register_blueprint(admin_bp) 
             print("✅ تم تسجيل لوحة التحكم بنجاح تحت مسار /admin")
