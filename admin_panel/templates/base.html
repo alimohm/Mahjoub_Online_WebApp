@@ -149,7 +149,7 @@
                     <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.7rem; transition: 0.4s; {% if 'supplier' in request.endpoint %}transform: rotate(180deg);{% endif %}"></i>
                 </div>
                 <ul class="dropdown-content" style="{% if 'supplier' in request.endpoint %}display: block;{% endif %}">
-                    <li><a href="{{ url_for('admin.add_supplier') }}"><i class="fas fa-plus-circle me-1"></i> تعميد كيان جديد</a></li>
+                    <li><a href="{{ url_for('admin.manage_suppliers') }}"><i class="fas fa-plus-circle me-1"></i> تعميد كيان جديد</a></li>
                     <li><a href="{{ url_for('admin.manage_suppliers') }}"><i class="fas fa-list-check me-1"></i> الموردون المعتمدون</a></li>
                 </ul>
             </div>
