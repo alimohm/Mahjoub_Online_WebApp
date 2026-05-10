@@ -28,7 +28,7 @@ def dashboard():
         data = {
             'users_count': User.query.count(),
             'suppliers_count': Supplier.query.count(),
-            'orders_count': 0, # سيتم جلبه من API قمرة لاحقاً
+            'orders_count': 0, 
             
             # رصد السيولة في قاعدة البيانات المحلية
             'total_yer': db.session.query(db.func.sum(Supplier.balance_yer)).scalar() or 0.0,
@@ -39,6 +39,7 @@ def dashboard():
         }
         return render_template('admin/dashboard.html', **data)
     except Exception as e:
+        # إذا حدث خطأ هنا، سيظهر كرسالة نصية بدلاً من انهيار السيرفر بالكامل
         return f"⚠️ خطأ في الرادار: {e}"
 
 # ==========================================
@@ -48,18 +49,24 @@ def dashboard():
 @login_required
 def manage_suppliers():
     """عرض الموردين المسجلين في النظام المحلي"""
-    # جلب آخر 20 مورد مباشرة من القاعدة لضمان البساطة
-    suppliers = Supplier.query.order_by(Supplier.id.desc()).limit(20).all()
-    
-    stats = {
-        'total': Supplier.query.count(),
-        'active': Supplier.query.filter_by(status='active').count(),
-        'sovereign': Supplier.query.filter_by(tier='سيادي').count()
-    }
-    
-    return render_template('admin/manage_suppliers.html', 
-                           suppliers=suppliers, 
-                           stats=stats)
+    try:
+        # جلب آخر 20 مورد مباشرة
+        suppliers = Supplier.query.order_by(Supplier.id.desc()).limit(20).all()
+        
+        # --- تعديل طوارئ هنا لمنع انهيار السيرفر ---
+        # بما أن السجلات أظهرت أن "tier" غير موجود في قاعدة البيانات حالياً
+        # سنقوم بتعطيل الفلترة به حتى تقوم بتحديث الـ Model
+        stats = {
+            'total': Supplier.query.count(),
+            'active': Supplier.query.filter_by(status='active').count(),
+            'sovereign': 0  # اجعلها 0 مؤقتاً لتجاوز خطأ
+        }
+        
+        return render_template('admin/manage_suppliers.html', 
+                               suppliers=suppliers, 
+                               stats=stats)
+    except Exception as e:
+        return f"⚠️ خطأ في إدارة الموردين: {e}"
 
 # ==========================================
 # 4. بروتوكول الخروج الآمن (Logout)
