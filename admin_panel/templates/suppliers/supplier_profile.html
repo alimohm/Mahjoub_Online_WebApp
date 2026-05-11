@@ -96,6 +96,7 @@
                         <div class="row g-4">
                             {% set fields = [
                                 ('trade_name', 'الاسم التجاري', supplier.trade_name, 'fas fa-store'),
+                                ('username', 'اسم المستخدم (النظام)', supplier.username, 'fas fa-user-lock'),
                                 ('owner_name', 'اسم المالك', supplier.owner_name, 'fas fa-user-tie'),
                                 ('email', 'البريد الإلكتروني', supplier.email, 'fas fa-envelope'),
                                 ('phone', 'رقم الهاتف', supplier.phone, 'fas fa-phone'),
@@ -123,7 +124,7 @@
                     
                     <div class="mt-5 p-4 bg-light rounded text-center border-dashed">
                         <i class="fas fa-shield-alt text-purple mb-2 opacity-50 fa-2x"></i>
-                        <p class="small text-muted mb-0">نظام الرقابة اللحظي يحفظ كل حركة تقوم بها. تم تشفير سجلات الوصول لهذا الكيان.</p>
+                        <p class="small text-muted mb-0">تم حجب حقول كلمات المرور لدواعي أمنية سيادية. يتم التشفير بنظام SHA-256.</p>
                     </div>
                 </div>
             </div>
@@ -138,7 +139,8 @@
                 <h6 class="modal-title fw-bold">إلحاق موظف جديد بالكيان</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST"> <div class="modal-body">
+            <form method="POST">
+                <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">اسم الموظف الكامل</label>
                         <input type="text" name="full_name" class="form-control" required>
@@ -176,7 +178,6 @@
 </div>
 
 <script>
-    // دالة إظهار التنبيه السيادي
     function showLogicToast(success, message) {
         const toastEl = document.getElementById('saveToast');
         const msgEl = document.getElementById('toast-msg');
@@ -197,7 +198,6 @@
         toast.show();
     }
 
-    // وظيفة الحفظ التلقائي (التواصل مع المحرك عبر JSON)
     async function autoSave(inputElement) {
         const fieldName = inputElement.name;
         const fieldValue = inputElement.value;
@@ -209,13 +209,8 @@
         try {
             const response = await fetch(`{{ url_for('admin.supplier_profile', supplier_id=supplier.id) }}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    field: fieldName,
-                    value: fieldValue
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: fieldName, value: fieldValue })
             });
 
             const result = await response.json();
@@ -236,7 +231,6 @@
         if(icon) setTimeout(() => { icon.className = 'fas fa-pen fa-xs text-muted'; }, 2000);
     }
 
-    // تفعيل المستشعرات اللحظية
     document.querySelectorAll('.auto-save-input').forEach(i => {
         i.addEventListener('blur', function() { autoSave(this); });
     });
