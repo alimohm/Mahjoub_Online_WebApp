@@ -26,8 +26,8 @@ app = create_app()
 
 def initialize_database():
     """
-    بروتوكول تهيئة الترسانة الرقمية المستقرة - منصة محجوب أونلاين v3.6
-    تم إيقاف 'بروتوكول التصفير' لضمان بقاء بيانات القائد للأبد.
+    بروتوكول تهيئة الترسانة الرقمية المستقرة - منصة محجوب أونلاين v3.7
+    تم إضافة حقول full_name و phone لإصلاح أخطاء Postgres في Railway.
     """
     with app.app_context():
         try:
@@ -35,21 +35,21 @@ def initialize_database():
             print("🚀 بدء بروتوكول التحديث والتعميد - محجوب أونلاين")
             print("="*60)
             
-            # [تم إيقاف الحذف] 1. تجاوز بروتوكول التصفير (Safe Harbor Protocol)
-            # تم تعطيل DROP TABLE لضمان عدم ضياع بيانات الموردين المسجلين
-            print("🛡️ وضع الحماية نشط: لن يتم حذف أي بيانات موجودة.")
-
-            # 2. بناء الهيكل الرقمي (Schema Creation)
-            # ينشئ الجداول الجديدة فقط (مثل supplier_staff) ولا يلمس الجداول الموجودة
+            # 1. بناء الهياكل الجديدة
             db.create_all() 
             print("✅ تم فحص وبناء الهياكل الجديدة (Tables Verified).")
             
-            # 3. ترميم الأعمدة وتحديث الخزينة (Sovereign Alterations)
-            # نضمن وجود الحقول الجديدة التي أضفناها في ملفات models
+            # 2. ترميم الأعمدة المفقودة (إصلاح خطأ column users.full_name does not exist)
             with db.engine.connect() as connection:
                 alter_queries = [
+                    # حقول جدول المستخدمين (المطلوبة في السجلات)
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(150);",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20);",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'admin';",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers(id);",
+                    
+                    # حقول جدول الموردين السيادية
                     "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tier VARCHAR(50) DEFAULT 'مبتدئ';",
                     "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS mint_sovereign_id VARCHAR(100) UNIQUE;",
                     "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS balance_sar FLOAT DEFAULT 0.0;",
@@ -60,14 +60,15 @@ def initialize_database():
                         connection.execute(text(query))
                         connection.commit()
                     except Exception: 
-                        pass 
-            print("✅ تم تعميد الحقول السيادية الجديدة في قاعدة البيانات.")
+                        pass # يتخطى إذا كان العمود موجوداً بالفعل
+            print("✅ تم ترميم الأعمدة المفقودة وتحديث الخزينة (Fix Applied).")
 
-            # 4. تأمين حساب المؤسس "علي محجوب"
+            # 3. تأمين حساب المؤسس "علي محجوب"
             admin_user = User.query.filter_by(username="علي محجوب").first()
             if not admin_user:
                 new_admin = User(
                     username="علي محجوب",
+                    full_name="المهندس علي محجوب", # إضافة الاسم الكامل هنا
                     email='admin@mahjoub.online',
                     role='admin'
                 )
@@ -75,11 +76,14 @@ def initialize_database():
                 db.session.add(new_admin)
                 print("👤 تم إنشاء حساب المؤسس السيادي (علي محجوب) بنجاح.")
             else:
+                # تحديث البيانات إذا كان الحساب موجوداً
                 admin_user.role = 'admin'
-                print("ℹ️ حساب المؤسس موجود مسبقاً وتَم حفظ بياناته.")
+                if not admin_user.full_name:
+                    admin_user.full_name = "المهندس علي محجوب"
+                print("ℹ️ حساب المؤسس موجود مسبقاً وتَم تحديث بياناته.")
 
             db.session.commit()
-            print("\n🌟 المحرك يعمل الآن بنظام الاستقرار الكامل.")
+            print("\n🌟 النظام مستقر الآن، وتم استئصال أخطاء Postgres.")
             print("="*60 + "\n")
             
         except Exception as e:
