@@ -32,6 +32,7 @@
             overflow-x: hidden;
         }
 
+        /* أنيميشن الشعار السيادي */
         @keyframes logo-pulse {
             0% { filter: brightness(0) invert(1) drop-shadow(0 0 5px rgba(212, 175, 55, 0.2)); transform: scale(1); }
             50% { filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(212, 175, 55, 0.5)); transform: scale(1.05); }
@@ -198,13 +199,13 @@
             </div>
 
             <div class="nav-item">
-                <div class="nav-link {% if 'staff' in request.endpoint or 'permissions' in request.endpoint %}active{% endif %}" style="cursor:pointer" onclick="toggleDropdown(this)">
+                <div class="nav-link {% if 'staff' in request.endpoint %}active{% endif %}" style="cursor:pointer" onclick="toggleDropdown(this)">
                     <i class="fas fa-user-shield"></i>
                     <span>حوكمة الصلاحيات</span>
-                    <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.7rem; transition: 0.4s; {% if 'staff' in request.endpoint or 'permissions' in request.endpoint %}transform: rotate(180deg);{% endif %}"></i>
+                    <i class="fas fa-chevron-down chevron ms-auto" style="font-size: 0.7rem; transition: 0.4s; {% if 'staff' in request.endpoint %}transform: rotate(180deg);{% endif %}"></i>
                 </div>
-                <ul class="dropdown-content" style="{% if 'staff' in request.endpoint or 'permissions' in request.endpoint %}display: block;{% endif %}">
-                    <li><a href="#"><i class="fas fa-users-gear me-1"></i> طاقم الإدارة العليا</a></li>
+                <ul class="dropdown-content" style="{% if 'staff' in request.endpoint %}display: block;{% endif %}">
+                    <li><a href="{{ url_for('staff.manage_staff') }}"><i class="fas fa-users-gear me-1"></i> طاقم الإدارة العليا</a></li>
                     <li><a href="#"><i class="fas fa-users-viewfinder me-1"></i> طاقم الكيانات</a></li>
                     <li><a href="#"><i class="fas fa-key me-1"></i> مصفوفة الرتب</a></li>
                 </ul>
@@ -223,7 +224,7 @@
                 <div class="user-avatar"><i class="fas fa-crown"></i></div>
                 <div>
                     <div style="font-weight: 800; color: var(--royal-purple);">
-                        {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}علي محجوب{% endif %}
+                        {% if current_user.is_authenticated %}{{ current_user.full_name or current_user.username }}{% else %}علي محجوب{% endif %}
                     </div>
                     <div style="color: #6c757d; font-size: 0.7rem; font-weight: 700;">المؤسس والمدير الأعلى</div>
                 </div>
@@ -231,7 +232,7 @@
             
             <div class="admin-badge d-none d-lg-flex" style="background: #f8f9fa; padding: 8px 20px; border-radius: 12px; border: 1px solid rgba(212, 175, 55, 0.3); align-items: center; gap: 10px;">
                 <i class="fas fa-shield-halved" style="color: var(--mahjoub-gold);"></i>
-                <span style="font-weight: 800; color: var(--royal-purple); font-size: 0.8rem;">نظام الحوكمة المركزية v3.5</span>
+                <span style="font-weight: 800; color: var(--royal-purple); font-size: 0.8rem;">نظام الحوكمة المركزية v3.6</span>
             </div>
         </header>
 
@@ -258,9 +259,6 @@
             const chevron = element.querySelector('.chevron');
             const isOpen = content.style.display === "block";
             
-            // إغلاق أي قوائم أخرى مفتوحة (اختياري لزيادة التنظيم)
-            // document.querySelectorAll('.dropdown-content').forEach(el => el.style.display = 'none');
-
             content.style.display = isOpen ? "none" : "block";
             if(chevron) chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
         }
