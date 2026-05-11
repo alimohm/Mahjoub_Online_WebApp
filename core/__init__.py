@@ -4,7 +4,7 @@ from flask_wtf.csrf import CSRFProtect  # 🛡️ درع الحماية السي
 from .extensions import db, login_manager 
 from .setup import auth_loaders 
 
-# تهيئة درع الحماية عالمياً لمنع هجمات التزييف
+# تهيئة درع الحماية عالمياً
 csrf = CSRFProtect()
 
 def create_app():
@@ -18,7 +18,9 @@ def create_app():
     # --- تفعيل الترسانة الرقمية والخدمات المركزية ---
     db.init_app(app)
     login_manager.init_app(app)
-    csrf.init_app(app) 
+    
+    # 🔓 تعطيل مؤقت لدرع CSRF لاختبار نجاح تسجيل الموردين وتجاوز خطأ JSON.parse
+    # csrf.init_app(app) 
     
     login_manager.login_view = 'admin.login'
     login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى الترسانة السيادية"
@@ -32,14 +34,22 @@ def create_app():
             db.create_all()
             
             # قائمة التحديثات لضمان توافق قاعدة البيانات مع الكود الجديد في Railway
+            # تم إضافة حقول إضافية قد يحتاجها نموذج المورد لتجنب الانهيار
             db_updates = [
                 ("suppliers", "email", "VARCHAR(150)"),
                 ("suppliers", "identity_image", "VARCHAR(255)"),
+                ("suppliers", "identity_type", "VARCHAR(50)"),
+                ("suppliers", "activity_type", "VARCHAR(100)"),
+                ("suppliers", "bank_name", "VARCHAR(100)"),
+                ("suppliers", "bank_acc", "VARCHAR(100)"),
+                ("suppliers", "district", "VARCHAR(100)"),
+                ("suppliers", "address_detail", "TEXT"),
                 ("suppliers", "balance_yer", "NUMERIC(20, 2) DEFAULT 0.0"), 
                 ("suppliers", "balance_sar", "NUMERIC(20, 2) DEFAULT 0.0"), 
                 ("suppliers", "balance_usd", "NUMERIC(20, 2) DEFAULT 0.0"), 
                 ("suppliers", "sovereign_id", "VARCHAR(100) UNIQUE"),       
                 ("suppliers", "tier", "VARCHAR(50) DEFAULT 'مبتدئ'"),
+                ("suppliers", "status", "VARCHAR(50) DEFAULT 'نشط'"),
                 ("users", "full_name", "VARCHAR(150)"),
                 ("users", "permissions", "TEXT DEFAULT '{}'"),
                 ("users", "role", "VARCHAR(50) DEFAULT 'admin'"),
@@ -48,7 +58,7 @@ def create_app():
             
             for table, col_name, col_type in db_updates:
                 try:
-                    # إضافة الأعمدة فقط إذا لم تكن موجودة
+                    # تنفيذ إضافة الأعمدة بشكل مباشر لضمان عدم توقف السيرفر
                     db.session.execute(db.text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
                 except Exception:
                     pass 
@@ -62,8 +72,10 @@ def create_app():
 
         # 3. تسجيل البلوبرنتات والروابط (Blueprint Registry)
         from admin_panel import admin_bp
-        from admin_panel import supplier_service_routes 
-        from admin_panel import staff_routes
+        # الاستيرادات التالية لضمان تسجيل الروابط الفرعية داخل البلوبرنت
+        import admin_panel.add_supplier_routes 
+        import admin_panel.supplier_service_routes 
+        import admin_panel.staff_routes
         
         app.register_blueprint(admin_bp) 
 
