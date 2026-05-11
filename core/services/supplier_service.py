@@ -6,48 +6,81 @@ import logging
 # إعداد السجلات لمراقبة العمليات السيادية
 logger = logging.getLogger(__name__)
 
-def update_supplier_profile(supplier_id, data):
-    """
-    بروتوكول تحديث بيانات الكيان مع نظام تتبع (Debug) لحل مشكلة عدم الحفظ.
-    """
+def get_all_suppliers():
+    """ جلب كافة الموردين مع إحصائياتهم للوحة التحكم """
     try:
-        # 🟢 تتبع: رؤية البيانات القادمة من المتصفح في سجلات Railway
-        logger.info(f"🔍 محاولة تحديث المورد {supplier_id}. البيانات المستلمة: {data}")
+        suppliers = Supplier.query.order_by(Supplier.id.desc()).all()
+        stats = {
+            'total': len(suppliers),
+            'active': Supplier.query.filter_by(status='active').count(),
+            'sovereign': Supplier.query.filter_by(tier='سيادي').count(),
+            'total_yer': db.session.query(db.func.sum(Supplier.balance_yer)).scalar() or 0
+        }
+        return {'suppliers': suppliers, 'stats': stats}
+    except Exception as e:
+        logger.error(f"⚠️ خطأ في استرجاع قائمة الموردين: {str(e)}")
+        return {'suppliers': [], 'stats': {'total': 0, 'active': 0, 'sovereign': 0, 'total_yer': 0}}
 
-        supplier = Supplier.query.get(supplier_id)
-        if not supplier:
-            logger.warning(f"❌ الكيان {supplier_id} غير موجود في القاعدة.")
-            return False, "عذراً، لم يتم العثور على الكيان."
-
-        # تحديث الحقول مع التأكد من وجود القيمة في 'data'
-        if 'trade_name' in data:
-            supplier.trade_name = data.get('trade_name')
-        if 'owner_name' in data:
-            supplier.owner_name = data.get('owner_name')
-        if 'email' in data:
-            supplier.email = data.get('email')
-        if 'phone' in data:
-            supplier.phone = data.get('phone')
+def create_supplier(data):
+    """ محرك تعميد الموردين الجدد """
+    try:
+        new_supplier = Supplier(
+            username=data.get('username'),
+            trade_name=data.get('trade_name'),
+            owner_name=data.get('owner_name'),
+            activity_type=data.get('activity_type'),
+            identity_type=data.get('identity_type'),
+            phone=data.get('phone'),
+            email=data.get('email'),
+            province=data.get('province'),
+            district=data.get('district'),
+            status='active',
+            tier=data.get('tier', 'مبتدئ')
+        )
+        password = data.get('password') or '123456'
+        new_supplier.set_password(password)
         
-        # إضافة حقول إضافية قد تكون ناقصة في الواجهة
-        if 'province' in data:
-            supplier.province = data.get('province')
-        if 'district' in data:
-            supplier.district = data.get('district')
-
-        if 'identity_image' in data and data['identity_image']:
-            supplier.identity_image = data.get('identity_image')
-
-        # 🟢 تعميد التعديلات
+        # استخدام الدالة المعتمدة في الموديل
+        new_supplier.generate_sovereign_codes()
+        
+        db.session.add(new_supplier)
         db.session.commit()
-        
-        # تتبع بعد الحفظ للتأكد من نجاح العملية في PostgreSQL
-        logger.info(f"✅ تم الحفظ بنجاح للكيان: {supplier.trade_name}")
-        return True, "تم تحديث بيانات الكيان بنجاح."
-        
+        logger.info(f"✅ تم تعميد كيان جديد: {new_supplier.trade_name}")
+        return True, new_supplier.trade_name
     except Exception as e:
         db.session.rollback()
-        logger.error(f"⚠️ فشل تحديث بيانات المورد {supplier_id}: {str(e)}")
         return False, str(e)
 
-# بقية الدوال (get_all_suppliers, create_supplier, get_next_supplier_id) تبقى كما هي دون تغيير
+def update_supplier_profile(supplier_id, data):
+    """ بروتوكول تحديث بيانات الكيان مع نظام تتبع (Debug) """
+    try:
+        logger.info(f"🔍 محاولة تحديث المورد {supplier_id}. البيانات: {data}")
+        supplier = Supplier.query.get(supplier_id)
+        if not supplier:
+            return False, "الكيان غير موجود"
+
+        # تحديث الحقول الأساسية
+        supplier.trade_name = data.get('trade_name', supplier.trade_name)
+        supplier.owner_name = data.get('owner_name', supplier.owner_name)
+        supplier.email = data.get('email', supplier.email)
+        supplier.phone = data.get('phone', supplier.phone)
+        
+        # تحديث الموقع
+        supplier.province = data.get('province', supplier.province)
+        supplier.district = data.get('district', supplier.district)
+
+        db.session.commit()
+        logger.info(f"✅ تم الحفظ بنجاح للكيان: {supplier.trade_name}")
+        return True, "تم الحفظ بنجاح"
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"⚠️ فشل التحديث: {str(e)}")
+        return False, str(e)
+
+def get_next_supplier_id():
+    """ حساب الرقم التسلسلي القادم """
+    try:
+        last_sup = Supplier.query.order_by(Supplier.id.desc()).first()
+        return (last_sup.id + 1) if last_sup else 1
+    except Exception:
+        return 1
