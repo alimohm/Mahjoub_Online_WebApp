@@ -1,5 +1,5 @@
 # admin_panel/supplier_service_routes.py
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required
 from admin_panel import admin_bp
 from core.models.supplier import Supplier
@@ -8,27 +8,28 @@ from core.models.supplier import Supplier
 @login_required
 def supplier_profile(supplier_id):
     """
-    مسار إدارة بروفايل المورد:
-    - GET: عرض بيانات المورد الحالية في الواجهة.
-    - POST: استقبال طلبات التحديث وتعميدها عبر المحرك المستقل.
+    مسار إدارة بروفايل المورد السيادي:
+    - GET: عرض بيانات المورد وطاقم العمل.
+    - POST (AJAX): تحديث الحقول بشكل فردي (الحفظ التلقائي).
+    - POST (Form): إضافة موظفين جدد لطاقم العمل.
     """
     
-    # 1. بروتوكول التحديث (POST) القادم من AJAX
-    if request.method == 'POST':
-        # استدعاء المحرك هنا داخلياً لكسر دائرة الاستيراد (Circular Import Prevention)
-        from core.services.supplier_service import update_supplier_profile
+    # 1. بروتوكول التحديث القادم من AJAX (الحفظ التلقائي)
+    if request.method == 'POST' and request.is_json:
+        from core.services.supplier_service import update_supplier_field
         
         try:
-            # استخراج البيانات من الفورم القادم عبر الطلب
-            data = request.form.to_dict()
+            data = request.get_json()
+            field = data.get('field')
+            value = data.get('value')
             
-            # تنفيذ عملية التعميد في قاعدة البيانات
-            success, message = update_supplier_profile(supplier_id, data)
+            # تنفيذ عملية التعميد للحقل المحدد فقط لسرعة الأداء
+            success, message = update_supplier_field(supplier_id, field, value)
             
             if success:
                 return jsonify({
                     "status": "success", 
-                    "message": "تم تعميد التحديثات بنجاح في السجلات السيادية."
+                    "message": "تم تعميد التحديث بنجاح."
                 })
             else:
                 return jsonify({
@@ -39,11 +40,29 @@ def supplier_profile(supplier_id):
         except Exception as e:
             return jsonify({
                 "status": "error", 
-                "message": f"خطأ في الاتصال بالمحرك: {str(e)}"
+                "message": f"خطأ في المحرك: {str(e)}"
             }), 500
 
-    # 2. بروتوكول العرض (GET)
-    # جلب بيانات الكيان أو إظهار 404 في حال عدم الوجود
+    # 2. بروتوكول إضافة موظف جديد (من المودال)
+    if request.method == 'POST' and 'new_username' in request.form:
+        from core.services.supplier_service import add_staff_to_supplier
+        
+        staff_data = {
+            'username': request.form.get('new_username'),
+            'name': request.form.get('full_name'),
+            'password': request.form.get('new_password')
+        }
+        
+        success, message = add_staff_to_supplier(supplier_id, staff_data)
+        
+        if success:
+            flash(f"✅ {message}", "success")
+        else:
+            flash(f"⚠️ {message}", "danger")
+            
+        return redirect(url_for('admin.supplier_profile', supplier_id=supplier_id))
+
+    # 3. بروتوكول العرض (GET)
     supplier = Supplier.query.get_or_404(supplier_id)
     
     return render_template(
