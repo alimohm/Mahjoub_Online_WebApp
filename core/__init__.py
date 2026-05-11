@@ -1,6 +1,6 @@
 # core/__init__.py
 from flask import Flask
-from flask_wtf.csrf import CSRFProtect  # 🛡️ استيراد درع الحماية السيادي
+from flask_wtf.csrf import CSRFProtect  # 🛡️ درع الحماية السيادي
 from .extensions import db, login_manager 
 from .setup import auth_loaders 
 
@@ -12,28 +12,27 @@ def create_app():
                 static_folder='../static', 
                 template_folder='../templates')
     
-    # تحميل الإعدادات المركزية (تأكد من وجود SECRET_KEY في config.Config)
+    # تحميل الإعدادات المركزية
     app.config.from_object('config.Config')
     
     # --- تفعيل الترسانة الرقمية والخدمات المركزية ---
     db.init_app(app)
     login_manager.init_app(app)
-    csrf.init_app(app)  # ✅ تفعيل الحماية: هذا السطر ينهي خطأ 'csrf_token' is undefined
+    csrf.init_app(app) 
     
     login_manager.login_view = 'admin.login'
     login_manager.login_message = "يرجى تسجيل الدخول للوصول إلى الترسانة السيادية"
 
     with app.app_context():
-        # 1. استيراد الموديلات المطهّرة لضمان وعي المحرك بها
+        # 1. استيراد الموديلات لضمان وعي المحرك بها
         from .models import User, Supplier, SupplierStaff
         
         # 2. بروتوكول التحديث التلقائي للهيكل (Auto-Migration)
         try:
             db.create_all()
             
-            # قائمة التحديثات السيادية للجداول لضمان توافق Railway مع الكود الجديد
+            # قائمة التحديثات لضمان توافق قاعدة البيانات مع الكود الجديد
             db_updates = [
-                # جداول الموردين
                 ("suppliers", "email", "VARCHAR(150)"),
                 ("suppliers", "identity_image", "VARCHAR(255)"),
                 ("suppliers", "balance_yer", "NUMERIC(20, 2) DEFAULT 0.0"), 
@@ -41,7 +40,6 @@ def create_app():
                 ("suppliers", "balance_usd", "NUMERIC(20, 2) DEFAULT 0.0"), 
                 ("suppliers", "sovereign_id", "VARCHAR(100) UNIQUE"),       
                 ("suppliers", "tier", "VARCHAR(50) DEFAULT 'مبتدئ'"),
-                # جداول المستخدمين (نظام الحوكمة الجديد)
                 ("users", "full_name", "VARCHAR(150)"),
                 ("users", "permissions", "TEXT DEFAULT '{}'"),
                 ("users", "role", "VARCHAR(50) DEFAULT 'admin'"),
@@ -52,30 +50,37 @@ def create_app():
                 try:
                     db.session.execute(db.text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
                 except Exception:
-                    pass # تخطي في حال كان الحقل موجوداً مسبقاً
+                    pass 
 
             db.session.commit()
             
-            # 3. بروتوكول تثبيت الهوية السيادية للقائد
+            # --- 3. بروتوكول الترقية السيادية للقائد (حل مشكلة رفض الدخول) ---
             try:
-                boss = Supplier.query.filter_by(trade_name="علي محجوب").first()
-                if boss and not boss.sovereign_id:
-                    boss.generate_sovereign_codes() 
+                # محاولة ترقية أول حساب موجود في النظام ليكون هو الأدمن
+                commander = User.query.first()
+                if commander:
+                    commander.role = 'admin'
                     db.session.commit()
-                    print("✅ تم تعميد الهوية السيادية للقائد بنجاح.")
+                    print(f"👑 تم منح صلاحيات القيادة (Admin) للحساب: {commander.username}")
+                
+                # تعميد الهوية السيادية في جدول الموردين
+                boss_supplier = Supplier.query.filter_by(trade_name="علي محجوب").first()
+                if boss_supplier and not boss_supplier.sovereign_id:
+                    boss_supplier.generate_sovereign_codes() 
+                    db.session.commit()
+                    print("✅ تم تعميد الهوية السيادية للمورد بنجاح.")
             except Exception as e:
                 db.session.rollback()
-                print(f"⚠️ تنبيه أثناء تعميد الهوية: {e}")
+                print(f"⚠️ تنبيه أثناء الترقية السيادية: {e}")
 
             print("✅ تم استكمال الترسانة وتطهير الهيكل بنجاح.")
             
         except Exception as e:
-            print(f"⚠️ عطل سيادي في التهيئة: {e}")
+            print(f"⚠️ عطل في التهيئة: {e}")
             db.session.rollback()
 
-        # 4. تسجيل البلوبرنتات لربط الواجهات بالمحرك
+        # 4. تسجيل البلوبرنتات والروابط
         from admin_panel import admin_bp
-        # تسجيل نظام الطاقم والخدمات لضمان تفعيل الروابط السيادية
         from admin_panel import supplier_service_routes 
         from admin_panel import staff_routes
         
