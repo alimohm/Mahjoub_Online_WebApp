@@ -48,10 +48,16 @@
                         <div class="col-12">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white small border-end-0">الحالة</span>
-                                <select name="status" id="status-select" class="form-select auto-save-select fw-bold border-start-0 {% if supplier.status == 'active' %}text-success{% elif supplier.status == 'blocked' %}text-danger{% else %}text-warning{% endif %}" data-id="{{ supplier.id }}">
+                                <select name="status" id="status-select" class="form-select auto-save-select fw-bold border-start-0 
+                                    {% if supplier.status == 'active' %}text-success
+                                    {% elif supplier.status == 'pending' %}text-warning
+                                    {% elif supplier.status == 'blocked' %}text-danger
+                                    {% elif supplier.status == 'rejected' %}text-secondary{% endif %}" 
+                                    data-id="{{ supplier.id }}">
                                     <option value="active" {% if supplier.status == 'active' %}selected{% endif %}>🟢 نشط</option>
                                     <option value="pending" {% if supplier.status == 'pending' %}selected{% endif %}>🟡 معلق</option>
                                     <option value="blocked" {% if supplier.status == 'blocked' %}selected{% endif %}>🔴 محظور</option>
+                                    <option value="rejected" {% if supplier.status == 'rejected' %}selected{% endif %}>⚪ مرفوض</option>
                                 </select>
                                 <span class="input-group-text bg-white edit-icon"><i class="fas fa-pen fa-xs text-muted"></i></span>
                             </div>
@@ -162,11 +168,13 @@
             });
 
             if (response.ok) {
+                // تحديث منطق الألوان للأربع حالات برمجياً
                 if(fieldName === 'status') {
-                    inputElement.classList.remove('text-success', 'text-danger', 'text-warning');
+                    inputElement.classList.remove('text-success', 'text-danger', 'text-warning', 'text-secondary');
                     if(fieldValue === 'active') inputElement.classList.add('text-success');
                     else if(fieldValue === 'blocked') inputElement.classList.add('text-danger');
-                    else inputElement.classList.add('text-warning');
+                    else if(fieldValue === 'pending') inputElement.classList.add('text-warning');
+                    else if(fieldValue === 'rejected') inputElement.classList.add('text-secondary');
                 }
 
                 if(fieldName === 'trade_name') document.getElementById('display-trade-name').innerText = fieldValue;
