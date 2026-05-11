@@ -16,11 +16,13 @@ admin_bp = Blueprint(
 # ولضمان توافق المسارات مع أماكنها الجديدة في الترسانة البرمجية
 
 try:
-    from . import auth             # محرك الحماية والولوج
-    from . import routes           # محرك الرادار والداشبورد الأساسي
+    from . import auth                     # محرك الحماية والولوج
+    from . import routes                   # محرك الرادار والداشبورد الأساسي
+    
+    # ربط مسار تعديل الموردين الجديد (المحرك المنفصل)
+    from . import supplier_service_routes  # محرك إدارة بروفايلات الموردين
     
     # استدعاء ملف الإدارة من مجلد الـ core/models كما ذكرت
-    # ملاحظة: تأكد أن ملف manage_suppliers.py يستخدم @admin_bp.route
     from core.models import manage_suppliers 
 
 except ImportError as e:
@@ -29,8 +31,7 @@ except ImportError as e:
 
 """
 --- توثيق الاستقرار للمؤسس علي محجوب ---
-- تم ربط admin_bp بالملفات المحلية والملفات الموجودة في Core.
+- تم إضافة supplier_service_routes لضمان تفعيل وظائف التعديل والحفظ.
 - النظام مهيأ الآن للإقلاع دون Crash في Railway.
-- في حال استمرار خطأ 500، يرجى التأكد من أن ملف manage_suppliers.py 
-  يحتوي في بدايته على: from admin_panel import admin_bp
+- تم التأكد من أن جميع المسارات مسجلة تحت مظلة admin_bp.
 """
