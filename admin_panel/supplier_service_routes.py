@@ -11,8 +11,8 @@ def supplier_profile(supplier_id):
     """
     مسار إدارة بروفايل المورد السيادي:
     - GET: عرض بيانات المورد وطاقم العمل.
-    - POST (AJAX): تحديث الحقول بشكل فردي (الحفظ التلقائي) لبيانات المورد الأساسية واسم المستخدم.
-    - POST (Form): إضافة موظفين جدد لطاقم العمل للكيان.
+    - POST (AJAX): تحديث الحقول بشكل فردي (الحفظ التلقائي).
+    - POST (Form): إضافة موظفين جدد لطاقم العمل.
     """
     supplier = Supplier.query.get_or_404(supplier_id)
 
@@ -23,11 +23,11 @@ def supplier_profile(supplier_id):
             field = data.get('field')
             value = data.get('value')
             
-            # منع تغيير المعرف السيادي أو كلمة المرور عبر هذا المسار لغرض الأمان اللحظي
+            # منع تعديل كلمة المرور عبر AJAX (يجب استخدام مسار الـ Reset المخصص)
             if field == 'password':
                 return jsonify({
                     "status": "error", 
-                    "message": "تغيير كلمة المرور يتطلب بروتوكولاً أمنياً منفصلاً."
+                    "message": "تعديل كلمة المرور محظور عبر هذا البروتوكول."
                 }), 403
 
             # التأكد من وجود الحقل في كائن المورد وتحديثه
@@ -41,7 +41,7 @@ def supplier_profile(supplier_id):
             else:
                 return jsonify({
                     "status": "error", 
-                    "message": f"الحقل '{field}' غير موجود في مصفوفة بيانات المورد."
+                    "message": f"الحقل '{field}' غير معرّف في النظام."
                 }), 400
                 
         except Exception as e:
@@ -58,19 +58,18 @@ def supplier_profile(supplier_id):
             name = request.form.get('full_name')
             password = request.form.get('new_password')
             
-            # التحقق من عدم تكرار اسم المستخدم في طاقم الموردين
+            # التحقق من توفر اسم المستخدم
             existing_user = SupplierStaff.query.filter_by(username=username).first()
             if existing_user:
-                flash(f"⚠️ اسم المستخدم {username} محجوز مسبقاً في النظام.", "danger")
+                flash(f"⚠️ اسم المستخدم {username} محجوز مسبقاً.", "danger")
                 return redirect(url_for('admin.supplier_profile', supplier_id=supplier_id))
 
-            # إنشاء عضو جديد في طاقم العمل وتشفير كلمة مروره
             new_staff = SupplierStaff(
                 supplier_id=supplier_id,
                 username=username,
                 name=name
             )
-            new_staff.set_password(password) # استخدام ميثود التشفير السيادية
+            new_staff.set_password(password)
             
             db.session.add(new_staff)
             db.session.commit()
@@ -88,9 +87,33 @@ def supplier_profile(supplier_id):
         supplier=supplier
     )
 
+@admin_bp.route('/suppliers/reset-password/<int:supplier_id>', methods=['POST'])
+@login_required
+def reset_supplier_password(supplier_id):
+    """
+    بروتوكول إعادة تعيين كلمة المرور السيادية للمورد (في حال النسيان)
+    """
+    supplier = Supplier.query.get_or_404(supplier_id)
+    new_password = request.form.get('new_password')
+
+    if not new_password:
+        flash("⚠️ لم يتم استقبال كلمة مرور جديدة.", "warning")
+        return redirect(url_for('admin.supplier_profile', supplier_id=supplier_id))
+
+    try:
+        # تشفير كلمة المرور الجديدة وحفظها
+        supplier.set_password(new_password)
+        db.session.commit()
+        flash(f"✅ تم تصفير كلمة مرور الكيان {supplier.trade_name} بنجاح.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"⚠️ عطل في بروتوكول التصفير: {str(e)}", "danger")
+
+    return redirect(url_for('admin.supplier_profile', supplier_id=supplier_id))
+
 """
---- بروتوكول الحماية والرقابة ---
-1. الحماية اللحظية: تم عزل تعديل كلمات المرور عن الحفظ التلقائي لضمان عدم تمرير نصوص خام (Plain Text).
-2. الشفافية: حقل 'username' الآن قابل للتعديل لحظياً ويرتبط مباشرة بقاعدة بيانات الهوية.
-3. التشفير: جميع كلمات المرور للموظفين المضافين تخضع لنظام التشفير الخاص بـ Core Models قبل دخولها الـ Postgres.
+--- ملاحظات حوكمة النظام ---
+1. تم فصل "تصفير كلمة المرور" في مسار مستقل لضمان تطبيق دوال التشفير (Hashing) بشكل صحيح.
+2. النظام الآن يدعم الحفظ التلقائي لاسم المستخدم (Username) مع إمكانية استعادة الوصول عبر Reset Password.
+3. جميع العمليات مسجلة في قاعدة بيانات "محجوب أونلاين".
 """
