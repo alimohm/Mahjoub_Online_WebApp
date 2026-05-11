@@ -4,10 +4,13 @@ from flask_login import login_required, logout_user
 from . import admin_bp
 
 # 🛡️ استدعاء الخدمات السيادية (الترسانة التقنية)
-# ملاحظة: استدعاء دالة التعديل supplier_profile يتم عبر الملف المنفصل supplier_service_routes.py
 from core.services.supplier_service import get_all_suppliers, create_supplier, get_next_supplier_id
 from core.services.stats_service import get_admin_dashboard_stats
 from .auth import login_view 
+
+# 🔗 ربط المسارات المنفصلة (نظام الموردين المتطور v3.6)
+# استدعاء الملف لضمان تسجيل مسارات الـ profile والحفظ التلقائي داخل الـ admin_bp
+from . import supplier_service_routes
 
 # ==========================================
 # 1. بوابة الولوج (The Login Gate)
@@ -76,7 +79,7 @@ def add_supplier():
         
         return jsonify({"status": "error", "message": result}), 500
 
-    # في حالة العرض: جلب الرقم التسلسلي القادم تلقائياً
+    # في حالة العرض: جلب الرقم التسلسلي القادم تلقائياً لتركيبه في المعرفات
     next_id = get_next_supplier_id()
     return render_template('admin/add_supplier.html', next_id=next_id)
 
@@ -92,8 +95,8 @@ def logout():
     return redirect(url_for('admin.login'))
 
 """
---- توثيق الاستقرار (القائد علي محجوب) ---
-- تم فصل مسار 'supplier_profile' ليكون في 'supplier_service_routes.py'.
-- تم ربط كافة المسارات بالخدمات (Services) لضمان Clean Architecture.
-- النظام جاهز للنشر (Deployment) على Railway بدون تداخلات.
+--- توثيق الاستقرار والربط (القائد علي محجوب) ---
+1. تم إضافة سطر 'from . import supplier_service_routes' لضمان تفعيل الحفظ التلقائي.
+2. الحفاظ على خفة الملف عبر توزيع المهام على الخدمات (Services).
+3. معالجة الإحصائيات لتشمل العملات الثلاث (YER/SAR/USD) لضمان دقة الرادار.
 """
