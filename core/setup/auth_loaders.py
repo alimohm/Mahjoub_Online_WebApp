@@ -1,7 +1,8 @@
 # core/setup/auth_loaders.py
 from core.extensions import login_manager
-# نستخدم الاستيراد داخل الدالة أو من النقطة المركزية لتجنب الدوائر المغلقة
-from core.models import User, Supplier
+import logging
+
+logger = logging.getLogger(__name__)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -10,17 +11,20 @@ def load_user(user_id):
     يتحقق من الهوية في ترسانة المدراء أولاً، ثم الموردين.
     """
     
-    # حماية ضد القيم الفارغة أو غير الصالحة
     if not user_id or user_id == 'None':
         return None
+    
+    # استيراد محلي لتجنب الدوائر المغلقة (Circular Import)
+    from core.models.user import User
+    from core.models.supplier import Supplier
     
     try:
         uid = int(user_id)
         
         # 1. فحص جدول المستخدمين (القيادة المركزية)
+        # ملاحظة: إذا استمر الخطأ هنا، فهذا يؤكد ضرورة تشغيل init_db.py فوراً
         user = User.query.get(uid)
         if user:
-            # إضافة وسم لتمييز نوع المستخدم برمجياً إذا احتجنا لاحقاً
             user.is_admin_account = True 
             return user
             
@@ -31,8 +35,8 @@ def load_user(user_id):
             return supplier
             
     except Exception as e:
-        # طباعة الخطأ في سجلات Railway للتشخيص الدقيق
-        print(f"⚠️ خطأ في محرك استعادة الهوية: {e}")
+        # تسجيل الخطأ في Railway للتشخيص
+        logger.error(f"⚠️ عطل في رادار الهوية: {str(e)}")
         return None
 
     return None
