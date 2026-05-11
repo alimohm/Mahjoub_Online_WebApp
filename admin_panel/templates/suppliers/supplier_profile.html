@@ -94,12 +94,25 @@
                 <div class="card-body">
                     <form id="inlineEditForm">
                         <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold text-muted">اسم المستخدم (الدخول للنظام)</label>
+                                <div class="input-group input-group-edit shadow-sm">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-user-lock text-purple-light"></i></span>
+                                    <input type="text" name="username" class="form-control border-start-0 border-end-0 auto-save-input fw-bold text-purple" value="{{ supplier.username }}" placeholder="اسم المستخدم">
+                                    <button class="btn btn-outline-danger border-start-0 px-3 fw-bold small" type="button" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                        <i class="fas fa-key me-1"></i> إعادة تعيين كلمة المرور
+                                    </button>
+                                </div>
+                                <div class="form-text mt-1 text-muted small" style="font-size: 10px;">
+                                    * تغيير اسم المستخدم يتم لحظياً. لإعادة تعيين كلمة المرور، استخدم الزر الأحمر.
+                                </div>
+                            </div>
+
                             {% set fields = [
-                                ('trade_name', 'الاسم التجاري', supplier.trade_name, 'fas fa-store'),
-                                ('username', 'اسم المستخدم (النظام)', supplier.username, 'fas fa-user-lock'),
-                                ('owner_name', 'اسم المالك', supplier.owner_name, 'fas fa-user-tie'),
+                                ('trade_name', 'الاسم التجاري للكيان', supplier.trade_name, 'fas fa-store'),
+                                ('owner_name', 'اسم المالك المعتمد', supplier.owner_name, 'fas fa-user-tie'),
                                 ('email', 'البريد الإلكتروني', supplier.email, 'fas fa-envelope'),
-                                ('phone', 'رقم الهاتف', supplier.phone, 'fas fa-phone'),
+                                ('phone', 'رقم الهاتف / التواصل', supplier.phone, 'fas fa-phone'),
                                 ('province', 'المحافظة', supplier.province, 'fas fa-map-marker-alt'),
                                 ('district', 'المديرية', supplier.district, 'fas fa-location-arrow')
                             ] %}
@@ -124,7 +137,7 @@
                     
                     <div class="mt-5 p-4 bg-light rounded text-center border-dashed">
                         <i class="fas fa-shield-alt text-purple mb-2 opacity-50 fa-2x"></i>
-                        <p class="small text-muted mb-0">تم حجب حقول كلمات المرور لدواعي أمنية سيادية. يتم التشفير بنظام SHA-256.</p>
+                        <p class="small text-muted mb-0">نظام الرقابة السحابي يحجب كلمات المرور المشفرة. التغيير يخضع لبروتوكول التحقق الثنائي.</p>
                     </div>
                 </div>
             </div>
@@ -135,28 +148,51 @@
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-purple text-white">
+            <div class="modal-header bg-purple text-white border-0">
                 <h6 class="modal-title fw-bold">إلحاق موظف جديد بالكيان</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
-                <div class="modal-body">
+                <div class="modal-body py-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">اسم الموظف الكامل</label>
-                        <input type="text" name="full_name" class="form-control" required>
+                        <input type="text" name="full_name" class="form-control" required placeholder="مثال: أحمد محمد علي">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">اسم المستخدم (الدخول)</label>
-                        <input type="text" name="new_username" class="form-control" required>
+                        <label class="form-label small fw-bold">اسم المستخدم (للدخول)</label>
+                        <input type="text" name="new_username" class="form-control" required placeholder="user123">
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">كلمة المرور السيادية</label>
-                        <input type="password" name="new_password" class="form-control" required>
+                        <input type="password" name="new_password" class="form-control" required placeholder="••••••••">
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-purple btn-sm">تعميد الموظف</button>
+                    <button type="submit" class="btn btn-purple btn-sm px-4">تعميد الموظف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0">
+                <h6 class="modal-title fw-bold"><i class="fas fa-lock-open me-2"></i>تصفير كلمة المرور</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('admin.reset_supplier_password', supplier_id=supplier.id) }}" method="POST">
+                <div class="modal-body py-4">
+                    <p class="text-center small text-muted mb-4">أدخل كلمة المرور الجديدة للكيان. سيتم تشفيرها فوراً.</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-danger">كلمة المرور الجديدة</label>
+                        <input type="password" name="new_password" class="form-control border-danger" required placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold">تحديث وتعميد</button>
                 </div>
             </form>
         </div>
@@ -182,27 +218,22 @@
         const toastEl = document.getElementById('saveToast');
         const msgEl = document.getElementById('toast-msg');
         const iconEl = document.getElementById('toast-icon');
-        
         msgEl.innerText = message;
         if (success) {
             iconEl.innerHTML = '<i class="fas fa-check-circle fa-2x text-success"></i>';
-            toastEl.classList.remove('bg-danger');
-            toastEl.classList.add('bg-dark');
+            toastEl.classList.replace('bg-danger', 'bg-dark');
         } else {
             iconEl.innerHTML = '<i class="fas fa-times-circle fa-2x text-danger"></i>';
-            toastEl.classList.remove('bg-dark');
-            toastEl.classList.add('bg-danger');
+            toastEl.classList.replace('bg-dark', 'bg-danger');
         }
-        
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
+        new bootstrap.Toast(toastEl).show();
     }
 
     async function autoSave(inputElement) {
         const fieldName = inputElement.name;
         const fieldValue = inputElement.value;
-        const parent = inputElement.closest('.input-group') || inputElement.parentElement;
-        const icon = parent.querySelector('.edit-icon i') || null;
+        const parent = inputElement.closest('.input-group');
+        const icon = parent.querySelector('.edit-icon i');
         
         if(icon) icon.className = 'fas fa-sync fa-spin text-warning';
 
@@ -212,29 +243,25 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ field: fieldName, value: fieldValue })
             });
-
             const result = await response.json();
-
             if (response.ok && result.status === 'success') {
                 if(fieldName === 'trade_name') document.getElementById('display-trade-name').innerText = fieldValue;
                 showLogicToast(true, result.message);
                 if(icon) icon.className = 'fas fa-check text-success';
             } else {
-                showLogicToast(false, result.message || "رفض الكيان تحديث البيانات.");
+                showLogicToast(false, result.message);
                 if(icon) icon.className = 'fas fa-times text-danger';
             }
         } catch (error) {
-            showLogicToast(false, "انقطع اتصال الرادار بالسيرفر.");
+            showLogicToast(false, "انقطع اتصال الرادار.");
             if(icon) icon.className = 'fas fa-exclamation-triangle text-danger';
         }
-        
         if(icon) setTimeout(() => { icon.className = 'fas fa-pen fa-xs text-muted'; }, 2000);
     }
 
     document.querySelectorAll('.auto-save-input').forEach(i => {
         i.addEventListener('blur', function() { autoSave(this); });
     });
-    
     document.querySelectorAll('.auto-save-select').forEach(s => {
         s.addEventListener('change', function() { autoSave(this); });
     });
@@ -246,9 +273,12 @@
     .bg-purple { background-color: var(--royal-purple); }
     .btn-purple { background: var(--royal-purple); color: white; border: none; }
     .btn-gold { background: var(--gold); color: white; border: none; }
-    .input-group-edit:focus-within { transform: scale(1.02); transition: 0.3s; }
+    .btn-outline-purple { border-color: var(--royal-purple); color: var(--royal-purple); }
+    .btn-outline-purple:hover { background: var(--royal-purple); color: white; }
+    .input-group-edit:focus-within { transform: scale(1.01); transition: 0.2s; z-index: 10; }
     .border-dashed { border: 2px dashed #dee2e6; }
     .toast { border-radius: 15px; border: 1px solid var(--gold) !important; }
     .text-gold { color: var(--gold); }
+    .avatar-xs { display: flex; align-items: center; justify-content: center; font-weight: bold; }
 </style>
 {% endblock %}
