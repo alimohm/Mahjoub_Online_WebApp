@@ -366,10 +366,17 @@
 
         try {
             const formData = new FormData(this);
+            // تحويل الـ FormData إلى JSON لضمان التوافق مع دالة الـ routes
+            const plainFormData = Object.fromEntries(formData.entries());
+            const formDataJsonString = JSON.stringify(plainFormData);
+
             const response = await fetch(this.action, { 
                 method: 'POST', 
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                body: formDataJsonString,
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json' // تحديد أننا نرسل JSON لحل خطأ 415
+                }
             });
             
             const result = await response.json();
