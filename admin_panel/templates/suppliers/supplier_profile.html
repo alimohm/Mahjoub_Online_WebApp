@@ -42,7 +42,6 @@
                                     <option value="احترافي" {% if supplier.tier == 'احترافي' %}selected{% endif %}>🥈 احترافي</option>
                                     <option value="سيادي" {% if supplier.tier == 'سيادي' %}selected{% endif %}>👑 سيادي</option>
                                 </select>
-                                <span class="input-group-text bg-white edit-icon"><i class="fas fa-pen fa-xs text-muted"></i></span>
                             </div>
                         </div>
                         <div class="col-12">
@@ -59,26 +58,32 @@
                                     <option value="blocked" {% if supplier.status == 'blocked' %}selected{% endif %}>🔴 محظور</option>
                                     <option value="rejected" {% if supplier.status == 'rejected' %}selected{% endif %}>⚪ مرفوض</option>
                                 </select>
-                                <span class="input-group-text bg-white edit-icon"><i class="fas fa-pen fa-xs text-muted"></i></span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0 p-4">
-                <h6 class="fw-bold mb-3 text-purple small"><i class="fas fa-vault me-2"></i>الأرصدة السيادية</h6>
-                <div class="balance-item mb-2 p-2 bg-light rounded border-start border-4 border-primary shadow-sm d-flex justify-content-between">
-                    <small class="text-muted">YER</small>
-                    <span class="fw-bold small">{{ "{:,.2f}".format(supplier.balance_yer or 0) }}</span>
+            <div class="card shadow-sm border-0 p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-purple small mb-0"><i class="fas fa-users-cog me-2"></i>طاقم الكيان</h6>
+                    <button class="btn btn-xs btn-gold rounded-pill px-2 py-0 small" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-plus fa-xs"></i> إضافة
+                    </button>
                 </div>
-                <div class="balance-item mb-2 p-2 bg-light rounded border-start border-4 border-success shadow-sm d-flex justify-content-between">
-                    <small class="text-muted">SAR</small>
-                    <span class="fw-bold small">{{ "{:,.2f}".format(supplier.balance_sar or 0) }}</span>
-                </div>
-                <div class="balance-item p-2 bg-light rounded border-start border-4 border-info shadow-sm d-flex justify-content-between">
-                    <small class="text-muted">USD</small>
-                    <span class="fw-bold small text-dark">{{ "{:,.2f}".format(supplier.balance_usd or 0) }}</span>
+                <div id="users-list">
+                    {% for user in supplier.users %}
+                    <div class="user-item d-flex align-items-center p-2 border-bottom">
+                        <div class="avatar-xs bg-purple text-white rounded-circle text-center me-2" style="width: 30px; height: 30px; line-height: 30px; font-size: 10px;">
+                            {{ user.username[:2]|upper }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="small fw-bold">{{ user.username }}</div>
+                            <div class="text-muted" style="font-size: 9px;">{{ user.role or 'موظف' }}</div>
+                        </div>
+                        <i class="fas fa-circle text-success" style="font-size: 7px;"></i>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -88,7 +93,6 @@
                 <div class="card-header bg-white py-3 border-0">
                     <h5 class="fw-bold mb-0 text-purple">
                         <i class="fas fa-fingerprint me-2"></i>حوكمة البيانات السحابية
-                        <small class="text-muted fw-normal d-block mt-1" style="font-size: 11px;">سيتم الحفظ التلقائي فور الخروج من الحقل.</small>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -96,7 +100,6 @@
                         <div class="row g-4">
                             {% set fields = [
                                 ('trade_name', 'الاسم التجاري', supplier.trade_name, 'fas fa-store'),
-                                ('username', 'اسم المستخدم', supplier.username, 'fas fa-user-circle'),
                                 ('owner_name', 'اسم المالك', supplier.owner_name, 'fas fa-user-tie'),
                                 ('email', 'البريد الإلكتروني', supplier.email, 'fas fa-envelope'),
                                 ('phone', 'رقم الهاتف', supplier.phone, 'fas fa-phone'),
@@ -132,24 +135,68 @@
     </div>
 </div>
 
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-    <div id="saveToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body d-flex align-items-center">
-                <div id="toast-icon" class="me-2 text-success">
-                    <i class="fas fa-check-circle fa-lg"></i>
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-purple text-white">
+                <h6 class="modal-title fw-bold">إلحاق موظف جديد بالكيان</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">اسم المستخدم</label>
+                        <input type="text" name="new_username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">كلمة المرور</label>
+                        <input type="password" name="new_password" class="form-control" required>
+                    </div>
                 </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-purple btn-sm">تعميد الموظف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed top-50 start-50 translate-middle" style="z-index: 2000">
+    <div id="saveToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center p-3 text-center w-100 justify-content-center">
+                <div id="toast-icon" class="me-3">
+                    </div>
                 <div>
-                    <strong class="d-block text-gold small">محرك محجوب أونلاين</strong>
-                    <span id="toast-msg" class="small">تم تعميد البيانات في الترسانة.</span>
+                    <strong class="d-block text-gold mb-1">نظام محجوب أونلاين</strong>
+                    <span id="toast-msg">جاري المعالجة...</span>
                 </div>
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     </div>
 </div>
 
 <script>
+    // دالة إظهار التنبيه المنطقي
+    function showLogicToast(success, message) {
+        const toastEl = document.getElementById('saveToast');
+        const msgEl = document.getElementById('toast-msg');
+        const iconEl = document.getElementById('toast-icon');
+        
+        msgEl.innerText = message;
+        if (success) {
+            iconEl.innerHTML = '<i class="fas fa-check-circle fa-2x text-success animate__animated animate__bounceIn"></i>';
+            toastEl.classList.replace('bg-danger', 'bg-dark');
+        } else {
+            iconEl.innerHTML = '<i class="fas fa-times-circle fa-2x text-danger animate__animated animate__shakeX"></i>';
+            toastEl.classList.replace('bg-dark', 'bg-danger');
+        }
+        
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
     async function autoSave(inputElement) {
         const fieldName = inputElement.name;
         const fieldValue = inputElement.value;
@@ -168,30 +215,22 @@
             });
 
             if (response.ok) {
-                // تحديث منطق الألوان للأربع حالات برمجياً
-                if(fieldName === 'status') {
-                    inputElement.classList.remove('text-success', 'text-danger', 'text-warning', 'text-secondary');
-                    if(fieldValue === 'active') inputElement.classList.add('text-success');
-                    else if(fieldValue === 'blocked') inputElement.classList.add('text-danger');
-                    else if(fieldValue === 'pending') inputElement.classList.add('text-warning');
-                    else if(fieldValue === 'rejected') inputElement.classList.add('text-secondary');
-                }
-
                 if(fieldName === 'trade_name') document.getElementById('display-trade-name').innerText = fieldValue;
-
-                document.getElementById('toast-msg').innerText = `تم تعميد "${fieldName}" بنجاح.`;
-                new bootstrap.Toast(document.getElementById('saveToast')).show();
+                
+                showLogicToast(true, `تم تحديث ${fieldName} بنجاح في قاعدة البيانات.`);
                 icon.className = 'fas fa-check text-success';
             } else {
+                showLogicToast(false, "تعذر تعديل البيانات.. الكيان رفض المزامنة.");
                 icon.className = 'fas fa-times text-danger';
             }
         } catch (error) {
+            showLogicToast(false, "تعذر الوصول للسيرفر.. افحص اتصال الرادار.");
             icon.className = 'fas fa-exclamation-triangle text-danger';
         }
-
         setTimeout(() => { icon.className = 'fas fa-pen fa-xs text-muted'; }, 2000);
     }
 
+    // تفعيل الحفظ التلقائي
     document.querySelectorAll('.auto-save-input').forEach(i => i.addEventListener('blur', function() { autoSave(this); }));
     document.querySelectorAll('.auto-save-select').forEach(s => s.addEventListener('change', function() { autoSave(this); }));
 </script>
@@ -199,13 +238,22 @@
 <style>
     :root { --royal-purple: #4a148c; --gold: #c5a02a; --purple-light: #7b1fa2; }
     .text-purple { color: var(--royal-purple); }
+    .bg-purple { background-color: var(--royal-purple); }
+    .btn-purple { background: var(--royal-purple); color: white; border: none; }
+    .btn-purple:hover { background: var(--purple-light); color: white; }
     .text-gold { color: var(--gold); }
+    .btn-gold { background: var(--gold); color: white; border: none; }
     .btn-outline-purple { color: var(--royal-purple); border-color: var(--royal-purple); }
     .btn-outline-purple:hover { background: var(--royal-purple); color: white; }
-    .input-group-edit input:focus { box-shadow: none; border-color: #eee; }
-    .input-group-edit:focus-within { transform: translateY(-2px); transition: 0.3s; }
+    .input-group-edit:focus-within { transform: scale(1.02); transition: 0.3s; }
     .border-dashed { border: 2px dashed #dee2e6; }
     .edit-icon { border-left: 0 !important; cursor: pointer; font-size: 0.7rem; }
-    .form-select:focus { box-shadow: none; border-color: #dee2e6; }
+    
+    /* جعل التنبيه في المنتصف وبشكل ملكي */
+    .toast-container { pointer-events: none; }
+    .toast { pointer-events: auto; min-width: 300px; border-radius: 15px; }
+    
+    .user-item:hover { background: #f8f9fa; cursor: default; }
+    .btn-xs { padding: 0.2rem 0.4rem; font-size: 0.7rem; }
 </style>
 {% endblock %}
