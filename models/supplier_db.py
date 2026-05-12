@@ -1,14 +1,13 @@
-from flask_sqlalchemy import SQLAlchemy
+# استيراد الكائن db الموحد من ملف المسؤولين لضمان وحدة قاعدة البيانات
+from models.admin_db import db 
 from datetime import datetime
 
-# نستخدم الكائن db المعرف في الملف الأساسي أو نعرفه هنا إذا كان منفصلاً
-db = SQLAlchemy()
-
 class Supplier(db.Model):
+    """جدول بيانات الموردين في منظومة محجوب أونلاين"""
     __tablename__ = 'suppliers'
     
     id = db.Column(db.Integer, primary_key=True)
-    sovereign_id = db.Column(db.String(50), unique=True) # المعرف السيادي
+    sovereign_id = db.Column(db.String(50), unique=True) # المعرف السيادي الفريد
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(100))
