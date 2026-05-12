@@ -29,6 +29,8 @@ db.init_app(app)
 # تسجيل البوابات ببادئات واضحة (Prefixes)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(admin_bp, url_prefix='/admin')
+from apps.add_supplier.routes import add_supplier_bp
+app.register_blueprint(add_supplier_bp)
 
 @app.route('/')
 def root():
