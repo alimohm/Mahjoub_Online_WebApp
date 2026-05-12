@@ -92,7 +92,6 @@
 
         .content-area { padding: 2rem; flex-grow: 1; }
 
-        /* ستايل زر الخروج */
         .logout-btn {
             color: #ff4d4d;
             font-weight: 700;
@@ -117,7 +116,8 @@
                 <span>مركز المراقبة</span>
             </a>
 
-            <a href="{{ url_for('add_supplier.add_supplier') }}" class="nav-link {% if 'add_supplier' in request.endpoint %}active{% endif %}">
+            <!-- التعديل هنا: استخدام save_supplier بدلاً من add_supplier بناءً على الـ Logs -->
+            <a href="{{ url_for('add_supplier.save_supplier') }}" class="nav-link {% if 'add_supplier' in request.endpoint %}active{% endif %}">
                 <i class="fas fa-truck-ramp-box"></i>
                 <span>إضافة مورد جديد</span>
             </a>
