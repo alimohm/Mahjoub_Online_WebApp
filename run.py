@@ -1,24 +1,21 @@
 from flask import Flask
 from core.extensions import db, login_manager
-from core.setup.initializer import initialize_sovereign_system
 import os
 
 def create_app():
     app = Flask(__name__)
+    # إعدادات قاعدة البيانات
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+    app.config['SECRET_KEY'] = 'MAHJOUB_2026_SOVEREIGN'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # تحميل الإعدادات من ملف config
-    app.config.from_object('config.Config')
-
-    # تهيئة الإضافات
     db.init_app(app)
     login_manager.init_app(app)
 
-    # 🚀 تفعيل محرك الهيكلة التلقائية
-    initialize_sovereign_system(app)
-
-    # تسجيل البلوبرنتات (ستقوم بتفعيلها تدريجياً)
-    # from apps.supplier_app.routes import supplier_bp
-    # app.register_blueprint(supplier_bp)
+    # استدعاء محرك التأسيس داخل سياق التطبيق
+    with app.app_context():
+        from core.setup.initializer import initialize_sovereign_system
+        initialize_sovereign_system(app)
 
     return app
 
