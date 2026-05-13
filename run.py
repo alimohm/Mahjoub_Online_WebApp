@@ -21,20 +21,23 @@ def create_app():
 
     # تسجيل البوابات الرقمية (Blueprints)
     from apps.auth_portal.routes import auth_bp
-    from apps.admin_dashboard.routes import admin_bp
-    # التصحيح هنا: استيراد الاسم الجديد admin_suppliers بدلاً من add_supplier_bp
-    from apps.add_supplier.routes import admin_suppliers 
+    
+    # التصحيح الحاسم: تأكد أن اسم الملف والمجلد صحيح
+    try:
+        from apps.admin_dashboard.routes import admin_bp
+        app.register_blueprint(admin_bp, url_prefix='/admin')
+    except ImportError:
+        # حل احتياطي في حال كان الـ Blueprint داخل المجلد يسمى admin_suppliers
+        from apps.admin_dashboard.routes import admin_suppliers as admin_bp
+        app.register_blueprint(admin_bp, url_prefix='/admin')
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(admin_bp, url_prefix='/admin')
-    # التصحيح هنا: تسجيل الـ Blueprint بالاسم الجديد
-    app.register_blueprint(admin_suppliers, url_prefix='/admin')
 
     with app.app_context():
         try:
             db.create_all()
             
-            # --- زراعة مستخدم المالك (علي محجوب) ---
+            # زراعة مستخدم المالك (علي محجوب)
             owner = AdminUser.query.filter_by(username='ali_mahjoub').first()
             if not owner:
                 new_admin = AdminUser(
@@ -42,19 +45,23 @@ def create_app():
                     full_name='علي محجوب',
                     role='founder'
                 )
-                new_admin.set_password('123') # تشفير كلمة المرور 123
+                new_admin.set_password('123') 
                 db.session.add(new_admin)
                 db.session.commit()
                 print("👑 تم زراعة مستخدم المالك 'علي محجوب' بنجاح.")
             else:
-                print("✅ مستخدم المالك موجود مسبقاً في المنظومة.")
+                print("✅ مستخدم المالك موجود مسبقاً.")
                 
         except Exception as e:
             print(f"⚠️ خطأ أثناء إعداد البيانات: {e}")
 
     @app.route('/')
     def root():
-        return redirect(url_for('auth.login'))
+        # تأكد أن اسم الـ Blueprint هو 'auth' وليس 'auth_bp' في ملف الـ routes الخاص به
+        try:
+            return redirect(url_for('auth.login'))
+        except:
+            return redirect('/auth/login')
 
     return app
 
