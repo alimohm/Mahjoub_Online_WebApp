@@ -3,8 +3,10 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 from models.supplier_db import db, Supplier  
 from datetime import datetime
 from functools import wraps
+import logging
 
 # تعريف الـ Blueprint المركزي للوحة التحكم
+# تم التأكيد على استخدام مجلد القوالب المحلي
 admin_bp = Blueprint('admin_dashboard', __name__, template_folder='templates')
 
 def login_required(f):
@@ -24,7 +26,13 @@ def dashboard():
     عرض لوحة التحكم الرئيسية
     المسار: /admin/dashboard
     """
-    return render_template('admin/dashboard_content.html')
+    try:
+        # استدعاء ملف المحتوى الذي يرث من admin_base.html
+        return render_template('admin/dashboard_content.html')
+    except Exception as e:
+        # في حال حدوث خطأ 500، سيظهر لك السبب الدقيق بدلاً من صفحة بيضاء
+        logging.error(f"خطأ في تحميل لوحة التحكم: {str(e)}")
+        return f"عطل فني في المنظومة: {str(e)}", 500
 
 @admin_bp.route('/add-supplier', methods=['GET', 'POST'])
 @login_required
@@ -37,10 +45,10 @@ def add_supplier():
         data = request.get_json() if request.is_json else request.form
 
         try:
-            # صياغة بيانات المورد الجديد وفقاً للموديل المعتمد
+            # صياغة بيانات المورد الجديد وفقاً للموديل المعتمد لـ محجوب أونلاين
             new_supplier = Supplier(
                 username=data.get('username'),
-                password=data.get('password', '123456'), # كلمة مرور افتراضية
+                password=data.get('password', '123456'), 
                 trade_name=data.get('trade_name'),
                 owner_name=data.get('owner_name'),
                 activity_type=data.get('activity_type'),
@@ -59,20 +67,25 @@ def add_supplier():
             
             return jsonify({
                 "status": "success", 
-                "message": f"تم تعميد المورد {data.get('trade_name')} بنجاح في نظام محجوب أونلاين."
+                "message": f"تم تعميد المورد {data.get('trade_name')} بنجاح."
             })
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({"status": "error", "message": f"عطل فني أثناء الأرشفة: {str(e)}"}), 500
+            return jsonify({"status": "error", "message": f"عطل أثناء الحفظ: {str(e)}"}), 500
 
-    # التعديل الحاسم هنا: بما أن الملف في مجلد مستقل، نستخدم المسار النسبي أو الكامل
-    # Flask سيبحث في كافة مجلدات templates المسجلة في الـ Blueprints
-    return render_template('admin/add_supplier.html', next_id=963)
+    # التوجيه لملف الإضافة - تأكد من وجوده في مجلد templates/admin/
+    try:
+        return render_template('admin/add_supplier.html', next_id=963)
+    except Exception as e:
+        return f"خطأ في الوصول لملف الإضافة: {str(e)}", 500
 
 @admin_bp.route('/suppliers-list')
 @login_required
 def list_suppliers():
     """عرض سجل الموردين المعتمدين في المنظومة"""
-    suppliers = Supplier.query.order_by(Supplier.created_at.desc()).all()
-    return render_template('admin/list_suppliers.html', suppliers=suppliers)
+    try:
+        suppliers = Supplier.query.order_by(Supplier.created_at.desc()).all()
+        return render_template('admin/list_suppliers.html', suppliers=suppliers)
+    except Exception as e:
+        return f"خطأ في جلب القائمة: {str(e)}", 500
