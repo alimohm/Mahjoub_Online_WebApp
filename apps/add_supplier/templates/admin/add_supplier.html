@@ -3,172 +3,120 @@
 {% block title %}إضافة مورد جديد | محجوب أونلاين{% endblock %}
 
 {% block content %}
-<style>
-    /* المتغيرات اللونية لمنصة محجوب أونلاين */
-    :root {
-        --mahjoub-purple: #4B0082;
-        --mahjoub-gold: #D4AF37;
-        --bg-light: #f8fafc;
-    }
-
-    .form-section-title {
-        background: #f1f5f9;
-        color: var(--mahjoub-purple);
-        padding: 10px 20px;
-        font-weight: 800;
-        border-right: 5px solid var(--mahjoub-gold);
-        margin: 20px 0;
-        border-radius: 0 8px 8px 0;
-    }
-
-    .card-custom {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        background: #fff;
-    }
-
-    .form-control:focus {
-        box-shadow: none;
-        border: 1px solid var(--mahjoub-gold) !important;
-        background-color: #fff !important;
-    }
-
-    .btn-submit {
-        background: var(--mahjoub-gold);
-        color: white;
-        padding: 15px;
-        border-radius: 12px;
-        font-size: 1.1rem;
-        transition: 0.3s;
-        border: none;
-    }
-
-    .btn-submit:hover {
-        background: var(--mahjoub-purple) !important;
-        transform: translateY(-3px);
-        color: white;
-    }
-
-    .file-upload-box {
-        border: 2px dashed #cbd5e1;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        cursor: pointer;
-        background: var(--bg-light);
-    }
-</style>
-
 <div class="container-fluid" id="main-content">
     <!-- رأس الصفحة -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="mb-4 d-flex justify-content-between align-items-center">
         <div>
-            <h2 class="fw-bold" style="color: var(--mahjoub-purple);">🛡️ تعميد مورد جديد</h2>
-            <p class="text-muted">تسجيل وأرشفة بيانات المورد في النظام السيادي للمنصة.</p>
+            <h2 class="fw-bold" style="color: #4B0082;">🛡️ تعميد مورد جديد</h2>
+            <p class="text-muted">نظام الأرشفة السيادي لمنصة محجوب أونلاين.</p>
         </div>
-        <div class="text-start bg-light p-3 rounded border">
-            <small class="text-muted">المعرف القادم:</small><br>
-            <span class="fw-bold text-primary">SUP-{{ next_id }}</span>
+        <!-- تم إضافة عرض المعرف القادم بشكل بسيط -->
+        <div class="p-2 border rounded bg-light text-center">
+            <small class="d-block text-muted">رقم الاعتماد</small>
+            <span class="fw-bold text-dark">SUP-{{ next_id if next_id else '000' }}</span>
         </div>
     </div>
 
-    <form id="addSupplierForm" method="POST" enctype="multipart/form-data" action="{{ url_for('admin.add_supplier') }}">
-        
-        <!-- القسم الأول: الهوية الرقمية والنشاط -->
-        <div class="form-section-title"><i class="fas fa-user-shield me-2"></i> بيانات الهوية الرقمية والنشاط</div>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">اسم المستخدم</label>
-                <input type="text" name="username" class="form-control bg-light" placeholder="مثال: user2026" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">كلمة المرور الأولية</label>
-                <input type="password" name="password" class="form-control bg-light" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">البريد الإلكتروني</label>
-                <input type="email" name="email" class="form-control bg-light" placeholder="mail@example.com">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">تصنيف النشاط</label>
-                <select name="activity_type" class="form-select bg-light" required>
-                    <option value="مواد غذائية">مواد غذائية</option>
-                    <option value="إلكترونيات">إلكترونيات</option>
-                    <option value="ملابس">ملابس</option>
-                    <option value="أخرى">أخرى...</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- القسم الثاني: بيانات المالك والتوثيق -->
-        <div class="form-section-title"><i class="fas fa-id-card me-2"></i> بيانات المالك والتوثيق الرسمي</div>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label small fw-bold">اسم المالك الكامل</label>
-                <input type="text" name="owner_name" class="form-control bg-light" placeholder="كما هو في الهوية" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">الاسم التجاري (المؤسسة)</label>
-                <input type="text" name="trade_name" class="form-control bg-light" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">رقم الهاتف (واتساب)</label>
-                <input type="tel" name="phone" class="form-control bg-light" placeholder="77xxxxxxx" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold">نوع الوثيقة المرفقة</label>
-                <select name="identity_type" class="form-select bg-light">
-                    <option value="بطاقة شخصية">بطاقة شخصية</option>
-                    <option value="جواز سفر">جواز سفر</option>
-                    <option value="سجل تجاري">سجل تجاري</option>
-                </select>
-            </div>
-            <div class="col-md-9">
-                <label class="form-label small fw-bold">صورة الوثيقة</label>
-                <input type="file" name="identity_image" class="form-control bg-light" accept="image/*">
-            </div>
-        </div>
-
-        <!-- القسم الثالث: الربط المالي والجغرافي -->
-        <div class="row mt-2">
-            <div class="col-md-6">
-                <div class="form-section-title"><i class="fas fa-university me-2"></i> المحفظة المالية</div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">اسم البنك / الصرافة</label>
-                        <input type="text" name="bank_name" class="form-control bg-light" placeholder="مثال: الكريمي" required>
+    <form id="addSupplierForm" method="POST" enctype="multipart/form-data">
+        <div class="row g-4">
+            
+            <!-- العمود الأول: الهوية الرقمية والوثائق -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #D4AF37 !important;">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-user-shield fa-lg me-2" style="color: #4B0082;"></i>
+                        <h5 class="fw-bold mb-0">الهوية والتوثيق</h5>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">رقم الحساب / الآيبان</label>
-                        <input type="text" name="bank_acc" class="form-control bg-light" required>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">اسم المستخدم</label>
+                        <input type="text" name="username" class="form-control bg-light border-0" placeholder="ali_2026" required>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-section-title"><i class="fas fa-map-marker-alt me-2"></i> العنوان والنطاق</div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">المحافظة</label>
-                        <select name="province" class="form-select bg-light" id="provinceSelect">
-                            <option value="الحديدة">الحديدة</option>
-                            <option value="عدن">عدن</option>
-                            <option value="تعز">تعز</option>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">البريد الإلكتروني</label>
+                        <input type="email" name="email" class="form-control bg-light border-0" placeholder="mail@example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">نوع الوثيقة</label>
+                        <select name="identity_type" class="form-select bg-light border-0">
+                            <option value="بطاقة شخصية">بطاقة شخصية</option>
+                            <option value="سجل تجاري">سجل تجاري</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">المديرية</label>
-                        <input type="text" name="district" class="form-control bg-light" placeholder="مثال: الخوخة" required>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">رفع صورة الوثيقة</label>
+                        <input type="file" name="identity_image" class="form-control bg-light border-0">
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="mt-5 mb-5">
-            <button type="submit" class="btn btn-submit w-100 fw-bold">
-                🛡️ إتمام التعميد والأرشفة النهائية
-            </button>
+            <!-- العمود الثاني: النشاط والموقع -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #D4AF37 !important;">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-store fa-lg me-2" style="color: #4B0082;"></i>
+                        <h5 class="fw-bold mb-0">النشاط والنطاق</h5>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">الاسم التجاري</label>
+                        <input type="text" name="trade_name" class="form-control bg-light border-0" placeholder="مؤسسة الفقية" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">رقم الهاتف</label>
+                        <input type="text" name="phone" class="form-control bg-light border-0" placeholder="77xxxxxxx" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label text-muted small">المحافظة</label>
+                            <input type="text" name="province" class="form-control bg-light border-0" value="الحديدة">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label text-muted small">المديرية</label>
+                            <input type="text" name="district" class="form-control bg-light border-0" placeholder="الخوخة">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- العمود الثالث: البيانات المالية والأمان -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #D4AF37 !important;">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-wallet fa-lg me-2" style="color: #4B0082;"></i>
+                        <h5 class="fw-bold mb-0">المحفظة والأمان</h5>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">اسم البنك / الصرافة</label>
+                        <input type="text" name="bank_name" class="form-control bg-light border-0" placeholder="الكريمي / النجم">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">رقم الحساب</label>
+                        <input type="text" name="bank_acc" class="form-control bg-light border-0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">كلمة المرور الأولية</label>
+                        <input type="password" name="password" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="mt-auto">
+                        <button type="submit" class="btn w-100 fw-bold shadow-sm" style="background: #D4AF37; color: white; transition: 0.3s; padding: 12px;">
+                            حفظ واعتماد المورد <i class="fas fa-check-circle ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </form>
 </div>
+
+<style>
+    .form-control:focus, .form-select:focus {
+        box-shadow: none;
+        border: 1px solid #D4AF37 !important;
+        background-color: #fff !important;
+    }
+    .btn:hover {
+        background: #4B0082 !important;
+        transform: translateY(-2px);
+    }
+    label { font-size: 0.85rem; }
+</style>
 {% endblock %}
