@@ -28,7 +28,6 @@
             direction: rtl;
         }
 
-        /* تنسيق اللوجو */
         .logo-img { 
             width: 70px; 
             height: auto; 
@@ -36,7 +35,6 @@
             filter: brightness(0) invert(1); 
         }
 
-        /* القائمة الجانبية */
         .sidebar {
             width: var(--sidebar-width);
             background: linear-gradient(180deg, var(--royal-purple) 0%, var(--deep-black) 100%);
@@ -56,7 +54,6 @@
         }
 
         .sidebar-header { padding: 2rem 1rem; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
-
         .nav-menu { padding: 1rem; flex-grow: 1; }
         
         .nav-link, .dropdown-btn {
@@ -110,7 +107,6 @@
         
         .rotate { transform: rotate(-90deg); }
 
-        /* منطقة المحتوى الرئيسية */
         .main-wrapper { 
             margin-right: var(--sidebar-width); 
             width: calc(100% - var(--sidebar-width)); 
@@ -141,7 +137,6 @@
 
         .user-info { font-weight: 800; color: var(--royal-purple); }
 
-        /* مؤشر التحميل */
         #loader {
             display: none;
             position: fixed;
@@ -154,7 +149,6 @@
 </head>
 <body>
 
-    <!-- مؤشر التحميل السيادي -->
     <div id="loader">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; color: var(--mahjoub-gold) !important;"></div>
     </div>
@@ -178,8 +172,8 @@
                     <i class="fas fa-chevron-left" id="arrow"></i>
                 </button>
                 <div class="dropdown-container" id="supplierDropdown">
-                    <!-- تصحيح الرابط بناءً على الـ Blueprint: add_supplier والدالة: save_supplier -->
-                    <a href="javascript:void(0);" onclick="loadPage('{{ url_for('add_supplier.save_supplier') }}')">
+                    <!-- تم تصحيح الـ Endpoint هنا ليعمل مع محرك AJAX بنجاح -->
+                    <a href="javascript:void(0);" onclick="loadPage('{{ url_for('add_supplier.add_supplier') }}')">
                         <i class="fas fa-plus-circle me-2"></i> إضافة مورد جديد
                     </a>
                     <a href="#"><i class="fas fa-list-check me-2"></i> إدارة الموردين</a>
@@ -197,20 +191,17 @@
     <main class="main-wrapper">
         <header class="top-bar">
             <div class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
-            
             <div class="user-profile d-flex align-items-center gap-3">
                 <div class="user-info">علي محجوب | <small class="text-muted">المؤسس</small></div>
             </div>
         </header>
 
-        <!-- منطقة المحتوى الديناميكية -->
         <div class="p-4" id="main-content">
             {% block content %}{% endblock %}
         </div>
     </main>
 
     <script>
-        // 1. وظائف القائمة الجانبية
         function toggleDropdown() {
             const dropdown = document.getElementById("supplierDropdown");
             const arrow = document.getElementById("arrow");
@@ -222,7 +213,6 @@
             document.getElementById("sidebar").classList.toggle("active");
         }
 
-        // 2. محرك AJAX الذكي لتحميل الصفحات دون تحديث المتصفح
         async function loadPage(url) {
             const contentArea = document.getElementById('main-content');
             const loader = document.getElementById('loader');
@@ -239,14 +229,11 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // تحديث عنوان الصفحة في التبويب
                 document.title = doc.querySelector('title') ? doc.querySelector('title').innerText : "القيادة المركزية";
                 
-                // البحث عن الحاوية الرئيسية للمحتوى (form-container) أو المحتوى المتاح
                 const newContent = doc.querySelector('.form-container') || doc.querySelector('#main-content') || doc.body;
                 contentArea.innerHTML = newContent.innerHTML;
                 
-                // تفعيل السكريبتات الموجودة في الصفحة المحملة
                 const scripts = doc.querySelectorAll('script');
                 scripts.forEach(oldScript => {
                     const newScript = document.createElement('script');
@@ -255,24 +242,21 @@
                     document.body.appendChild(newScript);
                 });
 
-                // تحديث رابط المتصفح (History API)
                 window.history.pushState({path: url}, '', url);
                 
-                // غلق القائمة الجانبية تلقائياً في الشاشات الصغيرة
                 if (window.innerWidth <= 991) {
                     document.getElementById("sidebar").classList.remove("active");
                 }
 
             } catch (err) {
-                console.error("فشل في جلب البيانات السيادية:", err);
-                contentArea.innerHTML = `<div class="alert alert-danger text-center">عذراً أيها المؤسس، حدث تداخل في البيانات أثناء تحميل الصفحة.</div>`;
+                console.error("خطأ في تحميل الصفحة:", err);
+                contentArea.innerHTML = `<div class="alert alert-danger text-center">حدث خطأ أثناء تحميل البيانات، يرجى المحاولة لاحقاً.</div>`;
             } finally {
                 loader.style.display = 'none';
                 contentArea.style.opacity = '1';
             }
         }
 
-        // إغلاق القائمة عند النقر في الخارج (للجوال)
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById("sidebar");
             const toggle = document.querySelector(".menu-toggle");
@@ -283,7 +267,6 @@
             }
         });
 
-        // التعامل مع زر الرجوع في المتصفح لضمان استقرار المحتوى
         window.onpopstate = function() {
             location.reload();
         };
