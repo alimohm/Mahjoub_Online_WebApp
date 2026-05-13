@@ -1,13 +1,20 @@
 from flask import render_template
-from . import admin_dashboard  # استيراد البلوبرينت الذي أنشأناه في __init__
+from . import admin_dashboard  # استيراد البلوبرينت المركز لدائرة الإدارة
 
 @admin_dashboard.route('/')
 @admin_dashboard.route('/dashboard')
 def dashboard():
-    # هذا سيجعل الهيكل والديشبورد يعملان معاً
-    return render_template('admin/dashboard.html')
+    """
+    مسار لوحة التحكم الرئيسية (مركز المراقبة).
+    تم تعديل المسار ليقرأ dashboard.html مباشرة لحل خطأ TemplateNotFound.
+    """
+    # تصحيح: حذف 'admin/' لأن Flask يبحث الآن داخل مجلد templates المخصص للبلوبرينت
+    return render_template('dashboard.html')
 
-# أضفنا هذا المسار لمنع خطأ BuildError الذي ظهر سابقاً
 @admin_dashboard.route('/suppliers/list')
 def list_suppliers():
-    return render_template('admin/list_suppliers.html')
+    """
+    مسار عرض سجل الموردين.
+    يستخدم لتجنب خطأ BuildError عند النقر على روابط القائمة الجانبية.
+    """
+    return render_template('list_suppliers.html')
