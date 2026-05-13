@@ -10,7 +10,6 @@
             <h2 class="fw-bold" style="color: #4B0082;">🛡️ تعميد مورد جديد</h2>
             <p class="text-muted">نظام الأرشفة السيادي لمنصة محجوب أونلاين.</p>
         </div>
-        <!-- تم إضافة عرض المعرف القادم بشكل بسيط -->
         <div class="p-2 border rounded bg-light text-center">
             <small class="d-block text-muted">رقم الاعتماد</small>
             <span class="fw-bold text-dark">SUP-{{ next_id if next_id else '000' }}</span>
@@ -20,7 +19,7 @@
     <form id="addSupplierForm" method="POST" enctype="multipart/form-data">
         <div class="row g-4">
             
-            <!-- العمود الأول: الهوية الرقمية والوثائق -->
+            <!-- العمود الأول: الهوية والفئة (القائمة المنسدلة للفئات) -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #D4AF37 !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -32,14 +31,21 @@
                         <input type="text" name="username" class="form-control bg-light border-0" placeholder="ali_2026" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">البريد الإلكتروني</label>
-                        <input type="email" name="email" class="form-control bg-light border-0" placeholder="mail@example.com">
+                        <label class="form-label text-muted small">فئة المورد</label>
+                        <select name="category" class="form-select bg-light border-0" required>
+                            <option value="">اختر الفئة...</option>
+                            <option value="جملة">تاجر جملة</option>
+                            <option value="تجزئة">تاجر تجزئة</option>
+                            <option value="مصنع">مصنع / منتج محلي</option>
+                            <option value="مستورد">مستورد خارجي</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">نوع الوثيقة</label>
                         <select name="identity_type" class="form-select bg-light border-0">
                             <option value="بطاقة شخصية">بطاقة شخصية</option>
                             <option value="سجل تجاري">سجل تجاري</option>
+                            <option value="جواز سفر">جواز سفر</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -49,35 +55,36 @@
                 </div>
             </div>
 
-            <!-- العمود الثاني: النشاط والموقع -->
+            <!-- العمود الثاني: النطاق الجغرافي (ربط المحافظات بالمديريات) -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #D4AF37 !important;">
                     <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-store fa-lg me-2" style="color: #4B0082;"></i>
+                        <i class="fas fa-map-marker-alt fa-lg me-2" style="color: #4B0082;"></i>
                         <h5 class="fw-bold mb-0">النشاط والنطاق</h5>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">الاسم التجاري</label>
-                        <input type="text" name="trade_name" class="form-control bg-light border-0" placeholder="مؤسسة الفقية" required>
+                        <input type="text" name="trade_name" class="form-control bg-light border-0" placeholder="مثلاً: مؤسسة الفقية" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">رقم الهاتف</label>
-                        <input type="text" name="phone" class="form-control bg-light border-0" placeholder="77xxxxxxx" required>
+                        <label class="form-label text-muted small">المحافظة</label>
+                        <select name="province" id="provinceSelect" class="form-select bg-light border-0" onchange="updateDistricts()" required>
+                            <option value="">اختر المحافظة...</option>
+                            <option value="الحديدة">الحديدة</option>
+                            <option value="تعز">تعز</option>
+                            <option value="عدن">عدن</option>
+                        </select>
                     </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label text-muted small">المحافظة</label>
-                            <input type="text" name="province" class="form-control bg-light border-0" value="الحديدة">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label text-muted small">المديرية</label>
-                            <input type="text" name="district" class="form-control bg-light border-0" placeholder="الخوخة">
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">المديرية</label>
+                        <select name="district" id="districtSelect" class="form-select bg-light border-0" required>
+                            <option value="">اختر المحافظة أولاً...</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- العمود الثالث: البيانات المالية والأمان -->
+            <!-- العمود الثالث: البيانات المالية والأمان (قائمة البنوك) -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #D4AF37 !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -85,19 +92,27 @@
                         <h5 class="fw-bold mb-0">المحفظة والأمان</h5>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">اسم البنك / الصرافة</label>
-                        <input type="text" name="bank_name" class="form-control bg-light border-0" placeholder="الكريمي / النجم">
+                        <label class="form-label text-muted small">اسم البنك / المحفظة</label>
+                        <select name="bank_name" class="form-select bg-light border-0" required>
+                            <option value="">اختر وسيلة الدفع...</option>
+                            <option value="الكريمي">بنك الكريمي</option>
+                            <option value="النجم">النجم للحوالات</option>
+                            <option value="باسياب">باسياب للصرافة</option>
+                            <option value="تداول">محفظة تداول</option>
+                            <option value="إم فلوس">إم فلوس (M-Pesa)</option>
+                            <option value="كاش">كاش (يدوي)</option>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">رقم الحساب</label>
-                        <input type="text" name="bank_acc" class="form-control bg-light border-0">
+                        <label class="form-label text-muted small">رقم الحساب / الجوال</label>
+                        <input type="text" name="bank_acc" class="form-control bg-light border-0" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">كلمة المرور الأولية</label>
                         <input type="password" name="password" class="form-control bg-light border-0" required>
                     </div>
                     <div class="mt-auto">
-                        <button type="submit" class="btn w-100 fw-bold shadow-sm" style="background: #D4AF37; color: white; transition: 0.3s; padding: 12px;">
+                        <button type="submit" class="btn w-100 fw-bold shadow-sm" style="background: #D4AF37; color: white; padding: 12px;">
                             حفظ واعتماد المورد <i class="fas fa-check-circle ms-2"></i>
                         </button>
                     </div>
@@ -106,6 +121,33 @@
         </div>
     </form>
 </div>
+
+<!-- كود JavaScript للربط الديناميكي بين المحافظة والمديرية -->
+<script>
+function updateDistricts() {
+    const province = document.getElementById('provinceSelect').value;
+    const districtSelect = document.getElementById('districtSelect');
+    
+    // تفريغ قائمة المديريات
+    districtSelect.innerHTML = '<option value="">اختر المديرية...</option>';
+
+    // قاعدة بيانات المديريات
+    const cityData = {
+        'الحديدة': ['الخوخة', 'حيس', 'التحيتا', 'الدريهمي', 'الزيدية', 'باجل'],
+        'تعز': ['المخا', 'ذوباب', 'موزع', 'الوازعية', 'المظفر', 'القاهرة'],
+        'عدن': ['المنصورة', 'الشيخ عثمان', 'كريتر', 'خور مكسر', 'البريقة']
+    };
+
+    if (province && cityData[province]) {
+        cityData[province].forEach(function(district) {
+            let option = document.createElement('option');
+            option.value = district;
+            option.text = district;
+            districtSelect.add(option);
+        });
+    }
+}
+</script>
 
 <style>
     .form-control:focus, .form-select:focus {
