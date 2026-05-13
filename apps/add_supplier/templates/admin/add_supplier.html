@@ -660,38 +660,28 @@
     };
 
     function updateFileName(input) {
-
         const display = document.getElementById('file-name-display');
-
         if (input.files && input.files[0]) {
-
             display.innerHTML =
                 "✅ تم اختيار: <strong>" +
                 input.files[0].name +
                 "</strong>";
-
             display.style.color = "var(--accent-green)";
         }
     }
 
     function handleManualSelection(selectObj, hiddenId) {
-
         const isActivity = hiddenId === 'activity_type';
-
         const manualInput = document.getElementById(
             isActivity ? 'manual_activity' : 'manual_bank'
         );
-
         const hiddenField = document.getElementById(hiddenId);
 
         if (selectObj.value === 'manual') {
-
             manualInput.style.display = 'block';
             manualInput.required = true;
             hiddenField.value = '';
-
         } else {
-
             manualInput.style.display = 'none';
             manualInput.required = false;
             hiddenField.value = selectObj.value;
@@ -699,14 +689,10 @@
     }
 
     function loadDistricts(prov) {
-
         const dSelect = document.getElementById('dist_select');
-
         dSelect.innerHTML =
             '<option value="">اختر المديرية...</option>';
-
         if (geoData[prov]) {
-
             geoData[prov]
                 .sort()
                 .forEach(d =>
@@ -716,7 +702,6 @@
     }
 
     function setFinance(type) {
-
         document
             .getElementById('btn_banks')
             .classList.toggle('active', type === 'banks');
@@ -726,7 +711,6 @@
             .classList.toggle('active', type === 'exchange');
 
         const bSelect = document.getElementById('bank_select');
-
         bSelect.innerHTML =
             '<option value="">اختر من القائمة...</option>';
 
@@ -745,48 +729,37 @@
     }
 
     function validateForm() {
-
         let valid = true;
-
         const requiredFields = document.querySelectorAll(
             '[required]'
         );
-
         requiredFields.forEach(field => {
-
             field.classList.remove('error');
-
             if (!field.value.trim()) {
-
                 field.classList.add('error');
                 valid = false;
             }
         });
-
         return valid;
     }
 
     document
         .getElementById('sovereignForm')
         .addEventListener('submit', async function(e) {
-
             e.preventDefault();
 
             if (!validateForm()) {
-
                 Swal.fire({
                     title: 'حقول ناقصة',
                     text: 'يرجى تعبئة جميع الحقول المطلوبة',
                     icon: 'warning',
                     confirmButtonColor: '#1a0b2e'
                 });
-
                 return;
             }
 
             const actSelect =
                 document.getElementById('activity_select');
-
             document.getElementById('activity_type').value =
                 (actSelect.value === 'manual')
                     ? document.getElementById('manual_activity').value
@@ -794,7 +767,6 @@
 
             const bnkSelect =
                 document.getElementById('bank_select');
-
             document.getElementById('bank_name').value =
                 (bnkSelect.value === 'manual')
                     ? document.getElementById('manual_bank').value
@@ -802,16 +774,12 @@
 
             const submitBtn =
                 document.getElementById('submitBtn');
-
             submitBtn.innerHTML =
                 '<i class="fas fa-shield-alt fa-spin"></i> جاري الأرشفة السيادية...';
-
             submitBtn.disabled = true;
 
             try {
-
                 const formData = new FormData(this);
-
                 const response = await fetch(this.action, {
                     method: 'POST',
                     body: formData,
@@ -826,7 +794,6 @@
                     response.ok &&
                     result.status === 'success'
                 ) {
-
                     Swal.fire({
                         title: '✅ تم التعميد بنجاح',
                         text: result.message,
@@ -834,21 +801,16 @@
                         confirmButtonText: 'موافق',
                         confirmButtonColor: '#1a0b2e'
                     }).then(() => {
-
                         window.location.href =
                             "{{ url_for('admin.dashboard') }}";
                     });
-
                 } else {
-
                     throw new Error(
                         result.message ||
                         'فشل في عملية الأرشفة'
                     );
                 }
-
             } catch (err) {
-
                 Swal.fire({
                     title: 'خطأ في النظام',
                     text: err.message,
@@ -856,25 +818,20 @@
                     confirmButtonText: 'محاولة أخرى',
                     confirmButtonColor: '#D4AF37'
                 });
-
                 submitBtn.disabled = false;
-
                 submitBtn.innerHTML =
                     '🛡️ إتمام التعميد والأرشفة';
             }
         });
 
     window.onload = () => {
-
         const pSelect =
             document.getElementById('prov_select');
-
         Object.keys(geoData)
             .sort()
             .forEach(p =>
                 pSelect.add(new Option(p, p))
             );
-
         setFinance('banks');
     };
 </script>
