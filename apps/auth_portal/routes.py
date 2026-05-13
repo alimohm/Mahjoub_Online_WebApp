@@ -20,7 +20,10 @@ def login():
                 session['role'] = user.role # حفظ الدور القيادي (مثل founder)
                 
                 flash(f'مرحباً بك يا {user.full_name}، تم توثيق الدخول بنجاح', 'success')
-                return redirect(url_for('admin.index'))
+                
+                # التصحيح الجوهري: التوجيه إلى admin.dashboard بدلاً من admin.index
+                # ليتوافق مع نظام Flask كما ظهر في خطأ BuildError في الصورة image_3ac59f.png
+                return redirect(url_for('admin.dashboard'))
             else:
                 flash('خطأ: كلمة المرور غير مطابقة للسجلات المشفرة.', 'danger')
         else:
@@ -29,3 +32,9 @@ def login():
         return redirect(url_for('auth.login'))
 
     return render_template('auth/login.html')
+
+@auth_bp.route('/logout')
+def logout():
+    session.clear()
+    flash('تم تسجيل الخروج من المنظومة بنجاح.', 'info')
+    return redirect(url_for('auth.login'))
