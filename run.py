@@ -1,9 +1,11 @@
 from flask import Flask, redirect, url_for
 import os
+# استيراد القاعدة والموديل السيادي من المجلد الرئيسي
 from models.admin_db import db, AdminUser
 
 def create_app():
     app = Flask(__name__)
+    
     # مفتاح الأمان السيادي للمنصة
     app.secret_key = os.environ.get('SECRET_KEY') or 'MAHJOUB_SECURE_2026'
 
@@ -18,10 +20,11 @@ def create_app():
     # ربط قاعدة البيانات بالتطبيق
     db.init_app(app)
 
-    # تسجيل البوابات الرقمية (تصحيح الاستيراد لمنع Crashed)
-    # نستورد الكائن من المجلد مباشرة لضمان تنفيذ __init__.py أولاً
+    # تسجيل البوابات الرقمية (تصحيح الاستيراد لمنع الانهيار Crashed)
+    # ملاحظة: نستخدم الاستيراد داخل الدالة لضمان استقرار الهيكل التنظيمي
     from apps.auth_portal.routes import auth_bp
-    from apps.admin_dashboard import admin_dashboard 
+    # تأكد أن admin_dashboard معرف كـ Blueprint في ملفه
+    from apps.admin_dashboard import admin_dashboard  
     from apps.add_supplier.routes import admin_suppliers
 
     # تفعيل المسارات في هيكل النظام
@@ -29,20 +32,23 @@ def create_app():
     app.register_blueprint(admin_dashboard, url_prefix='/admin')
     app.register_blueprint(admin_suppliers, url_prefix='/admin/suppliers')
 
+    # إنشاء الجداول السيادية إذا لم تكن موجودة عند الإقلاع
     with app.app_context():
         db.create_all()
 
-    # التوجيه التلقائي لبوابة الدخول
+    # التوجيه التلقائي لبوابة الدخول عند فتح الرابط الرئيسي
     @app.route('/')
     def root():
-        return redirect(url_for('auth_portal.login')) # استخدام url_for أفضل تقنياً
+        # تأكد أن اسم البلوبرينت في auth_portal هو 'auth_portal'
+        return redirect(url_for('auth_portal.login')) 
 
     return app
 
-# إنشاء نسخة التطبيق للـ WSGI (Railway/Gunicorn)
+# إنشاء نسخة التطبيق لمحرك Gunicorn في بيئة Railway
 app = create_app()
 
 if __name__ == '__main__':
-    # التشغيل على المنفذ المخصص من Railway
+    # التشغيل على المنفذ المخصص من Railway أو المنفذ الافتراضي 8080
     port = int(os.environ.get('PORT', 8080))
+    # الإقلاع بوضع الاستماع العام لضمان ظهور الموقع أونلاين
     app.run(host='0.0.0.0', port=port)
