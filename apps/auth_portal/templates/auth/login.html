@@ -10,6 +10,7 @@
             --gov-purple: #1a0b2e;
             --gov-gold: #D4AF37;
             --soft-white: #f8fafc;
+            --error-red: #ff4d4d;
         }
 
         body {
@@ -39,14 +40,32 @@
         .login-card h1 {
             color: var(--gov-gold);
             font-size: 1.8rem;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             font-weight: 900;
+            letter-spacing: 1px;
         }
 
         .login-card p {
             font-size: 0.9rem;
             opacity: 0.8;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+        }
+
+        /* تنسيق رسائل التنبيه والخطأ */
+        .flash-messages {
+            margin-bottom: 20px;
+            list-style: none;
+            padding: 0;
+        }
+
+        .flash-message {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            background: rgba(255, 77, 77, 0.2);
+            border: 1px solid var(--error-red);
+            color: white;
         }
 
         .input-group {
@@ -134,12 +153,24 @@
         <h1>محجوب أونلاين</h1>
         <p>بوابة الوصول السيادية</p>
 
-        <form action="{{ url_for('auth_portal.login') }}" method="POST">
+        <!-- عرض رسائل الخطأ من Flask -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-messages">
+              {% for category, message in messages %}
+                <li class="flash-message">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <!-- التعديل الهام: الربط بـ auth.login -->
+        <form action="{{ url_for('auth.login') }}" method="POST">
             <div class="input-group">
                 <label>اسم المستخدم</label>
                 <div class="input-wrapper">
                     <i class="fas fa-user"></i>
-                    <input type="text" name="username" placeholder="أدخل اسم المستخدم" required>
+                    <input type="text" name="username" placeholder="أدخل اسم المستخدم" required autocomplete="username">
                 </div>
             </div>
 
@@ -147,7 +178,7 @@
                 <label>كلمة المرور</label>
                 <div class="input-wrapper">
                     <i class="fas fa-lock"></i>
-                    <input type="password" name="password" placeholder="••••••••" required>
+                    <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
                 </div>
             </div>
 
