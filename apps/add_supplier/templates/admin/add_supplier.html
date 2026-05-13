@@ -1,6 +1,5 @@
-{% extends "admin/dashboard_content.html" %}
-
-{% block title %}التعميد السيادي للموردين | محجوب أونلاين{% endblock %}
+{# تعديل الوراثة: إذا كان الطلب AJAX لا تورث الهيكل الكامل، وإذا كان طلباً مباشراً ورث القاعدة #}
+{% extends "admin/admin_base.html" if not request.is_xhr and not request.headers.get('X-Requested-With') else "admin/blank.html" %}
 
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
