@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models.admin_db import AdminUser  # استيراد نموذج المستخدمين من مجلد models
+from models.admin_db import AdminUser  # استيراد النموذج السيادي
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -9,20 +9,22 @@ def login():
         username_input = request.form.get('username')
         password_input = request.form.get('password')
 
-        # البحث عن المستخدم في سجلات المنظومة
+        # 1. البحث عن المستخدم في جدول admin_users
         user = AdminUser.query.filter_by(username=username_input).first()
 
         if user:
-            # مطابقة كلمة السر يدوياً كما هي في قاعدة البيانات حالياً
-            if user.password == password_input:
+            # 2. استخدام الدالة السيادية check_password للتحقق من التشفير
+            if user.check_password(password_input):
                 session['user_id'] = user.id
                 session['username'] = user.username
-                flash(f'مرحباً بك يا {user.username}، تم الدخول بنجاح', 'success')
-                return redirect(url_for('admin.index')) # التوجه للوحة التحكم
+                session['role'] = user.role # حفظ الدور القيادي (مثل founder)
+                
+                flash(f'مرحباً بك يا {user.full_name}، تم توثيق الدخول بنجاح', 'success')
+                return redirect(url_for('admin.index'))
             else:
-                flash('فشل الدخول: كلمة المرور غير صحيحة.', 'danger')
+                flash('خطأ: كلمة المرور غير مطابقة للسجلات المشفرة.', 'danger')
         else:
-            flash('تنبيه: اسم المستخدم هذا غير موجود في النظام.', 'warning')
+            flash('تنبيه: هذا المستخدم غير معرف في المنظومة.', 'warning')
             
         return redirect(url_for('auth.login'))
 
