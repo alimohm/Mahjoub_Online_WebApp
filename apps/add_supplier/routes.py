@@ -1,10 +1,12 @@
 import os
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
+from apps import db  # استيراد كائن قاعدة البيانات المركزي
+# 🔥 الحل الحاسم: استيراد الموديل هنا في الأعلى لكي يراه محرك SQLAlchemy فوراً عند تشغيل التطبيق
+from models.supplier_db import Supplier 
 
-# 🎯 الحل الديناميكي الحاسم: حساب المسار النسبي صعوداً من المجلد الحالي للوصول إلى المجلد المشترك templates
+# حساب المسار النسبي صعوداً من المجلد الحالي للوصول إلى المجلد المشترك templates
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# الصعود خطوتين لأعلى (من add_supplier ثم من apps) للوصول للمجلد الرئيسي المشترك
 template_dir = os.path.abspath(os.path.join(current_dir, '..', '..', 'templates'))
 
 admin_suppliers = Blueprint(
@@ -13,16 +15,27 @@ admin_suppliers = Blueprint(
     template_folder=template_dir
 )
 
+# 🔥 السحر المستقل: إجبار السيرفر على إنشاء الجدول فوراً عند إقلاع التطبيق أونلاين
+with admin_suppliers.record_once(lambda state: None):
+    try:
+        # استخدام سياق التطبيق لضمان الاتصال الآمن بقاعدة البيانات في Railway
+        from run import create_app
+        app = create_app()
+        with app.app_context():
+            db.create_all()
+            print("🚀 [Independent DB] 'suppliers' table created successfully or already exists!")
+    except Exception as e:
+        # إذا واجه بايثون تداخل في التشغيل المبدئي، سنقوم بإنشائه داخل الدالة كخطة بديلة آمنة
+        print(f"⚠️ Initial DB setup skipped, will build inside route: {e}")
+
+
 @admin_suppliers.route('/add', methods=['GET', 'POST'])
 def add_supplier():
-    from models.supplier_db import Supplier
-    from apps import db 
-
-    # إنشاء الجدول تلقائياً إذا لم يكن موجوداً
+    # خطة دفاعية ثانية: التأكد من وجود الجدول فور دخول الصفحة
     try:
         db.create_all()
-    except Exception as e:
-        print(f"⚠️ Database initialization notice: {e}")
+    except Exception:
+        pass
 
     if request.method == 'POST':
         try:
@@ -99,8 +112,6 @@ def add_supplier():
 
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
 def check_duplicate():
-    from models.supplier_db import Supplier 
-
     check_type = request.args.get('type')
     value = request.args.get('value', '').strip()
     bank_name = request.args.get('bank_name', '').strip()
