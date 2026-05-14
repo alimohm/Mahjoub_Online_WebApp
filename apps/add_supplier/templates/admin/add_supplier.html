@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <!-- العمود الثاني: المالك والعنوان (النطاق الجغرافي: اليمن) -->
+            <!-- العمود الثاني: المالك والعنوان -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -166,6 +166,44 @@
     </form>
 </div>
 
+<!-- Modal إشعار النجاح والنسخ السيادي -->
+<div class="modal fade" id="successModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header border-0 pb-0 justify-content-center pt-4">
+                <div class="rounded-circle bg-success d-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px;">
+                    <i class="fas fa-check fa-3x text-white"></i>
+                </div>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <h4 class="fw-bold mb-2">تم الاعتماد بنجاح</h4>
+                <p class="text-muted mb-4">تم تسجيل المورد <span id="res_trade_name" class="fw-bold text-dark"></span> في النظام.</p>
+                
+                <div class="bg-light p-3 rounded-3 mb-3 text-start">
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">اسم المستخدم:</small>
+                        <div class="d-flex justify-content-between align-items-center bg-white p-2 border rounded">
+                            <span class="fw-bold font-monospace" id="res_username"></span>
+                            <button class="btn btn-sm btn-link text-primary p-0 fw-bold" onclick="copyToClipboard('res_username')">نسخ</button>
+                        </div>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block mb-1">كلمة المرور:</small>
+                        <div class="d-flex justify-content-between align-items-center bg-white p-2 border rounded">
+                            <span class="fw-bold font-monospace" id="res_password"></span>
+                            <button class="btn btn-sm btn-link text-primary p-0 fw-bold" onclick="copyToClipboard('res_password')">نسخ</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn w-100 fw-bold py-3 mt-2" style="background: #4B338A; color: white; border-radius: 10px;" onclick="location.reload()">
+                    إتمام العملية والعودة <i class="fas fa-arrow-left ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // بيانات المواقع الخاصة بالمناطق التشغيلية لمحجوب أونلاين في اليمن
 const locationData = {
@@ -225,6 +263,57 @@ function handleManualEntry(selectElement) {
     }
 }
 
+// وظيفة النسخ إلى الحافظة
+function copyToClipboard(id) {
+    const text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "تم النسخ!";
+        btn.classList.replace('text-primary', 'text-success');
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.replace('text-success', 'text-primary');
+        }, 2000);
+    });
+}
+
+// معالجة إرسال النموذج عبر AJAX
+document.getElementById('addSupplierForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const btnSubmit = this.querySelector('button[type="submit"]');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري التعميد...';
+
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch("{{ url_for('admin_suppliers.add_supplier') }}", {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            document.getElementById('res_trade_name').innerText = result.data.trade_name;
+            document.getElementById('res_username').innerText = result.data.username;
+            document.getElementById('res_password').innerText = result.data.password;
+            
+            const myModal = new bootstrap.Modal(document.getElementById('successModal'));
+            myModal.show();
+        } else {
+            alert("⚠️ " + result.message);
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = 'حفظ واعتماد المورد <i class="fas fa-check-double ms-2"></i>';
+        }
+    } catch (error) {
+        alert("❌ حدث خطأ في الاتصال بالسيرفر، يرجى المحاولة لاحقاً.");
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'حفظ واعتماد المورد <i class="fas fa-check-double ms-2"></i>';
+    }
+};
+
 window.onload = updateFinanceOptions;
 </script>
 
@@ -232,5 +321,6 @@ window.onload = updateFinanceOptions;
     .custom-select:focus { border: 1px solid #4B338A !important; box-shadow: 0 0 5px rgba(75, 51, 138, 0.2); }
     .btn-outline-primary { color: #4B338A; border-color: #4B338A; }
     .btn-check:checked + .btn-outline-primary { background-color: #4B338A !important; border-color: #4B338A !important; color: white !important; }
+    .font-monospace { letter-spacing: 1px; }
 </style>
 {% endblock %}
