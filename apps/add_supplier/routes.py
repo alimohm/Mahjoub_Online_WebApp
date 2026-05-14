@@ -1,27 +1,18 @@
 import os
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
-from werkzeug.utils import secure_filename
 
-# تعريف الـ Blueprint ليعود إلى مجلد القوالب الرئيسي
 admin_suppliers = Blueprint(
     'admin_suppliers', 
     __name__,
     template_folder='../../templates'
 )
 
-# امتدادات الملفات المسموحة لرفع الصور
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-# --- 1. مسار عرض الواجهة واعتماد المورد ---
 @admin_suppliers.route('/admin/suppliers/add', methods=['GET', 'POST'])
 def add_supplier():
-    # استيراد محلي لتجنب التعارض الدائري
-    from models.supplier_db import db, Supplier 
+    # استيراد محلي لتفادي الـ Circular Import تماماً وضمان إقلاع السيرفر
+    from models.supplier_db import Supplier
+    from apps import db # استيراد كائن قاعدة البيانات الرئيسي الخاص بالتطبيق
 
     if request.method == 'POST':
         try:
@@ -47,13 +38,12 @@ def add_supplier():
                 bank_name = request.form.get('manual_bank_name')
             bank_acc = request.form.get('bank_acc')
 
-            # فحص التكرار بأمان داخل بيئة الـ POST
+            # فحص التكرار
             if Supplier.query.filter_by(username=username).first():
                 return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً!'}), 400
             if Supplier.query.filter_by(trade_name=trade_name).first():
                 return jsonify({'status': 'error', 'message': 'الاسم التجاري مسجل مسبقاً!'}), 400
 
-            # بناء السجل
             new_supplier = Supplier(
                 sovereign_id=unified_id,
                 username=username,
@@ -85,28 +75,21 @@ def add_supplier():
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({
-                'status': 'error',
-                'message': f'حدث خطأ في النظام: {str(e)}'
-            }), 500
+            return jsonify({'status': 'error', 'message': f'حدث خطأ في الخادم: {str(e)}'}), 500
 
-    # === حماية طلب الـ GET لمنع خطأ 500 نهائياً ===
+    # معالجة الـ GET
     next_id_num = 1
     try:
-        # محاولة جلب آخر معرف من قاعدة البيانات
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         if last_supplier:
             next_id_num = last_supplier.id + 1
-    except Exception as db_error:
-        # إذا فشل الاتصال أو حدث خطأ في سياق الـ db، لا تجعل السيرفر ينهار
-        print(f"Database context warning (Using default ID 1): {str(db_error)}")
+    except Exception as e:
+        print(f"Warning: Database context fallback: {e}")
         next_id_num = 1
         
-    # نقوم بإرسال المتغير بكلا الاسمين (next_id و next_id_num) لضمان توافقه مع ملف الـ HTML الخاص بك أياً كان المسمى المدون فيه
     return render_template('admin/add_supplier.html', next_id=next_id_num, next_id_num=next_id_num)
 
 
-# --- 2. مسار التحقق اللحظي عبر الـ AJAX ---
 @admin_suppliers.route('/admin/suppliers/check-duplicate', methods=['GET'])
 def check_duplicate():
     from models.supplier_db import Supplier 
