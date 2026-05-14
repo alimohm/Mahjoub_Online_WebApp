@@ -16,7 +16,7 @@ class Supplier(db.Model):
     
     # --- بيانات الوصول والاعتماد ---
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)  # كلمة مرور النظام
+    password = db.Column(db.String(255), nullable=False)  # كلمة مرور النظام المشفرة
     email = db.Column(db.String(100), nullable=True)
     
     # --- تفاصيل النشاط التجاري والهوية ---
