@@ -28,9 +28,12 @@
                         <h5 class="fw-bold mb-0">بيانات الهوية والنشاط</h5>
                     </div>
                     
-                    <div class="mb-3">
+                    <div class="mb-3 position-relative">
                         <label class="form-label text-muted small">اسم المستخدم (للدخول)</label>
-                        <input type="text" name="username" class="form-control bg-light border-0" placeholder="user_2026" required>
+                        <div class="input-group">
+                            <input type="text" name="username" id="usernameInput" class="form-control bg-light border-0 validation-field" data-type="username" placeholder="user_2026" required>
+                            <span class="input-group-text bg-light border-0 validation-icon" id="usernameIcon"></span>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -72,16 +75,25 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">اسم المالك الكامل</label>
-                        <input type="text" name="owner_name" class="form-control bg-light border-0" placeholder="الاسم الرباعي" required>
+                        <div class="input-group">
+                            <input type="text" name="owner_name" id="ownerNameInput" class="form-control bg-light border-0 validation-field" data-type="owner_name" placeholder="الاسم الرباعي" required>
+                            <span class="input-group-text bg-light border-0 validation-icon" id="ownerNameIcon"></span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">الاسم التجاري للمنشأة</label>
-                        <input type="text" name="trade_name" class="form-control bg-light border-0" placeholder="مثلاً: مؤسسة المحجوب" required>
+                        <div class="input-group">
+                            <input type="text" name="trade_name" id="tradeNameInput" class="form-control bg-light border-0 validation-field" data-type="trade_name" placeholder="مثلاً: مؤسسة المحجوب" required>
+                            <span class="input-group-text bg-light border-0 validation-icon" id="tradeNameIcon"></span>
+                        </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label text-muted small">تلفون المالك</label>
-                            <input type="tel" name="owner_phone" class="form-control bg-light border-0" placeholder="77xxxxxxx" required>
+                            <div class="input-group">
+                                <input type="tel" name="owner_phone" id="ownerPhoneInput" class="form-control bg-light border-0 validation-field" data-type="owner_phone" placeholder="77xxxxxxx" required>
+                                <span class="input-group-text bg-light border-0 validation-icon" id="ownerPhoneIcon"></span>
+                            </div>
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small">هاتف المحل</label>
@@ -156,7 +168,7 @@
                     </div>
 
                     <div class="mt-auto">
-                        <button type="submit" class="btn w-100 fw-bold shadow-sm" style="background: #4B338A; color: white; padding: 15px; border-radius: 8px;">
+                        <button type="submit" id="submitBtn" class="btn w-100 fw-bold shadow-sm" style="background: #4B338A; color: white; padding: 15px; border-radius: 8px;">
                             حفظ واعتماد المورد <i class="fas fa-check-double ms-2"></i>
                         </button>
                     </div>
@@ -263,6 +275,37 @@ function handleManualEntry(selectElement) {
     }
 }
 
+// --- نظام التحقق الفوري من التكرار ---
+document.querySelectorAll('.validation-field').forEach(input => {
+    input.addEventListener('blur', async function() {
+        const value = this.value.trim();
+        const type = this.getAttribute('data-type');
+        const iconContainer = document.getElementById(this.id.replace('Input', 'Icon'));
+
+        if (value.length < 3) return;
+
+        iconContainer.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary"></span>';
+
+        try {
+            // ملاحظة: تأكد من وجود هذا المسار في الـ Backend لديك
+            const response = await fetch(`/admin/suppliers/check-duplicate/?type=${type}&value=${encodeURIComponent(value)}`);
+            const result = await response.json();
+
+            if (result.exists) {
+                iconContainer.innerHTML = '<i class="fas fa-times-circle text-danger animated pulse"></i>';
+                this.classList.add('is-invalid');
+                this.style.border = "1px solid #dc3545";
+            } else {
+                iconContainer.innerHTML = '<i class="fas fa-check-circle text-success animated bounceIn"></i>';
+                this.classList.remove('is-invalid');
+                this.style.border = "1px solid #198754";
+            }
+        } catch (error) {
+            iconContainer.innerHTML = '';
+        }
+    });
+});
+
 // وظيفة النسخ إلى الحافظة
 function copyToClipboard(id) {
     const text = document.getElementById(id).innerText;
@@ -281,7 +324,14 @@ function copyToClipboard(id) {
 // معالجة إرسال النموذج عبر AJAX
 document.getElementById('addSupplierForm').onsubmit = async function(e) {
     e.preventDefault();
-    const btnSubmit = this.querySelector('button[type="submit"]');
+    
+    // التحقق من وجود حقول غير صالحة (مكررة)
+    if (this.querySelectorAll('.is-invalid').length > 0) {
+        alert("⚠️ يرجى تصحيح البيانات المكررة المشار إليها بالأحمر قبل الحفظ.");
+        return;
+    }
+
+    const btnSubmit = document.getElementById('submitBtn');
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري التعميد...';
 
@@ -322,5 +372,11 @@ window.onload = updateFinanceOptions;
     .btn-outline-primary { color: #4B338A; border-color: #4B338A; }
     .btn-check:checked + .btn-outline-primary { background-color: #4B338A !important; border-color: #4B338A !important; color: white !important; }
     .font-monospace { letter-spacing: 1px; }
+    
+    /* أنيميشن التحقق */
+    .validation-icon { min-width: 45px; justify-content: center; }
+    .animated { animation-duration: 0.5s; animation-fill-mode: both; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+    @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 1; transform: scale(1.05); } 100% { transform: scale(1); } }
 </style>
 {% endblock %}
