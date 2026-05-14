@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container-fluid" id="main-content">
-    <!-- رأس الصفحة: نظام الترقيم السيادي -->
+    <!-- رأس الصفحة: نظام الترقيم السيادي لمنصة محجوب أونلاين -->
     <div class="mb-4 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
         <div>
             <h2 class="fw-bold" style="color: #4B338A;">🛡️ تعميد مورد جديد</h2>
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <!-- العمود الثاني: المالك والعنوان -->
+            <!-- العمود الثاني: المالك والعنوان (النطاق الجغرافي: اليمن) -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -89,7 +89,6 @@
                         </div>
                     </div>
 
-                    <!-- قسم المحافظة والمديرية المرتبط برمجياً -->
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label text-muted small">المحافظة</label>
@@ -168,7 +167,7 @@
 </div>
 
 <script>
-// بيانات المواقع الخاصة بمنصتك
+// بيانات المواقع الخاصة بالمناطق التشغيلية لمحجوب أونلاين في اليمن
 const locationData = {
     'الحديدة': ['الخوخة', 'حيس', 'التحيتا', 'المراوعة', 'باجل'],
     'تعز': ['المخا', 'المظفر', 'القاهرة', 'صالة'],
@@ -180,13 +179,10 @@ const financialData = {
     'exchange': ['شركة النجم للصرافة', 'شركة باسياب للصرافة', 'شركة الحرمين', 'شركة المريسي', 'شركة عدن للصرافة']
 };
 
-// وظيفة تحديث المديريات بناءً على المحافظة
 function updateDistrictOptions() {
     const province = document.getElementById('provinceSelect').value;
     const districtSelect = document.getElementById('districtSelect');
-    
     districtSelect.innerHTML = '<option value="" selected disabled>اختر المديرية...</option>';
-    
     if (locationData[province]) {
         locationData[province].forEach(district => {
             let option = document.createElement('option');
@@ -197,11 +193,9 @@ function updateDistrictOptions() {
     }
 }
 
-// وظيفة تحديث البنوك
 function updateFinanceOptions() {
     const type = document.querySelector('input[name="fin_type"]:checked').value;
     const select = document.getElementById('financeSelect');
-    
     select.innerHTML = '<option value="" selected disabled>اختر من القائمة...</option>';
     financialData[type].forEach(item => {
         let option = document.createElement('option');
@@ -209,21 +203,16 @@ function updateFinanceOptions() {
         option.textContent = item;
         select.appendChild(option);
     });
-
     let manualOption = document.createElement('option');
     manualOption.value = "manual";
     manualOption.textContent = "أخرى (إدخال يدوي)...";
-    manualOption.style.color = "#4B338A";
-    manualOption.style.fontWeight = "bold";
     select.appendChild(manualOption);
-
     document.getElementById('manualEntryDiv').style.display = 'none';
 }
 
 function handleManualEntry(selectElement) {
     const manualDiv = document.getElementById('manualEntryDiv');
     const manualInput = document.getElementById('manualInput');
-    
     if (selectElement.value === "manual") {
         manualDiv.style.display = 'block';
         manualInput.setAttribute('name', 'bank_name');
@@ -236,22 +225,12 @@ function handleManualEntry(selectElement) {
     }
 }
 
-// تشغيل الوظائف عند تحميل الصفحة
-window.onload = function() {
-    updateFinanceOptions();
-};
+window.onload = updateFinanceOptions;
 </script>
 
 <style>
-    .custom-select {
-        border: 1px solid transparent !important;
-        transition: 0.3s;
-    }
-    .custom-select:focus {
-        border: 1px solid #4B338A !important;
-        box-shadow: 0 0 5px rgba(75, 51, 138, 0.2);
-    }
+    .custom-select:focus { border: 1px solid #4B338A !important; box-shadow: 0 0 5px rgba(75, 51, 138, 0.2); }
     .btn-outline-primary { color: #4B338A; border-color: #4B338A; }
-    .btn-check:checked + .btn-outline-primary { background-color: #4B338A !important; border-color: #4B338A !important; }
+    .btn-check:checked + .btn-outline-primary { background-color: #4B338A !important; border-color: #4B338A !important; color: white !important; }
 </style>
 {% endblock %}
