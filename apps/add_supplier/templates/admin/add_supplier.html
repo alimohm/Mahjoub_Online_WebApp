@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <!-- العمود الثاني: المالك والاتصال (تم تحديثه) -->
+            <!-- العمود الثاني: المالك والاتصال -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -79,7 +79,6 @@
                         </div>
                     </div>
                     
-                    <!-- الحقل الجديد: رقم هاتف المحل/المنشأة -->
                     <div class="mb-3">
                         <label class="form-label text-muted small">رقم هاتف المنشأة (مطلوب)</label>
                         <div class="input-group dir-ltr">
@@ -143,13 +142,19 @@
                         </select>
                     </div>
 
+                    <!-- حقل الإدخال اليدوي المطور -->
                     <div id="manualEntryDiv" class="mb-3" style="display: none;">
-                        <input type="text" id="manualInput" class="form-control border-primary" placeholder="اكتب اسم الجهة هنا">
+                        <label class="form-label text-primary small fw-bold">اسم الجهة (إدخال يدوي)</label>
+                        <input type="text" name="manual_bank_name" id="manualInput" class="form-control border-primary" placeholder="اكتب اسم البنك أو الشركة">
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label text-muted small">رقم الحساب / المحفظة</label>
-                        <input type="text" name="bank_acc" class="form-control bg-light border-0 fw-bold" placeholder="0000000" required>
+                        <div class="input-group">
+                            <input type="text" name="bank_acc" id="bankAccInput" class="form-control bg-light border-0 fw-bold validation-field" data-type="bank_acc" placeholder="0000000" required>
+                            <span class="input-group-text bg-light border-0 validation-icon" id="bankAccIcon"></span>
+                        </div>
+                        <div id="bankAccFeedback" class="small mt-1" style="display:none;"></div>
                     </div>
 
                     <button type="submit" id="submitBtn" class="btn w-100 fw-bold shadow-sm py-3 mt-auto" style="background: #4B338A; color: white; border-radius: 12px;">
@@ -257,33 +262,49 @@ function handleManualEntry(select) {
     const manualInput = document.getElementById('manualInput');
     if (select.value === "manual") {
         manualDiv.style.display = 'block';
-        manualInput.setAttribute('name', 'bank_name');
-        select.removeAttribute('name');
+        manualInput.required = true;
     } else {
         manualDiv.style.display = 'none';
-        select.setAttribute('name', 'bank_name');
-        manualInput.removeAttribute('name');
+        manualInput.required = false;
+        manualInput.value = "";
     }
 }
 
-// فحص التكرار الفوري (شامل حقل الهاتف الجديد)
+// فحص التكرار الفوري المطور
 document.querySelectorAll('.validation-field').forEach(input => {
     input.addEventListener('blur', async function() {
         const value = this.value.trim();
         const type = this.getAttribute('data-type');
         const icon = document.getElementById(this.id.replace('Input', 'Icon'));
+        const feedback = document.getElementById('bankAccFeedback');
+        
         if (value.length < 3) return;
 
         icon.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary"></span>';
+        
+        // بناء الرابط ليشمل البنك الحالي في حالة فحص الحساب البنكي
+        let url = `/admin/suppliers/check-duplicate/?type=${type}&value=${encodeURIComponent(value)}`;
+        if(type === 'bank_acc') {
+            const currentBank = document.getElementById('financeSelect').value;
+            url += `&bank_name=${encodeURIComponent(currentBank)}`;
+        }
+
         try {
-            const res = await fetch(`/admin/suppliers/check-duplicate/?type=${type}&value=${encodeURIComponent(value)}`);
+            const res = await fetch(url);
             const data = await res.json();
+            
             if (data.exists) {
                 icon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
                 this.classList.add('is-invalid');
+                if(type === 'bank_acc' && data.message) {
+                    feedback.style.display = 'block';
+                    feedback.className = 'small mt-1 text-danger fw-bold';
+                    feedback.innerText = data.message;
+                }
             } else {
                 icon.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
                 this.classList.remove('is-invalid');
+                if(feedback) feedback.style.display = 'none';
             }
         } catch (e) { icon.innerHTML = ''; }
     });
@@ -294,7 +315,7 @@ document.getElementById('addSupplierForm').onsubmit = async function(e) {
     if (this.querySelectorAll('.is-invalid').length > 0) {
         Swal.fire({
             title: 'تنبيه أمني',
-            text: 'يرجى تصحيح البيانات المكررة المشار إليها بالأحمر قبل الحفظ.',
+            text: 'يرجى تصحيح البيانات المكررة أو رقم الحساب المسجل مسبقاً قبل الحفظ.',
             icon: 'warning',
             confirmButtonText: 'حسناً فهمت',
             confirmButtonColor: '#4B338A'
@@ -320,7 +341,7 @@ document.getElementById('addSupplierForm').onsubmit = async function(e) {
             document.getElementById('res_password').innerText = res.data.password;
             new bootstrap.Modal(document.getElementById('successModal')).show();
         } else {
-            Swal.fire({ title: 'خطأ في النظام', text: res.message, icon: 'error', confirmButtonColor: '#d33' });
+            Swal.fire({ title: 'فشل الاعتماد', text: res.message, icon: 'error', confirmButtonColor: '#d33' });
             btn.disabled = false;
             btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
         }
@@ -360,5 +381,6 @@ window.onload = updateFinanceOptions;
     }
     .validation-icon { min-width: 40px; justify-content: center; }
     .swal2-popup { font-family: inherit !important; border-radius: 15px !important; }
+    #bankAccFeedback { font-size: 0.75rem; padding: 0 5px; }
 </style>
 {% endblock %}
