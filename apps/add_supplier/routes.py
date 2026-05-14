@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
 
-# حساب المسار المطلق لمجلد القوالب (Templates) بشكل ديناميكي وآمن لمنع خطأ الـ TemplateNotFound
+# حساب مسار القوالب برمجياً لمنع خطأ TemplateNotFound
 base_dir = os.path.abspath(os.path.dirname(__file__))
 template_dir = os.path.join(base_dir, '..', '..', 'templates')
 
@@ -12,9 +12,34 @@ admin_suppliers = Blueprint(
     template_folder=template_dir
 )
 
+# دالة داخلية مستقلة تماماً لفحص وتحديث الأعمدة الناقصة لجدول الموردين فقط
+def auto_upgrade_supplier_table():
+    from apps import db
+    from sqlalchemy import inspect, text
+    try:
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('suppliers')]
+        
+        expected_columns = {
+            'category': 'VARCHAR(50)',
+            'finance_type': 'VARCHAR(50)',
+            'bank_name': 'VARCHAR(100)',
+            'bank_account': 'VARCHAR(100)'
+        }
+        
+        for col_name, col_type in expected_columns.items():
+            if col_name not in columns:
+                db.session.execute(text(f"ALTER TABLE suppliers ADD COLUMN {col_name} {col_type};"))
+                db.session.commit()
+                print(f"🔧 [Independent Upgrade] Added column: {col_name}")
+    except Exception as e:
+        print(f"⚠️ [Independent Upgrade Warning]: {e}")
+
 @admin_suppliers.route('/admin/suppliers/add', methods=['GET', 'POST'])
 def add_supplier():
-    # استيراد محلي لتفادي الـ Circular Import تماماً وضمان إقلاع السيرفر
+    # تشغيل الفحص الذاتي المستقل فور طلب الصفحة لضمان سلامة الجداول
+    auto_upgrade_supplier_table()
+
     from models.supplier_db import Supplier
     from apps import db 
 
@@ -42,7 +67,6 @@ def add_supplier():
                 bank_name = request.form.get('manual_bank_name')
             bank_acc = request.form.get('bank_acc')
 
-            # فحص تكرار البيانات قبل الحفظ
             if Supplier.query.filter_by(username=username).first():
                 return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً!'}), 400
             if Supplier.query.filter_by(trade_name=trade_name).first():
@@ -81,14 +105,12 @@ def add_supplier():
             db.session.rollback()
             return jsonify({'status': 'error', 'message': f'حدث خطأ في الخادم: {str(e)}'}), 500
 
-    # معالجة طلب الـ GET وعرض الصفحة
     next_id_num = 1
     try:
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         if last_supplier:
             next_id_num = last_supplier.id + 1
     except Exception as e:
-        print(f"Warning: Database context fallback: {e}")
         next_id_num = 1
         
     return render_template('admin/add_supplier.html', next_id=next_id_num, next_id_num=next_id_num)
