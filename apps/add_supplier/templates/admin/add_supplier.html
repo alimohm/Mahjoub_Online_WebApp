@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <!-- العمود الثاني: المالك والاتصال -->
+            <!-- العمود الثاني: المالك والاتصال (تم تحديثه) -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -78,8 +78,19 @@
                             <span class="input-group-text bg-light border-0 validation-icon" id="tradeNameIcon"></span>
                         </div>
                     </div>
+                    
+                    <!-- الحقل الجديد: رقم هاتف المحل/المنشأة -->
                     <div class="mb-3">
-                        <label class="form-label text-muted small">رقم هاتف المالك (9 أرقام)</label>
+                        <label class="form-label text-muted small">رقم هاتف المنشأة (مطلوب)</label>
+                        <div class="input-group dir-ltr">
+                            <span class="input-group-text bg-white border-0 fw-bold">+967</span>
+                            <input type="tel" name="shop_phone" id="shopPhoneInput" class="form-control bg-light border-0 validation-field" data-type="shop_phone" placeholder="0XXXXXXXX" required>
+                            <span class="input-group-text bg-light border-0 validation-icon" id="shopPhoneIcon"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">رقم هاتف المالك (شخصي)</label>
                         <div class="input-group dir-ltr">
                             <span class="input-group-text bg-white border-0 fw-bold">+967</span>
                             <input type="tel" name="owner_phone" id="ownerPhoneInput" class="form-control bg-light border-0 validation-field" data-type="owner_phone" placeholder="77XXXXXXX" pattern="[0-9]{9}" maxlength="9" required>
@@ -150,7 +161,7 @@
     </form>
 </div>
 
-<!-- Modal النجاح والبيانات السيادية -->
+<!-- Modal النجاح -->
 <div class="modal fade" id="successModal" data-bs-backdrop="static" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
@@ -200,7 +211,6 @@
     </div>
 </div>
 
-<!-- إضافة مكتبة SweetAlert2 للإشعارات الاحترافية -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -256,7 +266,7 @@ function handleManualEntry(select) {
     }
 }
 
-// فحص التكرار الفوري
+// فحص التكرار الفوري (شامل حقل الهاتف الجديد)
 document.querySelectorAll('.validation-field').forEach(input => {
     input.addEventListener('blur', async function() {
         const value = this.value.trim();
@@ -279,11 +289,8 @@ document.querySelectorAll('.validation-field').forEach(input => {
     });
 });
 
-// إرسال النموذج مع تنبيهات SweetAlert2 الاحترافية
 document.getElementById('addSupplierForm').onsubmit = async function(e) {
     e.preventDefault();
-    
-    // استبدال الـ Alert التقليدي بـ SweetAlert في حالة وجود أخطاء مكررة
     if (this.querySelectorAll('.is-invalid').length > 0) {
         Swal.fire({
             title: 'تنبيه أمني',
@@ -311,34 +318,19 @@ document.getElementById('addSupplierForm').onsubmit = async function(e) {
             document.getElementById('res_owner_name').innerText = document.getElementById('ownerNameInput').value;
             document.getElementById('res_username').innerText = res.data.username;
             document.getElementById('res_password').innerText = res.data.password;
-            
             new bootstrap.Modal(document.getElementById('successModal')).show();
         } else {
-            // تنبيه احترافي في حالة الخطأ من السيرفر
-            Swal.fire({
-                title: 'خطأ في النظام',
-                text: res.message,
-                icon: 'error',
-                confirmButtonText: 'إغلاق',
-                confirmButtonColor: '#d33'
-            });
+            Swal.fire({ title: 'خطأ في النظام', text: res.message, icon: 'error', confirmButtonColor: '#d33' });
             btn.disabled = false;
             btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
         }
     } catch (e) {
-        Swal.fire({
-            title: 'فشل الاتصال',
-            text: 'حدث خطأ غير متوقع أثناء الاتصال بالخادم.',
-            icon: 'error',
-            confirmButtonText: 'إغلاق',
-            confirmButtonColor: '#d33'
-        });
+        Swal.fire({ title: 'فشل الاتصال', text: 'خطأ غير متوقع بالخادم', icon: 'error', confirmButtonColor: '#d33' });
         btn.disabled = false;
         btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
     }
 };
 
-// وظيفة النسخ الكامل
 function copyFullReport() {
     const trade = document.getElementById('res_trade_name').innerText;
     const owner = document.getElementById('res_owner_name').innerText;
@@ -346,15 +338,7 @@ function copyFullReport() {
     const pass = document.getElementById('res_password').innerText;
     const id = document.getElementById('display-id').innerText;
     
-    const report = `🛡️ تقرير تعميد مورد - محجوب أونلاين\n` +
-                   `--------------------------\n` +
-                   `🏛️ المنشأة: ${trade}\n` +
-                   `👤 المالك: ${owner}\n` +
-                   `🆔 المعرف: ${id}\n` +
-                   `👤 المستخدم: ${user}\n` +
-                   `🔑 كلمة السر: ${pass}\n` +
-                   `--------------------------\n` +
-                   `⚠️ يرجى تغيير كلمة السر فور الدخول الأول.`;
+    const report = `🛡️ تقرير تعميد مورد - محجوب أونلاين\n--------------------------\n🏛️ المنشأة: ${trade}\n👤 المالك: ${owner}\n🆔 المعرف: ${id}\n👤 المستخدم: ${user}\n🔑 كلمة السر: ${pass}\n--------------------------\n⚠️ يرجى تغيير كلمة السر فور الدخول الأول.`;
 
     navigator.clipboard.writeText(report).then(() => {
         const btn = document.getElementById('copyAllBtn');
@@ -375,7 +359,6 @@ window.onload = updateFinanceOptions;
         background-color: #4B338A !important; border-color: #4B338A !important; color: #fff !important;
     }
     .validation-icon { min-width: 40px; justify-content: center; }
-    /* تحسين شكل خط SweetAlert */
     .swal2-popup { font-family: inherit !important; border-radius: 15px !important; }
 </style>
 {% endblock %}
