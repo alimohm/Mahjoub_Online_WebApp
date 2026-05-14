@@ -1,48 +1,33 @@
 # coding: utf-8
-# 🌟 ملف التشغيل الرئيسي لمنصة محجوب أونلاين
+# - نقطة انطلاق التطبيق
 import os
-import sys
-
-# التأكد من أن المجلد الحالي مضاف لمسار النظام لضمان صحة الاستيراد
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from flask import Flask
-
-# 🛡️ محاولة استيراد قاعدة البيانات بحذر لتجنب الانهيار المفاجئ
-try:
-    from models.admin_db import db, AdminUser
-    print("✅ تم استيراد نماذج قاعدة البيانات بنجاح")
-except ImportError as e:
-    print(f"❌ خطأ في الاستيراد: {e}")
-    # تعريف كائن وهمي لمنع الانهيار الكامل أثناء الفحص
-    db = None 
+# 💡 استيراد آمن من مجلد models
+from models.admin_db import db, AdminUser 
 
 def create_app():
+    """
+    دالة بناء التطبيق (App Factory):
+    تقوم بتجميع الإعدادات وربط قاعدة البيانات.
+    """
     app = Flask(__name__)
     
-    # إعدادات الأمان (مهمة لـ Flask-WTF في requirements.txt)
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-key-for-dev')
-    
-    # ربط قاعدة البيانات (PostgreSQL) الظاهرة في image_77d5fa.png
+    # إعدادات الاتصال بقاعدة البيانات (PostgreSQL في Railway)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    if db:
-        db.init_app(app)
-        with app.app_context():
-            try:
-                db.create_all()
-            except Exception as e:
-                print(f"⚠️ فشل إنشاء الجداول: {e}")
-
-    @app.route('/')
-    def health_check():
-        return "Mahjoub Online is Running!"
-
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_key_2026')
+    
+    # ربط القاعدة بالتطبيق
+    db.init_app(app)
+    
+    with app.app_context():
+        # إنشاء الجداول تلقائياً عند أول تشغيل
+        db.create_all()
+        
     return app
 
-# الكائن الذي يبحث عنه الـ Procfile عبر الأمر run:app
+# 🚀 المتغير الذي يحتاجه gunicorn للتشغيل
 app = create_app()
 
 if __name__ == "__main__":
-    app.run()
+    # التشغيل المحلي
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
