@@ -1,27 +1,16 @@
 # coding: utf-8
-# ملف التشغيل الرئيسي - منصة محجوب أونلاين
+# ملف التشغيل الرئيسي لمنصة محجوب أونلاين
 import os
-import sys
+from flask import Flask
 
-# 1. تهيئة المسارات البرمجية
-# نضمن أن النظام يرى مجلد apps كحزمة برمجية رئيسية
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# إنشاء كائن التطبيق - تأكد أن اسمه 'app' ليجده Gunicorn
+app = Flask(__name__)
 
-# 2. استيراد دالة مصنع التطبيق من مجلد apps
-# ملاحظة: سيقوم هذا السطر بتنفيذ الكود الموجود في apps/__init__.py
-try:
-    from apps import create_app
-    print("✅ تم استيراد محرك التطبيق من مجلد apps بنجاح")
-except ImportError as e:
-    print(f"❌ خطأ حرج: لم يتم العثور على حزمة apps. التفاصيل: {e}")
-    sys.exit(1) # إغلاق التشغيل في حال فشل الاستيراد
+@app.route('/')
+def home():
+    return "Mahjoub Online is Running!"
 
-# 3. إنشاء كائن التطبيق
-# هذا المتغير 'app' هو ما يبحث عنه خادم Railway لتشغيل الموقع
-app = create_app()
-
-# 4. نقطة الانطلاق عند التشغيل محلياً
 if __name__ == "__main__":
-    # تشغيل التطبيق على المنفذ المخصص (أو 5000 افتراضياً)
+    # تشغيل التطبيق على المنفذ الذي تحدده المنصة السحابية
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
