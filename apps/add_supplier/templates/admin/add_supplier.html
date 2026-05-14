@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="container-fluid" id="main-content">
-    <!-- رأس الصفحة -->
     <div class="mb-4 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm border-end border-4" style="border-color: #4B338A !important;">
         <div>
             <h2 class="fw-bold" style="color: #4B338A;">🛡️ تعميد مورد جديد</h2>
@@ -20,12 +19,11 @@
         <input type="hidden" name="unified_id" value="SUP-WEL-MAH963{{ next_id if next_id else '1' }}">
 
         <div class="row g-4">
-            <!-- العمود الأول: بيانات الوصول -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
                         <i class="fas fa-user-shield fa-lg me-2" style="color: #4B338A;"></i>
-                        <h5 class="fw-bold mb-0">بيانات الوصول</h5>
+                        <h5 class="fw-bold mb-0">بيانات الوصول والتوثيق</h5>
                     </div>
                     
                     <div class="mb-3">
@@ -42,23 +40,35 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-muted small">فئة المورد</label>
-                        <select name="category" id="categorySelect" class="form-select bg-light border-0" onchange="handleCategoryManualEntry(this)" required>
-                            <option value="" selected disabled>اختر فئة المورد...</option>
-                            <option value="مورد جملة">مورد جملة</option>
-                            <option value="مورد تجزئة">مورد تجزئة</option>
-                            <option value="منتج محلي / مصنع">منتج محلي / مصنع</option>
-                            <option value="مستورد">مستورد</option>
+                        <label class="form-label text-muted small">نوع الوثيقة / الهوية</label>
+                        <select name="identity_type" id="identityTypeSelect" class="form-select bg-light border-0" onchange="handleIdentityManualEntry(this)" required>
+                            <option value="" selected disabled>اختر نوع الهوية...</option>
+                            <option value="بطاقة الكترونية">بطاقة إلكترونية</option>
+                            <option value="رخصة مزاولة المهنه">رخصة مزاولة المهنة</option>
+                            <option value="سجل تجاري">سجل تجاري</option>
+                            <option value="بطاقة كمكبيوتر">بطاقة كمبيوتر</option>
                             <option value="manual">أخرى (إدخال يدوي)...</option>
                         </select>
                     </div>
-                    <div id="categoryManualDiv" class="mb-3" style="display: none;">
-                        <input type="text" name="manual_category" id="categoryManualInput" class="form-control border-primary" placeholder="اسم الفئة الجديدة">
+
+                    <div id="identityManualDiv" class="mb-3" style="display: none;">
+                        <label class="form-label text-primary small fw-bold">اكتب نوع الهوية يدويًا</label>
+                        <input type="text" name="manual_identity_type" id="identityManualInput" class="form-control border-primary" placeholder="مثال: جواز سفر ديبلوماسي">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">رقم الوثيقة / الهوية</label>
+                        <input type="text" name="identity_number" class="form-control bg-light border-0" placeholder="رقم السجل أو البطاقة" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">صورة الوثيقة المرفوعة</label>
+                        <input type="file" name="identity_image" class="form-control bg-light border-0" required>
+                        <small class="text-muted d-block mt-1" style="font-size: 11px;">الملفات المدعومة: JPG, PNG, PDF (الحد الأقصى 2MB)</small>
                     </div>
                 </div>
             </div>
 
-            <!-- العمود الثاني: بيانات المالك والمنشأة -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
@@ -86,31 +96,38 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">المحافظة</label>
-                        <select name="province" id="provinceSelect" class="form-select bg-light border-0" onchange="updateDistrictOptions()" required>
-                            <option value="" selected disabled>اختر المحافظة...</option>
-                            <option value="الحديدة">الحديدة</option>
-                            <option value="تعز">تعز</option>
-                            <option value="عدن">عدن</option>
-                            <option value="صنعاء">صنعاء</option>
-                            <option value="حضرموت">حضرموت</option>
-                        </select>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small">المحافظة</label>
+                            <select name="province" id="provinceSelect" class="form-select bg-light border-0" onchange="updateDistrictOptions()" required>
+                                <option value="" selected disabled>اختر...</option>
+                                <option value="الحديدة">الحديدة</option>
+                                <option value="تعز">تعز</option>
+                                <option value="عدن">عدن</option>
+                                <option value="صنعاء">صنعاء</option>
+                                <option value="حضرموت">حضرموت</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">المديرية</label>
+                            <select name="district" id="districtSelect" class="form-select bg-light border-0" required>
+                                <option value="" selected disabled>حدد المحافظة أولاً</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-muted small">العنوان بالتفصيل</label>
-                        <textarea name="address" class="form-control bg-light border-0" rows="2" required></textarea>
+                        <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="الشارع، الحي، بجانب..." required></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- العمود الثالث: الربط المالي -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
                     <div class="d-flex align-items-center mb-3">
                         <i class="fas fa-wallet fa-lg me-2" style="color: #4B338A;"></i>
-                        <h5 class="fw-bold mb-0">الربط المالي</h5>
+                        <h5 class="fw-bold mb-0">الربط المالي السيادي</h5>
                     </div>
                     
                     <div class="mb-3 text-center">
@@ -125,12 +142,12 @@
                     <div class="mb-3">
                         <label class="form-label text-muted small">جهة التحويل</label>
                         <select name="bank_name" id="financeSelect" class="form-select bg-light border-0" onchange="handleManualEntry(this)" required>
-                            <!-- سيتم ملؤها عبر JavaScript -->
-                        </select>
+                            </select>
                     </div>
 
                     <div id="manualEntryDiv" class="mb-3" style="display: none;">
-                        <input type="text" name="manual_bank_name" id="manualInput" class="form-control border-primary" placeholder="اسم الجهة يدوياً">
+                        <label class="form-label text-primary small fw-bold">اسم البنك أو الشركة (يدوياً)</label>
+                        <input type="text" name="manual_bank_name" id="manualInput" class="form-control border-primary" placeholder="اكتب اسم الجهة الجديدة">
                     </div>
 
                     <div class="mb-4">
@@ -140,6 +157,21 @@
                             <span class="input-group-text bg-light border-0 validation-icon" id="bankAccIcon"></span>
                         </div>
                         <div id="bankAccFeedback" class="small mt-1" style="display:none;"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">فئة المورد</label>
+                        <select name="category" id="categorySelect" class="form-select bg-light border-0" onchange="handleCategoryManualEntry(this)" required>
+                            <option value="" selected disabled>اختر فئة المورد...</option>
+                            <option value="مورد جملة">مورد جملة</option>
+                            <option value="مورد تجزئة">مورد تجزئة</option>
+                            <option value="منتج محلي / مصنع">منتج محلي / مصنع</option>
+                            <option value="مستورد">مستورد</option>
+                            <option value="manual">أخرى (إدخال يدوي)...</option>
+                        </select>
+                    </div>
+                    <div id="categoryManualDiv" class="mb-3" style="display: none;">
+                        <input type="text" name="manual_category" id="categoryManualInput" class="form-control border-primary" placeholder="اسم الفئة الجديدة">
                     </div>
 
                     <button type="submit" id="submitBtn" class="btn w-100 fw-bold py-3 mt-auto" style="background: #4B338A; color: white; border-radius: 12px;">
@@ -152,7 +184,16 @@
 </div>
 
 <script>
-// القوائم المالية الشاملة
+// الداتابيز الجغرافية للمحافظات والمديريات اليمنية المطلوبة
+const locationData = {
+    'الحديدة': ['الخوخة', 'حيس', 'التحيتا', 'الحالي', 'الحوك', 'الميناء', 'باجل', 'الزيدية'],
+    'تعز': ['المخا', 'المظفر', 'القاهرة', 'صالة', 'التربة', 'الوازعية', 'موزع'],
+    'عدن': ['المنصورة', 'الشيخ عثمان', 'كريتر', 'المعلا', 'التواهي', 'خور مكسر', 'البريقة', 'دار سعد'],
+    'صنعاء': ['السبعين', 'التحرير', 'شعوب', 'الوحدة', 'الثورة', 'بني الحارث', 'سنحان'],
+    'حضرموت': ['المكلا', 'سيئون', 'الشحر', 'تريم', 'القطن', 'شبام', 'غيل باوزير']
+};
+
+// الداتابيز للمؤسسات المالية
 const financialData = {
     'banks': [
         'بنك الكريمي الإسلامي', 'بنك التضامن', 'بنك القطيبي الإسلامي', 
@@ -166,7 +207,26 @@ const financialData = {
     ]
 };
 
-// تحديث خيارات البنوك/الصرافة
+// وظيفة تحديث المديريات بناءً على المحافظة المحددة
+function updateDistrictOptions() {
+    const provinceSelect = document.getElementById('provinceSelect');
+    const districtSelect = document.getElementById('districtSelect');
+    const selectedProvince = provinceSelect.value;
+
+    // تنظيف القائمة المنسدلة للمديريات
+    districtSelect.innerHTML = '<option value="" selected disabled>اختر المديرية...</option>';
+
+    if (locationData[selectedProvince]) {
+        locationData[selectedProvince].forEach(district => {
+            let option = document.createElement('option');
+            option.value = district;
+            option.textContent = district;
+            districtSelect.appendChild(option);
+        });
+    }
+}
+
+// تحديث خيارات البنوك والصرافة مع إضافة الإدخال اليدوي تلقائياً
 function updateFinanceOptions() {
     const type = document.querySelector('input[name="fin_type"]:checked').value;
     const select = document.getElementById('financeSelect');
@@ -183,7 +243,46 @@ function updateFinanceOptions() {
     select.appendChild(manualOpt);
 }
 
-// نظام التحقق اللحظي الشامل
+// التحكم بحقل الإدخال اليدوي لنوع الهوية
+function handleIdentityManualEntry(select) {
+    const div = document.getElementById('identityManualDiv');
+    const input = document.getElementById('identityManualInput');
+    if (select.value === 'manual') {
+        div.style.display = 'block';
+        input.setAttribute('required', 'true');
+    } else {
+        div.style.display = 'none';
+        input.removeAttribute('required');
+    }
+}
+
+// التحكم بحقل الإدخال اليدوي للبنوك والشركات
+function handleManualEntry(select) {
+    const div = document.getElementById('manualEntryDiv');
+    const input = document.getElementById('manualInput');
+    if (select.value === 'manual') {
+        div.style.display = 'block';
+        input.setAttribute('required', 'true');
+    } else {
+        div.style.display = 'none';
+        input.removeAttribute('required');
+    }
+}
+
+// التحكم بحقل فئة المورد يدويًا
+function handleCategoryManualEntry(select) {
+    const div = document.getElementById('categoryManualDiv');
+    const input = document.getElementById('categoryManualInput');
+    if (select.value === 'manual') {
+        div.style.display = 'block';
+        input.setAttribute('required', 'true');
+    } else {
+        div.style.display = 'none';
+        input.removeAttribute('required');
+    }
+}
+
+// نظام التحقق اللحظي الشامل (Ajax validation)
 document.querySelectorAll('.validation-field').forEach(input => {
     input.addEventListener('blur', async function() {
         const value = this.value.trim();
@@ -193,13 +292,11 @@ document.querySelectorAll('.validation-field').forEach(input => {
         
         if (value.length < 2) return;
 
-        // إظهار سبينر التحميل
         icon.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary"></span>';
         
         try {
             let url = `/admin/suppliers/check-duplicate/?type=${type}&value=${encodeURIComponent(value)}`;
             
-            // إضافة البنك للتحقق من تكرار رقم الحساب لنفس البنك فقط
             if(type === 'bank_acc') {
                 const bank = document.getElementById('financeSelect').value;
                 url += `&bank_name=${encodeURIComponent(bank)}`;
@@ -209,7 +306,6 @@ document.querySelectorAll('.validation-field').forEach(input => {
             const data = await res.json();
 
             if (data.exists) {
-                // حالة الخطأ (موجود مسبقاً)
                 icon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
                 this.classList.add('is-invalid');
                 this.classList.remove('is-valid');
@@ -219,7 +315,6 @@ document.querySelectorAll('.validation-field').forEach(input => {
                     feedback.innerText = '⚠️ الحساب مسجل مسبقاً لهذا البنك';
                 }
             } else {
-                // حالة النجاح (غير موجود)
                 icon.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
                 this.classList.remove('is-invalid');
                 this.classList.add('is-valid');
@@ -232,18 +327,10 @@ document.querySelectorAll('.validation-field').forEach(input => {
     });
 });
 
-// تهيئة البيانات عند التحميل
-window.onload = updateFinanceOptions;
-
-function handleCategoryManualEntry(select) {
-    const div = document.getElementById('categoryManualDiv');
-    div.style.display = select.value === 'manual' ? 'block' : 'none';
-}
-
-function handleManualEntry(select) {
-    const div = document.getElementById('manualEntryDiv');
-    div.style.display = select.value === 'manual' ? 'block' : 'none';
-}
+// تشغيل وتهيئة الإعدادات عند تحميل الصفحة
+window.onload = function() {
+    updateFinanceOptions();
+};
 </script>
 
 <style>
@@ -251,5 +338,9 @@ function handleManualEntry(select) {
     .is-valid { border: 1px solid #198754 !important; background-color: #f8fff9 !important; }
     .validation-icon { min-width: 45px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; }
     .dir-ltr { direction: ltr; }
+    .btn-outline-primary { color: #4B338A; border-color: #4B338A; }
+    .btn-outline-primary:hover, .btn-check:checked + .btn-outline-primary { 
+        background-color: #4B338A !important; border-color: #4B338A !important; color: #fff !important;
+    }
 </style>
 {% endblock %}
