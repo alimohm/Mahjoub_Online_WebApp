@@ -258,15 +258,15 @@ function handleIdentityManualEntry(s) { document.getElementById('identityManualD
 function handleManualEntry(s) { document.getElementById('manualEntryDiv').style.display = s.value === 'manual' ? 'block' : 'none'; }
 function handleCategoryManualEntry(s) { }
 
-// --- التفعيل القياسي والآمن عند تحميل الصفحة ---
+// تشغيل آمن عند اكتمال الـ DOM
 document.addEventListener("DOMContentLoaded", function() {
     updateFinanceOptions();
 
-    // ربط الفحص اللحظي AJAX لمنع تكرار الحقول
+    // فحص الحقول اللحظي لمنع التكرار عبر الـ Ajax
     document.querySelectorAll('.validation-field').forEach(input => {
         input.addEventListener('blur', async function() {
             const type = this.getAttribute('data-type');
-            const value = this.value.strip ? this.value.strip() : this.value.trim();
+            const value = this.value.trim();
             const iconSpan = document.getElementById(type + 'Icon');
             
             if (!value) return;
@@ -290,13 +290,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     if(iconSpan) iconSpan.innerHTML = '✔️';
                 }
             } catch (err) {
-                console.error("AJAX Error:", err);
+                console.error("AJAX Validation Error:", err);
             }
         });
     });
 });
 
-// معالجة إرسال النموذج عبر AJAX
+// إرسال البيانات عبر Ajax
 document.getElementById('addSupplierForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
@@ -306,7 +306,6 @@ document.getElementById('addSupplierForm').addEventListener('submit', async func
     const formData = new FormData(this);
 
     try {
-        // تحديد مسار ثابت صريح منعاً لتشوهات الروابط النسبية
         const response = await fetch('/admin/suppliers/add', {
             method: 'POST',
             body: formData,
@@ -340,7 +339,7 @@ function copyAndFinish() {
     const text = `بيانات المورد السيادية - محجوب أونلاين\nالمالك: ${document.getElementById('resOwner').innerText}\nاسم المستخدم: ${document.getElementById('resUser').innerText}\nكلمة المرور: ${document.getElementById('resPass').innerText}\nتنبيه: يرجى تغيير كلمة المرور فور الدخول.`;
     navigator.clipboard.writeText(text).then(() => {
         alert("تم نسخ البيانات بنجاح!");
-        window.location.href = '/admin/suppliers/add'; // إعادة تحميل نظيفة لمنع التكرار
+        window.location.href = '/admin/suppliers/add';
     });
 }
 </script>
