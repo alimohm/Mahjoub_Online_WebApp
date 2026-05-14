@@ -2,10 +2,14 @@ import os
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
 
+# حساب المسار المطلق لمجلد القوالب (Templates) بشكل ديناميكي وآمن لمنع خطأ الـ TemplateNotFound
+base_dir = os.path.abspath(os.path.dirname(__file__))
+template_dir = os.path.join(base_dir, '..', '..', 'templates')
+
 admin_suppliers = Blueprint(
     'admin_suppliers', 
     __name__,
-    template_folder='../../templates'
+    template_folder=template_dir
 )
 
 @admin_suppliers.route('/admin/suppliers/add', methods=['GET', 'POST'])
