@@ -1,22 +1,26 @@
+# coding: utf-8
 import os
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, current_app
 from werkzeug.utils import secure_filename
-from apps.models import db, Supplier, User  # افترضت وجود هذه النماذج في مشروعك
-from apps.utils import admin_required  # صالحة للتحقق من صلاحيات المشرف
+from models.supplier_db import db, Supplier
+from datetime import datetime
 
+# تعريف المسار (Blueprint)
 add_supplier_bp = Blueprint('add_supplier', __name__)
 
-# إعدادات رفع الصور
+# امتدادات الملفات المسموح بها لصور الهويات
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
 def allowed_file(filename):
+    """التحقق من نوع الملف المرفوع"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @add_supplier_bp.route('/admin/suppliers/add', methods=['GET', 'POST'])
-@admin_required
 def add_supplier():
+    """المحرك الرئيسي لإضافة وتعميد الموردين"""
+    
     if request.method == 'POST':
-        # 1. استلام البيانات الأساسية
+        # 1. استلام الهوية الرقمية والوصول
         unified_id = request.form.get('unified_id')
         username = request.form.get('username')
         password = request.form.get('password')
@@ -33,76 +37,85 @@ def add_supplier():
         shop_phone = request.form.get('shop_phone')
         province = request.form.get('province')
         district = request.form.get('district')
-        address = request.form.get('address')
+        address_detail = request.form.get('address')
         
-        # 4. الربط المالي (اختيار أو يدوي)
+        # 4. الربط المالي السيادي
         fin_type = request.form.get('fin_type')
         bank_name = request.form.get('bank_name')
         if bank_name == 'manual':
             bank_name = request.form.get('manual_bank_name')
         bank_acc = request.form.get('bank_acc')
         
-        # 5. فئة المورد (اختيار أو يدوي)
+        # 5. فئة المورد
         category = request.form.get('category')
         if category == 'manual':
             category = request.form.get('manual_category')
 
-        # 6. معالجة رفع صورة الوثيقة
+        # 6. معالجة رفع وأرشفة صورة الوثيقة
         file = request.files.get('identity_image')
         filename = None
         if file and allowed_file(file.filename):
+            # تسمية الملف بالمعرف الموحد لسهولة التتبع
             filename = secure_filename(f"{unified_id}_{file.filename}")
-            upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'suppliers_ids')
+            upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'suppliers_docs')
+            
             if not os.path.exists(upload_path):
                 os.makedirs(upload_path)
             file.save(os.path.join(upload_path, filename))
 
         try:
-            # إنشاء سجل المورد الجديد
+            # إنشاء كائن المورد الجديد
             new_supplier = Supplier(
-                unified_id=unified_id,
+                sovereign_id=unified_id,
                 username=username,
+                trade_name=trade_name,
+                owner_name=owner_name,
                 identity_type=identity_type,
                 identity_number=identity_number,
                 identity_image=filename,
-                owner_name=owner_name,
-                trade_name=trade_name,
                 shop_phone=shop_phone,
-                province=province,
-                district=district,
-                address=address,
                 fin_type=fin_type,
                 bank_name=bank_name,
                 bank_acc=bank_acc,
-                category=category
+                province=province,
+                district=district,
+                address_detail=address_detail,
+                activity_type=category
             )
-            # تعيين كلمة المرور (يفضل استخدام hash)
-            new_supplier.set_password(password) 
+            
+            # تشفير كلمة المرور المؤقتة قبل الحفظ
+            new_supplier.set_password(password)
             
             db.session.add(new_supplier)
             db.session.commit()
             
-            flash(f'تم اعتماد المورد {trade_name} بنجاح بالمعرف {unified_id}', 'success')
-            return redirect(url_for('add_supplier.list_suppliers')) # أو أي مسار آخر
+            # إذا كان الطلب AJAX (من الـ Modal)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'status': 'success', 'message': 'تم التعميد بنجاح'}), 200
+            
+            flash(f'تم تعميد المورد {trade_name} بنجاح', 'success')
+            return redirect(url_for('add_supplier.add_supplier'))
 
         except Exception as e:
             db.session.rollback()
-            flash(f'حدث خطأ أثناء الحفظ: {str(e)}', 'danger')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'status': 'error', 'message': str(e)}), 400
+            flash(f'خطأ في النظام: {str(e)}', 'danger')
 
-    # حساب المعرف القادم (Next ID) للعرض في القالب
+    # حساب المعرف الموحد القادم (Next ID) للعرض في الهيدر
     last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
     next_id = (last_supplier.id + 1) if last_supplier else 1
     
     return render_template('admin/add_supplier.html', next_id=next_id)
 
-# --- نظام التحقق اللحظي (Ajax Validation) ---
+# --- محرك التحقق اللحظي (Ajax Validation Engine) ---
 
 @add_supplier_bp.route('/admin/suppliers/check-duplicate/', methods=['GET'])
-@admin_required
 def check_duplicate():
+    """محرك فحص التكرار لضمان فرادة البيانات في المنظومة"""
     check_type = request.args.get('type')
     value = request.args.get('value')
-    bank_name = request.args.get('bank_name')
+    bank_name = request.args.get('bank_name') # خاص بفحص رقم الحساب
 
     exists = False
 
@@ -116,7 +129,7 @@ def check_duplicate():
         exists = Supplier.query.filter_by(shop_phone=value).first() is not None
 
     elif check_type == 'bank_acc':
-        # التحقق من تكرار رقم الحساب لنفس البنك فقط
+        # التحقق من أن رقم الحساب غير مسجل لنفس البنك/الشركة
         exists = Supplier.query.filter_by(bank_acc=value, bank_name=bank_name).first() is not None
 
     return jsonify({'exists': exists})
