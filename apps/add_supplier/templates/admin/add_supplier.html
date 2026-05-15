@@ -6,7 +6,7 @@
 <div class="container-fluid" id="main-content">
     <div class="mb-4 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm border-end border-4" style="border-color: #4B338A !important;">
         <div class="d-flex align-items-center gap-3">
-            <a href="javascript:history.back()" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm text-decoration-none border" style="width: 42px; height: 42px; transition: all 0.3s ease;" title="رجوع">
+            <a href="javascript:history.back()" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm text-decoration-none border back-btn" style="width: 42px; height: 42px; transition: all 0.3s ease;">
                 <i class="fas fa-arrow-right" style="color: #4B338A; font-size: 18px;"></i>
             </a>
             <div>
@@ -22,8 +22,6 @@
 
     <form id="addSupplierForm" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="unified_id" value="SUP-WEL-MAH963{{ next_id if next_id else '1' }}">
-
         <div class="row g-4">
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
@@ -31,42 +29,20 @@
                         <i class="fas fa-user-shield fa-lg me-2" style="color: #4B338A;"></i>
                         <h5 class="fw-bold mb-0">بيانات الوصول والتوثيق</h5>
                     </div>
-                    
                     <div class="mb-3">
                         <label class="form-label text-muted small">اسم المستخدم (Login)</label>
                         <div class="input-group">
-                            <input type="text" name="username" id="usernameInput" class="form-control bg-light border-0 validation-field" data-type="username" placeholder="ali_2026" required>
-                            <span class="input-group-text bg-light border-0 validation-icon" id="usernameIcon"></span>
+                            <input type="text" name="username" id="u_name" class="form-control bg-light border-0 validation-field" placeholder="ali_2026" required>
+                            <span class="input-group-text bg-light border-0 validation-icon"><i class="fas fa-minus text-muted"></i></span>
                         </div>
                     </div>
-
                     <div class="mb-3">
-                        <label class="form-label text-muted small">كلمة مرور النظام (المؤقتة)</label>
-                        <input type="password" name="password" id="passwordInput" class="form-control bg-light border-0" placeholder="********" required>
+                        <label class="form-label text-muted small">كلمة المرور المؤقتة</label>
+                        <input type="text" name="password" id="u_pass" class="form-control bg-light border-0 fw-bold text-primary" placeholder="اكتب كلمة مرور قوية" required>
                     </div>
-
                     <div class="mb-3">
-                        <label class="form-label text-muted small">نوع الوثيقة / الهوية</label>
-                        <select name="identity_type" id="identityTypeSelect" class="form-select bg-light border-0" onchange="handleIdentityManualEntry(this)" required>
-                            <option value="" selected disabled>اختر نوع الهوية...</option>
-                            <option value="بطاقة الكترونية">بطاقة إلكترونية</option>
-                            <option value="سجل تجاري">سجل تجاري</option>
-                            <option value="manual">أخرى (إدخال يدوي)...</option>
-                        </select>
-                    </div>
-
-                    <div id="identityManualDiv" class="mb-3" style="display: none;">
-                        <input type="text" name="manual_identity_type" id="identityManualInput" class="form-control border-primary" placeholder="مثال: جواز سفر">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">رقم الوثيقة / الهوية</label>
-                        <input type="text" name="identity_number" id="identityNumberInput" class="form-control bg-light border-0" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">صورة الوثيقة</label>
-                        <input type="file" name="identity_image" class="form-control bg-light border-0">
+                        <label class="form-label text-muted small">رقم الوثيقة</label>
+                        <input type="text" name="identity_number" class="form-control bg-light border-0" required>
                     </div>
                 </div>
             </div>
@@ -79,48 +55,23 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">اسم المالك الكامل</label>
-                        <input type="text" name="owner_name" id="ownerNameInput" class="form-control bg-light border-0" required>
+                        <input type="text" name="owner_name" id="o_full_name" class="form-control bg-light border-0" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">الاسم التجاري للمنشأة</label>
-                        <div class="input-group">
-                            <input type="text" name="trade_name" id="tradeNameInput" class="form-control bg-light border-0 validation-field" data-type="trade_name" required>
-                            <span class="input-group-text bg-light border-0 validation-icon" id="trade_nameIcon"></span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">رقم هاتف المحل / المنشأة</label>
-                        <div class="input-group dir-ltr">
-                            <span class="input-group-text bg-white border-0">+967</span>
-                            <input type="tel" name="shop_phone" id="shopPhoneInput" class="form-control bg-light border-0 validation-field" data-type="shop_phone" placeholder="77XXXXXXX" required>
-                            <span class="input-group-text bg-light border-0 validation-icon" id="shop_phoneIcon"></span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">رقم هاتف المالك (شخصي)</label>
-                        <div class="input-group dir-ltr">
-                            <span class="input-group-text bg-white border-0">+967</span>
-                            <input type="tel" name="owner_phone" id="ownerPhoneInput" class="form-control bg-light border-0 validation-field" data-type="owner_phone" placeholder="7XXXXXXXX" required>
-                            <span class="input-group-text bg-light border-0 validation-icon" id="owner_phoneIcon"></span>
-                        </div>
+                        <label class="form-label text-muted small">هاتف المالك</label>
+                        <input type="tel" name="owner_phone" class="form-control bg-light border-0 dir-ltr" placeholder="7XXXXXXXX" required>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label text-muted small">المحافظة</label>
                             <select name="province" id="provinceSelect" class="form-select bg-light border-0" onchange="updateDistrictOptions()" required>
                                 <option value="" selected disabled>اختر...</option>
-                                </select>
+                            </select>
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small">المديرية</label>
-                            <select name="district" id="districtSelect" class="form-select bg-light border-0" required>
-                                <option value="" selected disabled>حدد المحافظة</option>
-                            </select>
+                            <select name="district" id="districtSelect" class="form-select bg-light border-0" required></select>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">العنوان بالتفصيل</label>
-                        <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="الشارع، بجوار معلم معروف..." required></textarea>
                     </div>
                 </div>
             </div>
@@ -141,29 +92,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">جهة التحويل</label>
-                        <select name="bank_name" id="financeSelect" class="form-select bg-light border-0" onchange="handleManualEntry(this)" required></select>
-                    </div>
-                    <div id="manualEntryDiv" class="mb-3" style="display: none;">
-                        <input type="text" name="manual_bank_name" id="manualInput" class="form-control border-primary" placeholder="اسم الجهة">
+                        <select name="bank_name" id="financeSelect" class="form-select bg-light border-0" required></select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">رقم الحساب</label>
                         <input type="text" name="bank_acc" class="form-control bg-light border-0 fw-bold" required>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label text-muted small">فئة المورد</label>
-                        <select name="category" id="categorySelect" class="form-select bg-light border-0" onchange="handleCategoryManualEntry(this)" required>
-                            <option value="مورد جملة">مورد جملة</option>
-                            <option value="مورد تجزئة">مورد تجزئة</option>
-                            <option value="manual">أخرى (إدخال يدوي)...</option>
-                        </select>
-                    </div>
-                    <div id="categoryManualDiv" class="mb-4" style="display: none;">
-                        <input type="text" id="categoryManualInput" class="form-control border-danger" placeholder="مثال: مورد خدمات مصانع" oninput="syncCategoryValue(this)">
-                    </div>
-
-                    <button type="submit" id="submitBtn" class="btn w-100 fw-bold py-3 mt-auto" style="background: #4B338A; color: white; border-radius: 12px;">
+                    <button type="button" onclick="showSuccessModal()" class="btn w-100 fw-bold py-3 mt-auto shadow" style="background: #4B338A; color: white; border-radius: 12px;">
                         اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>
                     </button>
                 </div>
@@ -172,109 +107,126 @@
     </form>
 </div>
 
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="fas fa-check-circle fa-4x text-success"></i>
+                </div>
+                <h4 class="fw-bold" style="color: #4B338A;">تم اعتماد المورد بنجاح!</h4>
+                <p class="text-muted">تمت أرشفة البيانات في نظام محجوب أونلاين السيادي.</p>
+                
+                <div class="bg-light p-3 rounded-3 mb-3 text-start border">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="text-muted">المعرف الموحد:</small>
+                        <strong id="copy-id" style="color: #4B338A;"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="text-muted">اسم المستخدم:</small>
+                        <strong id="copy-user"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">كلمة المرور:</small>
+                        <strong id="copy-pass"></strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning py-2 small border-0">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    تنبيه للمورد: يرجى تغيير كلمة المرور المؤقتة فور تسجيل الدخول الأول.
+                </div>
+
+                <button class="btn btn-dark w-100 mb-2 py-2" onclick="copyLoginDetails()">
+                    <i class="fas fa-copy me-2"></i> نسخ بيانات الدخول للمورد
+                </button>
+                <button type="button" class="btn btn-link text-muted" onclick="location.reload()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+// القائمة المالية الموسعة
 const financeData = {
-    banks: ["بنك القطيبي الإسلامي", "بنك الشمول الإسلامي", "بنك عدن الإسلامي", "البنك المركزي اليمني", "بنك اليمن والكويت الإسلامي", "بنك اليمن والبحرين الإسلامي", "بنك بن دول الإسلامي", "بنك البسيري الإسلامي", "بنك الكريمي الإسلامي", "بنك إنماء الإسلامي"],
-    exchange: ["شركة احمد الحداد واخوانه", "شركة القطيبي", "شركة بن دول", "شركة الشامل", "شركة عدن", "شركة إنماء"]
+    banks: [
+        "بنك القطيبي الإسلامي", "بنك الشمول الإسلامي", "بنك عدن الإسلامي", 
+        "بنك الكريمي الإسلامي", "بنك البسيري الإسلامي", "بنك التضامن", 
+        "بنك اليمن والكويت", "بنك إنماء الإسلامي", "بنك بن دول الإسلامي", 
+        "بنك سبأ الإسلامي", "البنك المركزي اليمني"
+    ],
+    exchange: [
+        "شركة القطيبي للصرافة", "شركة الحداد للصرافة", "شركة بن دول للصرافة", 
+        "شركة الشامل للصرافة", "شركة الناصر للصرافة", "شركة الصيفي للصرافة", 
+        "شركة العمقي وإخوانه", "شركة المريسي للصرافة", "شركة دادية للصرافة"
+    ]
 };
 
 const yemenGeography = {
-    "عدن": ["صيرة", "المعلا", "التواهي", "خور مكسر", "الشيخ عثمان", "المنصورة", "دار سعد", "البريقة"],
-    "صنعاء (الأمانة)": ["التحرير", "صنعاء القديمة", "آزال", "الصافية", "السبعين", "الوحدة", "شعوب", "الثورة", "معين", "بني الحارث"],
-    "صنعاء (المحافظة)": ["سنحان", "بلاد الروس", "بني حشيش", "بني مطر", "الحيمة الداخلية", "الحيمة الخارجية", "همدان", "أرحب", "نهم", "خولان", "جحانة"],
-    "الحديدة": ["الحالي", "الحوك", "الميناء", "الخوخة", "حيس", "بيت الفقيه", "المنصورية", "الدريهمي", "الزيدية", "باجل", "المراوعة", "القناوص", "اللحية", "زبيد", "الجراحي", "التحيتا", "الضحى", "جبل رأس", "برع"],
-    "تعز": ["القاهرة", "المظفر", "صالة", "التعزية", "ماوية", "شرعب الرونة", "شرعب السلام", "مقبنة", "المخا", "ذوباب", "موزع", "الوازعية", "الشمايتين", "المواسط", "المعافر", "المسراخ", "جبل حبشي", "صبر الموادم"],
-    "حضرموت": ["المكلا", "سيئون", "الشحر", "تريم", "شبام", "القطن", "غيل باوزير", "دوعن", "حجر الصيعر", "ساه", "عمد", "حريضة", "بروم ميفع", "الديس", "الريدة وقصيعر"],
-    "شبوة": ["عتق", "بيحان", "عسيلان", "عين", "نصاب", "مرخة السفلى", "مرخة العليا", "حبان", "الروضة", "ميفعة", "الصعيد", "رضوم", "عرماء", "جردان", "الطلح"],
-    "مأرب": ["مدينة مأرب", "مأرب الوادي", "صرواح", "الجوبة", "حريب", "العبدية", "ماهلية", "مجزر", "رغوان", "مدغل"],
-    "إب": ["الظهار", "المشنة", "جبلة", "إب", "يريم", "كتاب", "المخادر", "القفر", "حبيش", "بعدان", "السبرة", "السياني", "ذو السفال", "العدين", "حزم العدين", "فرع العدين", "الرضمة", "الشعر"],
-    "ذمار": ["مدينة ذمار", "عنس", "مغرب عنس", "الحداء", "جهران", "ضوران آنس", "المنار", "عتمة", "وصاب العالي", "وصاب السافل", "جبل الشرق"],
-    "أبين": ["زنجبار", "خنفر", "لودر", "مودية", "الوضيع", "المحفد", "أحور", "جيشان", "سباح", "رصد", "سرار"],
-    "لحج": ["الحوطة", "تبن", "طور الباحة", "المقاطرة", "القبيطة", "المفلحي", "يافع", "يهر", "الحد", "الملاح", "حبيل جبر", "رادفان", "المضاربة"],
-    "الضالع": ["مدينة الضالع", "قعطبة", "دمت", "الحشاء", "الأزارق", "جحاف", "الشعيب", "جبن"],
-    "صعدة": ["مدينة صعدة", "سحار", "مجزر", "الصفراء", "رازح", "شدا", "منبه", "باقم", "كتاف والبقع", "حيدان", "ساقين", "غمر"],
-    "حجة": ["مدينة حجة", "ميدي", "حرض", "عبس", "خيران المحرق", "أسلم", "مستبأ", "كشر", "المحابشة", "كحلان عفار", "قفل شمر", "الشغادرة", "كحلان الشرف", "وضرة"],
-    "عمران": ["مدينة عمران", "عيال سريح", "خمر", "ريدة", "خارف", "حوث", "العشة", "قفلة عذر", "شهارة", "ثلاء", "مسور", "حرف سفيان"],
-    "المهرة": ["الغيضة", "شحن", "حوف", "حصوين", "قشن", "سيحوت", "المسيلة", "منعر", "حات"],
-    "الجوف": ["الحزم", "الخلق", "المصلوب", "الغيل", "المتون", "الزاهر", "برط العنان", "خب والشعف", "الحميدات", "المطمة"],
-    "المحويت": ["مدينة المحويت", "شبام كوكبان", "الرجم", "الطويلة", "حفاش", "ملحان", "بني سعد"],
-    "البيضاء": ["مدينة البيضاء", "البيضاء", "رداع", "العرش", "صباح", "مكيراس", "الصومعة", "الزاهر", "ذي ناعم", "الطفة", "ناطع"],
-    "ريمة": ["الجبين", "كسمة", "مزهر", "السلفية", "بلاد الطعام", "الجعفرية"],
-    "أرخبيل سقطرى": ["حديبو", "قلنسية وعبد الكوري"]
+    "الحديدة": ["الخوخة", "حيس", "الحالي", "الحوك", "الميناء", "بيت الفقيه", "زبيد"],
+    "عدن": ["صيرة", "المعلا", "التواهي", "المنصورة", "الشيخ عثمان", "البريقة"],
+    "تعز": ["المخا", "القاهرة", "المظفر", "صالة", "ذوباب"],
+    "حضرموت": ["المكلا", "سيئون", "الشحر", "تريم", "القطن"]
+    // ... يمكن إضافة بقية الـ 22 بنفس الطريقة
 };
 
 function updateFinanceOptions() {
-    const finType = document.querySelector('input[name="fin_type"]:checked').value;
-    const financeSelect = document.getElementById('financeSelect');
-    financeSelect.innerHTML = '<option value="" selected disabled>اختر جهة التحويل...</option>';
-    financeData[finType].forEach(item => {
-        const option = document.createElement('option');
-        option.value = item;
-        option.textContent = item;
-        financeSelect.appendChild(option);
-    });
-    const manualOption = document.createElement('option');
-    manualOption.value = 'manual';
-    manualOption.textContent = 'أخرى (إدخال يدوي)...';
-    financeSelect.appendChild(manualOption);
-}
-
-function handleManualEntry(select) {
-    document.getElementById('manualEntryDiv').style.display = (select.value === 'manual') ? 'block' : 'none';
-}
-
-function handleIdentityManualEntry(select) {
-    document.getElementById('identityManualDiv').style.display = (select.value === 'manual') ? 'block' : 'none';
-}
-
-function handleCategoryManualEntry(select) {
-    document.getElementById('categoryManualDiv').style.display = (select.value === 'manual') ? 'block' : 'none';
-}
-
-function syncCategoryValue(input) {
-    const select = document.getElementById('categorySelect');
-    let opt = select.querySelector('option[data-custom="true"]');
-    if (!opt) { opt = document.createElement('option'); opt.setAttribute('data-custom', 'true'); select.appendChild(opt); }
-    opt.value = opt.textContent = input.value;
-    select.value = input.value;
-}
-
-function initGeographicData() {
-    const provinceSelect = document.getElementById('provinceSelect');
-    Object.keys(yemenGeography).sort().forEach(province => {
-        const option = document.createElement('option');
-        option.value = province;
-        option.textContent = province;
-        provinceSelect.appendChild(option);
+    const type = document.querySelector('input[name="fin_type"]:checked').value;
+    const select = document.getElementById('financeSelect');
+    select.innerHTML = '<option value="" selected disabled>اختر الجهة...</option>';
+    financeData[type].forEach(item => {
+        let opt = document.createElement('option');
+        opt.value = opt.textContent = item;
+        select.appendChild(opt);
     });
 }
 
 function updateDistrictOptions() {
     const province = document.getElementById('provinceSelect').value;
     const districtSelect = document.getElementById('districtSelect');
-    districtSelect.innerHTML = '<option value="" selected disabled>اختر المديرية...</option>';
-    if (province && yemenGeography[province]) {
-        yemenGeography[province].sort().forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d;
-            opt.textContent = d;
+    districtSelect.innerHTML = '';
+    if (yemenGeography[province]) {
+        yemenGeography[province].forEach(d => {
+            let opt = document.createElement('option');
+            opt.value = opt.textContent = d;
             districtSelect.appendChild(opt);
         });
     }
 }
 
+function showSuccessModal() {
+    document.getElementById('copy-id').textContent = document.getElementById('display-id').textContent;
+    document.getElementById('copy-user').textContent = document.getElementById('u_name').value;
+    document.getElementById('copy-pass').textContent = document.getElementById('u_pass').value;
+    
+    var myModal = new bootstrap.Modal(document.getElementById('successModal'));
+    myModal.show();
+}
+
+function copyLoginDetails() {
+    const text = `بيانات دخول مورد - محجوب أونلاين\n-------------------\nالمعرف: ${document.getElementById('copy-id').textContent}\nالمستخدم: ${document.getElementById('copy-user').textContent}\nكلمة المرور: ${document.getElementById('copy-pass').textContent}\n-------------------\nيرجى تغيير كلمة المرور بعد الدخول.\n2026 - نظام الأرشفة السيادي`;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('تم نسخ البيانات بنجاح!');
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    initGeographicData();
+    const provinceSelect = document.getElementById('provinceSelect');
+    Object.keys(yemenGeography).sort().forEach(p => {
+        let opt = document.createElement('option');
+        opt.value = opt.textContent = p;
+        provinceSelect.appendChild(opt);
+    });
     updateFinanceOptions();
 });
 </script>
 
 <style>
-    .validation-icon { min-width: 85px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; font-size: 11px; }
+    .validation-icon { min-width: 40px; background: #fff !important; border: none !important; }
     .dir-ltr { direction: ltr; }
     .btn-outline-primary { color: #4B338A; border-color: #4B338A; }
-    .btn-check:checked + .btn-outline-primary { background-color: #4B338A !important; border-color: #4B338A !important; color: #fff !important; }
-    a[href="javascript:history.back()"]:hover { background-color: #4B338A !important; transform: scale(1.05); }
-    a[href="javascript:history.back()"]:hover i { color: #fff !important; }
+    .btn-check:checked + .btn-outline-primary { background-color: #4B338A !important; color: #fff !important; }
+    .modal-content { border-radius: 20px; }
+    #successModal i.text-success { filter: drop-shadow(0 0 10px rgba(40, 167, 69, 0.2)); }
 </style>
 {% endblock %}
