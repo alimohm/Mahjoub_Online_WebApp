@@ -65,16 +65,18 @@ def create_app():
             import apps.models 
             db.create_all()
             
-            # --- 🛡️ إجراءات تعميد المالك في قاعدة البيانات ---
+            # --- 🛡️ إجراءات تعميد المالك في قاعدة البيانات (الإصدار المصحح) ---
             from apps.models.admin_db import AdminUser
             
             # البحث عن "علي محجوب" في جدول الإدارة
             owner = AdminUser.query.filter_by(username='علي محجوب').first()
             
             if not owner:
-                print("🚀 جاري زرع حساب المالك السيادي في قاعدة البيانات...")
+                print("🚀 جاري زرع حساب المالك السيادي بكافة الحقول الإجبارية...")
                 new_owner = AdminUser(
+                    full_name='علي محجوب',          # حل مشكلة NotNull
                     username='علي محجوب',
+                    email='admin@mahjoub.online',   # حل مشكلة NotNull
                     password_hash=generate_password_hash('123'),
                     role='Owner'
                 )
@@ -82,7 +84,8 @@ def create_app():
                 db.session.commit()
                 print("✅ [سيادة] تم تعميد 'علي محجوب' مالكاً رسمياً للمنصة.")
             else:
-                # تحديث كلمة السر للتأكد من أنها '123' في حال تم تغييرها برمجياً
+                # تحديث البيانات الحيوية لضمان المطابقة
+                owner.full_name = 'علي محجوب'
                 owner.password_hash = generate_password_hash('123')
                 db.session.commit()
                 print(f"📡 نظام الحوكمة مفعل: المالك '{owner.username}' في وضع الاستعداد.")
@@ -90,6 +93,7 @@ def create_app():
             
             print("✅ تم تعميد جداول قاعدة البيانات بنجاح.")
         except Exception as e:
+            # طباعة الخطأ بشكل مفصل للمساعدة في التشخيص
             print(f"⚠️ تنبيه: خطأ أثناء تهيئة قاعدة البيانات: {e}")
 
     return app
