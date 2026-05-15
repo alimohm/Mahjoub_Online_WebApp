@@ -1,3 +1,4 @@
+# apps/add_supplier/routes.py
 # coding: utf-8
 import os
 from flask import Blueprint, render_template, request, jsonify
@@ -10,7 +11,7 @@ from apps import db
 from apps.models.supplier_db import Supplier 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# تأكد من أن المسار يشير إلى مجلد templates داخل المديول
+# التأكد من مسارات القوالب داخل المديول
 template_path = os.path.join(current_dir, 'templates')
 
 admin_suppliers = Blueprint(
@@ -22,34 +23,34 @@ admin_suppliers = Blueprint(
 @admin_suppliers.route('/add', methods=['GET', 'POST'])
 @login_required 
 def add_supplier():
+    """
+    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل السيادي
+    """
     if request.method == 'POST':
         try:
-            # 1. استقبال البيانات الأساسية
+            # 1. استقبال البيانات الأساسية وتطهيرها
             username = request.form.get('username', '').strip()
             trade_name = request.form.get('trade_name', '').strip()
             password = request.form.get('password')
+            unified_id = request.form.get('unified_id')
 
-            # 2. التحقق من عدم تكرار البيانات الحساسة
+            # 2. التحقق النهائي (Back-end Validation) لضمان عدم التلاعب
             if Supplier.query.filter_by(username=username).first():
-                return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً في النظام!'}), 400
-
-            # 3. معالجة حقول "الإدخال اليدوي" الديناميكية
-            # يتم استقبال القيمة من الـ Select مباشرة لأن JS يقوم بتحديثها لحظياً
+                return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً!'}), 400
             
-            # أ) نوع الهوية
+            if Supplier.query.filter_by(trade_name=trade_name).first():
+                return jsonify({'status': 'error', 'message': 'الاسم التجاري مسجل مسبقاً!'}), 400
+
+            # 3. معالجة حقول الإدخال اليدوي الديناميكية
             identity_type = request.form.get('identity_type')
-            
-            # ب) جهة التحويل المالي (البنك أو الشركة)
             bank_name = request.form.get('bank_name')
-
-            # ج) فئة المورد
             category = request.form.get('category', '').strip()
 
-            # 4. تشفير كلمة المرور وإنشاء سجل المورد الجديد
+            # 4. تشفير كلمة المرور وتجهيز الكائن
             hashed_pw = generate_password_hash(password)
             
             new_supplier = Supplier(
-                sovereign_id=request.form.get('unified_id'), # المعرف الموحد المرسل من الفورم
+                sovereign_id=unified_id, # المعرف الموحد SUP-WEL-...
                 username=username,
                 password_hash=hashed_pw,
                 identity_type=identity_type,
@@ -68,24 +69,23 @@ def add_supplier():
                 created_at=datetime.utcnow()
             )
 
-            # 5. معالجة الصورة (اختياري - يتم تفعيل المسار حسب إعدادات السيرفر لديك)
+            # 5. معالجة المرفقات (إذا تم رفع صورة الهوية)
             if 'identity_image' in request.files:
                 file = request.files['identity_image']
                 if file and file.filename != '':
-                    # هنا يمكن إضافة منطق رفع الصور (على سبيل المثال S3 أو Local Storage)
+                    # هنا يمكن إضافة منطق الحفظ الفعلي للصور
                     pass
 
             # 6. الحفظ النهائي في قاعدة البيانات
             db.session.add(new_supplier)
             db.session.commit()
 
-            # إرجاع استجابة نجاح ليقوم الـ Frontend بإظهار الـ Modal
             return jsonify({
                 'status': 'success',
                 'message': 'تم تعميد المورد بنجاح في نظام الأرشفة السيادي',
                 'data': {
                     'username': username,
-                    'unified_id': request.form.get('unified_id')
+                    'unified_id': unified_id
                 }
             }), 200
 
@@ -93,7 +93,7 @@ def add_supplier():
             db.session.rollback()
             return jsonify({'status': 'error', 'message': f'فشل في عملية التعميد: {str(e)}'}), 500
 
-    # حساب المعرف التالي (Next ID) لعرضه في واجهة الـ GET
+    # في حالة GET: حساب المعرف القادم لعرضه في الواجهة
     try:
         last_s = Supplier.query.order_by(Supplier.id.desc()).first()
         next_id = (last_s.id + 1) if last_s else 1
@@ -102,17 +102,19 @@ def add_supplier():
     
     return render_template('admin/add_supplier.html', next_id=next_id)
 
-# API للتحقق اللحظي (Check as you type)
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
 @login_required
 def check_duplicate():
+    """
+    نظام الفحص اللحظي: يتصل به الـ JavaScript لإظهار علامات الصح والخطأ ✅❌
+    """
     check_type = request.args.get('type')
     value = request.args.get('value', '').strip()
 
     if not check_type or not value:
         return jsonify({'exists': False})
 
-    # خريطة الحقول المسموح بالتحقق منها
+    # خريطة الحقول المسموح بفحص تكرارها
     field_map = {
         'username': Supplier.username,
         'trade_name': Supplier.trade_name,
@@ -123,7 +125,7 @@ def check_duplicate():
     target_field = field_map.get(check_type)
     exists = False
     
-    if target_field:
+    if target_field is not None:
         exists = Supplier.query.filter(target_field == value).first() is not None
 
     return jsonify({'exists': exists})
