@@ -1,23 +1,171 @@
-<form action="{{ url_for('auth_bp.login') }}" method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محجوب أونلاين | بوابة القيادة</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --royal-purple: #632C8F; 
+            --sovereign-gold: #D4AF37;
+            --pure-white: #ffffff;
+            --deep-space: #1a0b2e;
+        }
 
-    <div class="input-group">
-        <label>اسم المستخدم</label>
-        <div class="input-wrapper">
-            <i class="fas fa-user"></i>
-            <input type="text" name="username" placeholder="أدخل اسم المستخدم" required autocomplete="username">
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at center, #2a114d 0%, var(--deep-space) 100%);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        .sovereign-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border-radius: 35px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 45px;
+            text-align: center;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+        }
+
+        /* ⚪ تعديل اللوجو ليصبح أبيض ناصع */
+        .logo-section img {
+            width: 100px; 
+            margin-bottom: 15px;
+            filter: brightness(0) invert(1); /* تحويل اللوجو للون الأبيض */
+            drop-shadow: 0 0 15px rgba(255,255,255,0.3);
+        }
+
+        .brand-name {
+            font-size: 2rem; font-weight: 900;
+            color: var(--sovereign-gold);
+            margin: 0;
+        }
+
+        .philosophy-text {
+            font-size: 0.75rem; color: #b3a2c7;
+            margin-bottom: 25px; font-weight: 600;
+        }
+
+        .form-group { text-align: right; margin-bottom: 18px; }
+
+        .form-group label {
+            display: block; margin-bottom: 7px;
+            font-size: 0.8rem; color: var(--sovereign-gold);
+        }
+
+        .input-box { position: relative; }
+
+        .input-box i {
+            position: absolute; right: 15px; top: 50%;
+            transform: translateY(-50%); color: var(--sovereign-gold);
+            opacity: 0.7;
+        }
+
+        .input-box input {
+            width: 100%; padding: 14px 45px 14px 15px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px; color: #fff;
+            outline: none; transition: 0.3s; box-sizing: border-box;
+        }
+
+        .input-box input:focus {
+            border-color: var(--sovereign-gold);
+            background: rgba(255,255,255,0.12);
+        }
+
+        .btn-access {
+            width: 100%; padding: 15px;
+            background: linear-gradient(90deg, var(--sovereign-gold), #b8860b);
+            border: none; border-radius: 15px;
+            color: var(--deep-space); font-weight: 800;
+            font-size: 1.1rem; cursor: pointer;
+            transition: 0.4s; margin-top: 15px;
+        }
+
+        /* 🔑 تنسيق زر نسيت كلمة المرور */
+        .forgot-password {
+            margin-top: 20px;
+            display: block;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .forgot-password:hover {
+            color: var(--sovereign-gold);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .flash-message {
+            background: rgba(255, 77, 77, 0.2);
+            border: 1px solid #ff4d4d;
+            padding: 10px; border-radius: 12px;
+            margin-bottom: 20px; font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sovereign-card">
+        <div class="logo-section">
+            <img src="https://cdn.qumra.cloud/media/67f7f6d5f0b82f44a47bf845/1770229315912-117966978.webp" alt="Mahjoub Online White Logo">
+            <h1 class="brand-name">محجوب أونلاين</h1>
+            <p class="philosophy-text">منصة اللامركزية لحوكمة التجارة الرقمية</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="flash-message"><i class="fas fa-shield-virus"></i> {{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('auth_bp.login') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+                <label>الهوية الرقمية</label>
+                <div class="input-box">
+                    <i class="fas fa-user-shield"></i>
+                    <input type="text" name="username" placeholder="اسم المستخدم" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>مفتاح التشفير</label>
+                <div class="input-box">
+                    <i class="fas fa-lock-open"></i>
+                    <input type="password" name="password" placeholder="كلمة المرور" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-access">
+                تسجيل الدخول <i class="fas fa-key"></i>
+            </button>
+        </form>
+
+        <a href="#" class="forgot-password">
+            <i class="fas fa-question-circle"></i> نسيت كلمة المرور؟
+        </a>
+
+        <div style="margin-top: 35px; font-size: 0.65rem; opacity: 0.4;">
+            نظام حوكمة سوقك الذكي © 2026
         </div>
     </div>
 
-    <div class="input-group">
-        <label>كلمة المرور</label>
-        <div class="input-wrapper">
-            <i class="fas fa-lock"></i>
-            <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
-        </div>
-    </div>
-
-    <button type="submit" class="btn-login">
-        تسجيل الدخول <i class="fas fa-sign-in-alt"></i>
-    </button>
-</form>
+</body>
+</html>
