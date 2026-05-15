@@ -1,4 +1,6 @@
 # coding: utf-8
+# 🛡️ كود تعميد سيادة المالك - محجوب أونلاين 2026
+
 from werkzeug.security import generate_password_hash
 from apps import create_app, db
 from apps.models.admin_db import AdminUser
@@ -6,18 +8,23 @@ from apps.models.admin_db import AdminUser
 app = create_app()
 
 with app.app_context():
-    # التحقق مما إذا كان الحساب موجوداً مسبقاً لمنع التكرار
-    existing_user = AdminUser.query.filter_by(username='علي محجوب').first()
+    # البحث عن المستخدم "علي محجوب"
+    admin = AdminUser.query.filter_by(username='علي محجوب').first()
     
-    if not existing_user:
-        # إنشاء مستخدم الإدارة بكلمة سر مشفرة
-        admin = AdminUser(
-            username='علي محجوب',
-            password_hash=generate_password_hash('123'), # تشفير كلمة السر 123
-            role='Founder' # السيادة المطلقة للمؤسس
-        )
-        db.session.add(admin)
+    if admin:
+        # ترقية الصلاحيات إلى المالك (Owner)
+        admin.role = 'Owner'
+        # تحديث كلمة السر إلى 123 مع التشفير الأمني
+        admin.password_hash = generate_password_hash('123')
         db.session.commit()
-        print("✅ تم زرع حساب المؤسس (علي محجوب) بنجاح في قاعدة البيانات.")
+        print("✅ تم تعميد علي محجوب كـ 'المالك' بصلاحيات سيادية كاملة.")
     else:
-        print("⚠️ حساب المؤسس موجود بالفعل في النظام.")
+        # في حال لم يكن الحساب موجوداً، يتم إنشاؤه من الصفر كمالك
+        new_owner = AdminUser(
+            username='علي محجوب',
+            password_hash=generate_password_hash('123'),
+            role='Owner'
+        )
+        db.session.add(new_owner)
+        db.session.commit()
+        print("✅ تم إنشاء حساب المالك (علي محجوب) بنجاح.")
