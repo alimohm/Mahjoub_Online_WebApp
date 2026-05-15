@@ -5,11 +5,12 @@ from flask_login import login_required
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
-# 🚀 استيراد قاعدة البيانات والموديل بمسارات مطلقة
+# استيراد قاعدة البيانات والموديل
 from apps import db  
 from apps.models.supplier_db import Supplier 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
+# تأكد من أن المسار يشير إلى مجلد templates داخل المديول
 template_path = os.path.join(current_dir, 'templates')
 
 admin_suppliers = Blueprint(
@@ -28,42 +29,36 @@ def add_supplier():
             trade_name = request.form.get('trade_name', '').strip()
             password = request.form.get('password')
 
-            # 2. التحقق النهائي (حماية إضافية للباكيند)
+            # 2. التحقق من عدم تكرار البيانات الحساسة
             if Supplier.query.filter_by(username=username).first():
-                return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً!'}), 400
+                return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً في النظام!'}), 400
 
-            # 3. معالجة حقول الإدخال اليدوي الديناميكية
+            # 3. معالجة حقول "الإدخال اليدوي" الديناميكية
+            # يتم استقبال القيمة من الـ Select مباشرة لأن JS يقوم بتحديثها لحظياً
             
             # أ) نوع الهوية
             identity_type = request.form.get('identity_type')
-            if identity_type == 'manual':
-                identity_type = request.form.get('manual_identity_type', '').strip()
-
-            # ب) جهة التحويل المالي
+            
+            # ب) جهة التحويل المالي (البنك أو الشركة)
             bank_name = request.form.get('bank_name')
-            if bank_name == 'manual':
-                bank_name = request.form.get('manual_bank_name', '').strip()
 
-            # ج) فئة المورد (الاحتفاظ بالقيمة الجديدة)
-            # نأخذ القيمة من select أولاً، وإذا كانت manual نأخذها من حقل التحديث اللحظي
+            # ج) فئة المورد
             category = request.form.get('category', '').strip()
-            # في حال كان التصميم يرسل القيمة اليدوية في حقل منفصل عند اختيار 'manual'
-            if category == 'manual':
-                 category = request.form.get('manual_category_input', '').strip()
 
-            # 4. تشفير كلمة المرور وإنشاء الكائن
+            # 4. تشفير كلمة المرور وإنشاء سجل المورد الجديد
             hashed_pw = generate_password_hash(password)
             
             new_supplier = Supplier(
-                sovereign_id=request.form.get('unified_id'),
+                sovereign_id=request.form.get('unified_id'), # المعرف الموحد المرسل من الفورم
                 username=username,
                 password_hash=hashed_pw,
                 identity_type=identity_type,
                 identity_number=request.form.get('identity_number', '').strip(),
-                activity_type=category,       # هنا يتم حفظ الفئة الجديدة (تحديث لحظي)
+                activity_type=category,
                 owner_name=request.form.get('owner_name', '').strip(),
                 trade_name=trade_name,
                 shop_phone=request.form.get('shop_phone', '').strip(),
+                owner_phone=request.form.get('owner_phone', '').strip(),
                 province=request.form.get('province'),
                 district=request.form.get('district'),
                 address_detail=request.form.get('address'),
@@ -73,27 +68,32 @@ def add_supplier():
                 created_at=datetime.utcnow()
             )
 
-            # 5. معالجة الصورة (اختياري)
+            # 5. معالجة الصورة (اختياري - يتم تفعيل المسار حسب إعدادات السيرفر لديك)
             if 'identity_image' in request.files:
                 file = request.files['identity_image']
                 if file and file.filename != '':
-                    # منطق حفظ الملف يوضع هنا
+                    # هنا يمكن إضافة منطق رفع الصور (على سبيل المثال S3 أو Local Storage)
                     pass
 
-            # 6. الاعتماد النهائي في القاعدة
+            # 6. الحفظ النهائي في قاعدة البيانات
             db.session.add(new_supplier)
             db.session.commit()
 
+            # إرجاع استجابة نجاح ليقوم الـ Frontend بإظهار الـ Modal
             return jsonify({
                 'status': 'success',
-                'message': 'تم تسجيل وتعميد المورد بنجاح'
+                'message': 'تم تعميد المورد بنجاح في نظام الأرشفة السيادي',
+                'data': {
+                    'username': username,
+                    'unified_id': request.form.get('unified_id')
+                }
             }), 200
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'status': 'error', 'message': f'خطأ تقني: {str(e)}'}), 500
+            return jsonify({'status': 'error', 'message': f'فشل في عملية التعميد: {str(e)}'}), 500
 
-    # حساب الـ ID التالي للعرض
+    # حساب المعرف التالي (Next ID) لعرضه في واجهة الـ GET
     try:
         last_s = Supplier.query.order_by(Supplier.id.desc()).first()
         next_id = (last_s.id + 1) if last_s else 1
@@ -102,7 +102,7 @@ def add_supplier():
     
     return render_template('admin/add_supplier.html', next_id=next_id)
 
-# محرك التحقق اللحظي من البيانات (API)
+# API للتحقق اللحظي (Check as you type)
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
 @login_required
 def check_duplicate():
@@ -112,11 +112,12 @@ def check_duplicate():
     if not check_type or not value:
         return jsonify({'exists': False})
 
-    # خريطة الحقول للتحقق الديناميكي
+    # خريطة الحقول المسموح بالتحقق منها
     field_map = {
         'username': Supplier.username,
         'trade_name': Supplier.trade_name,
-        'shop_phone': Supplier.shop_phone
+        'shop_phone': Supplier.shop_phone,
+        'identity_number': Supplier.identity_number
     }
 
     target_field = field_map.get(check_type)
