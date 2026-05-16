@@ -25,7 +25,7 @@ def add_supplier():
             username = request.form.get('username', '').strip()
             trade_name = request.form.get('trade_name', '').strip()
             password = request.form.get('password')
-            unified_id = request.form.get('unified_id')
+            unified_id = request.form.get('sovereign_id') # استقبال المعرف السيادي الموحد المستقر
             identity_number = request.form.get('identity_number', '').strip()
 
             # 2. التحقق النهائي (Back-end Validation) المحصن تماماً لمنع التكرار والانكسار
@@ -52,7 +52,7 @@ def add_supplier():
             hashed_pw = generate_password_hash(password)
             
             new_supplier = Supplier(
-                sovereign_id=unified_id, # المعرف الموحد SUP-WEL-MAH963...
+                sovereign_id=unified_id, # المعرف الموحد المتسلسل تلقائياً
                 username=username,
                 password_hash=hashed_pw,
                 identity_type=identity_type,
@@ -68,6 +68,9 @@ def add_supplier():
                 fin_type=request.form.get('fin_type'),
                 bank_name=bank_name,
                 bank_acc=request.form.get('bank_acc', '').strip(),
+                status='المراجعة',       # إجبار إسناد حالة البدء الافتراضية لحوكمة النظام
+                rank_grade='ريادي',      # إجبار إسناد رتبة المورد الأولى للتحكم بالصلاحيات
+                registration_source='لوحة التحكم', # تحديد ولادة الحساب من الإدارة
                 created_at=datetime.utcnow()
             )
 
@@ -97,16 +100,15 @@ def add_supplier():
             print(f"Critical Error in add_supplier: {str(e)}")
             return jsonify({'status': 'error', 'message': f'فشل في عملية التعميد: {str(e)}'}), 500
 
-    # في حالة GET: حساب المعرف القادم بدقة وضمان تمريره كمتغير رقمي مستقر
+    # في حالة GET: استدعاء محرك الترقيم السيادي والمستقر من قاعدة البيانات لتحديد الرقم التالي المتاح فوراً
     try:
-        last_s = Supplier.query.order_by(Supplier.id.desc()).first()
-        next_id = (last_s.id + 1) if (last_s and last_s.id) else 1
+        next_sovereign_id = Supplier.generate_sovereign_id()
     except Exception as e:
-        print(f"Error fetching next_id: {str(e)}")
-        next_id = 1
+        print(f"Error fetching next_sovereign_id: {str(e)}")
+        next_sovereign_id = "MO-2026-1"
     
-    # [تحديث الحماية السحابية]: استدعاء القالب بعد تنظيفه وتحويل المعرف إلى نص صريح لمنع انكسار محرك جينجا
-    return render_template('admin/add_supplier.html', next_id=str(next_id))
+    # [تحديث الحماية السحابية]: تمرير المتغير الموحد والمطابق للواجهة لضمان عدم حدوث فراغات في الأرقام
+    return render_template('admin/add_supplier.html', sovereign_id=next_sovereign_id)
 
 
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
