@@ -39,3 +39,33 @@ class Supplier(db.Model):
 
     def __repr__(self):
         return f'<Supplier {self.trade_name}>'
+        
+#الحالة والرتبة
+from datetime import datetime
+
+# داخل كلاس المورد الحالي: class Supplier(db.Model):
+# اترك الحقول السابقة كما هي تماماً، واصعد إلى أسفل الكلاس وأضف ما يلي:
+
+    # 1. حقول التحكم بالحالة والرتبة (Core Governance Fields)
+    status = db.Column(db.String(20), nullable=False, default='المراجعة') 
+    # يقبل حصراً: 'نشط'، 'المراجعة'، 'محظور'، 'موقوف مؤقتاً'، 'رقابة'
+    
+    rank_grade = db.Column(db.String(20), nullable=False, default='ريادي') 
+    # يقبل حصراً الهرمية الفخمة: 'ريادي'، 'سيادي'، 'ملكي'
+
+    # 2. حقول الحوكمة وتتبع نظام الصلاحيات (Audit & Origin Fields)
+    registration_source = db.Column(db.String(30), nullable=False, default='الموقع الخارجي') 
+    # يحدد مكان ولادة الحساب: 'لوحة التحكم' أو 'الموقع الخارجي'
+    
+    # معرف الموظف أو المؤسس الذي قام بتعميد المورد (يرتبط بجدول المستخدمين/الموظفين لاحقاً)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) 
+    
+    # معرف الشخص الذي قام بآخر إجراء إداري (حظر، ترقية رتبة، إلخ)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) 
+
+    # 3. حقول التوثيق والتحليل الزمني (Timestamps)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) 
+    # يسجل وقت دخول المورد للنظام تلقائياً بدقة الثانية
+    
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow) 
+    # يتحدث تلقائياً مع كل إجراء إداري لتوثيق تاريخ التعديل
