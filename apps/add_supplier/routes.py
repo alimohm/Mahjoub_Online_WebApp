@@ -24,7 +24,7 @@ admin_suppliers = Blueprint(
 @login_required 
 def add_supplier():
     """
-    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل السيادي لـ "محجوب أونلاين"
+    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل لـ "محجوب أونلاين"
     """
     if request.method == 'POST':
         try:
@@ -38,13 +38,13 @@ def add_supplier():
             # 2. التحقق النهائي (Back-end Validation) المحصن تماماً لمنع التكرار والانكسار
             try:
                 if username and Supplier.query.filter_by(username=username).first():
-                    return jsonify({'status': 'error', 'message': 'فشل التعميد: اسم المستخدم مسجل مسبقاً!'}), 400
+                    return jsonify({'status': 'error', 'message': 'اسم المستخدم مسجل مسبقاً!'}), 400
                 
                 if trade_name and Supplier.query.filter_by(trade_name=trade_name).first():
-                    return jsonify({'status': 'error', 'message': 'فشل التعميد: الاسم التجاري مسجل مسبقاً!'}), 400
+                    return jsonify({'status': 'error', 'message': 'الاسم التجاري مسجل مسبقاً!'}), 400
 
                 if identity_number and Supplier.query.filter_by(identity_number=identity_number).first():
-                    return jsonify({'status': 'error', 'message': 'فشل التعميد: رقم الوثيقة أو الهوية مسجل مسبقاً!'}), 400
+                    return jsonify({'status': 'error', 'message': 'رقم الوثيقة أو الهوية مسجل مسبقاً!'}), 400
             except Exception as db_err:
                 # حماية مرنة: في حال وجود اختلاف مؤقت في هيكل الجداول أو الحقول أثناء الفحص المبدئي،
                 # نقوم بطباعة الخطأ في الـ Logs لتتبعه دون أن نقطع عملية التسجيل الأساسية.
@@ -92,7 +92,7 @@ def add_supplier():
             # إرجاع استجابة نجاح صريحة وقطعية لتغلق الـ JavaScript نافذة "جاري المعالجة" بنجاح
             return jsonify({
                 'status': 'success',
-                'message': 'تم تعميد المورد بنجاح في نظام الأرشفة السيادي',
+                'message': 'تم تعميد المورد بنجاح في النظام السجل العام',
                 'data': {
                     'username': username,
                     'unified_id': unified_id
@@ -113,7 +113,9 @@ def add_supplier():
         next_id = 1
     
     # [التصحيح الجوهري] تأمين خط الإياب والرجوع بالإشارة إلى المجلد الصحيح بالكامل
-    return render_template('admin/add_supplier.html', next_id=next_id)
+    # إذا كانت الملفات موضوعة داخل قالب فرعي مثل templates/add_supplier.html بدلاً من المجلد الفرعي admin
+    # تأكد من مطابقتها للهيكل المعتمد لديك لتجنب TemplateNotFound
+    return render_template('add_supplier.html', next_id=next_id)
 
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
 @login_required
