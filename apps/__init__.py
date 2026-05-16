@@ -105,6 +105,7 @@ def create_app():
 def load_user(user_id):
     from apps.models.admin_db import AdminUser
     try:
-        return AdminUser.query.get(int(user_id))
+        # استخدام الدالة القياسية والمستقرة المطابقة لـ SQLAlchemy الحديثة
+        return db.session.get(AdminUser, int(user_id))
     except Exception:
         return None
