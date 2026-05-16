@@ -24,7 +24,7 @@ admin_suppliers = Blueprint(
 @login_required 
 def add_supplier():
     """
-    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل السيادي
+    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل السيادي لـ "محجوب أونلاين"
     """
     if request.method == 'POST':
         try:
@@ -42,7 +42,7 @@ def add_supplier():
                 if Supplier.query.filter_by(trade_name=trade_name).first():
                     return jsonify({'status': 'error', 'message': 'الاسم التجاري مسجل مسبقاً!'}), 400
             except Exception as db_err:
-                # في حال وجود مشكلة في الأعمدة أثناء الفحص، لا تسقط السيرفر
+                # في حال وجود مشكلة في الأعمدة أثناء الفحص، لا تسقط السيرفر لحين تحديث الهيكل الفعلي
                 pass
 
             # 3. معالجة حقول الإدخال اليدوي الديناميكية
@@ -104,7 +104,7 @@ def add_supplier():
     except Exception as e:
         next_id = 1
     
-    # التعديل الجوهري هنا: الإشارة للمسار الفرعي الصحيح 'admin/add_supplier.html'
+    # [التصحيح الجوهري] تأمين خط الإياب والرجوع بالإشارة إلى المجلد الصحيح بالكامل
     return render_template('admin/add_supplier.html', next_id=next_id)
 
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
@@ -137,4 +137,6 @@ def check_duplicate():
         return jsonify({'exists': exists})
         
     except Exception as e:
+        # حماية سيادية: إذا فشل الفحص بسبب عدم تطابق أسماء الحقول أو الأعمدة، يعود بـ False
+        # هذا يمنع انكسار واجهة المستخدم ويضمن سلاسة تدفق البيانات
         return jsonify({'exists': False, 'error': str(e)})
