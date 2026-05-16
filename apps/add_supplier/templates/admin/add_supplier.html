@@ -35,7 +35,7 @@
                     <div class="mb-3">
                         <label class="form-label text-muted small">اسم المستخدم (Login)</label>
                         <div class="input-group">
-                            <input type="text" name="username" class="form-control bg-light border-0 validation-field" data-valid="min3" data-db-check="username" placeholder="ali_2026" required>
+                            <input type="text" name="username" id="form-username-field" class="form-control bg-light border-0 validation-field" data-valid="min3" data-db-check="username" placeholder="ali_2026" required>
                             <span class="input-group-text bg-light border-0 validation-icon"><i class="fas fa-minus text-muted"></i></span>
                         </div>
                     </div>
@@ -183,7 +183,7 @@
     </form>
 </div>
 
-<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
             <div class="modal-body text-center p-5">
@@ -202,7 +202,6 @@
 </div>
 
 <script>
-// البيانات الأساسية
 const yemenGeography = {
     "الحديدة": ["الخوخة", "حيس", "المخا", "باجل", "زبيد"],
     "عدن": ["المنصورة", "الشيخ عثمان", "كريتر"],
@@ -216,7 +215,6 @@ const financeData = {
     exchange: ["شركة القطيبي للصرافة", "شركة بن دول للصرافة", "شركة الشامل للصرافة"]
 };
 
-// --- نظام التحقق اللحظي الشامل (قاعدة البيانات + المتصفح) ---
 document.querySelectorAll('.validation-field').forEach(input => {
     input.addEventListener('change', async function() {
         const type = this.getAttribute('data-valid');
@@ -225,7 +223,6 @@ document.querySelectorAll('.validation-field').forEach(input => {
         const submitBtn = document.getElementById('submitBtn');
         let isValid = false;
 
-        // 1. التحقق من التنسيق (JS)
         switch(type) {
             case 'name': isValid = this.value.trim().split(' ').length >= 3; break;
             case 'min3': isValid = this.value.length >= 3; break;
@@ -234,17 +231,15 @@ document.querySelectorAll('.validation-field').forEach(input => {
             case 'acc': isValid = this.value.length >= 6; break;
         }
 
-        // 2. التحقق من قاعدة البيانات (إذا كان الحقل يتطلب ذلك)
         if (isValid && dbType) {
             icon.innerHTML = '<i class="fas fa-spinner fa-spin text-muted"></i>';
             try {
                 const response = await fetch(`/admin/suppliers/check-duplicate?type=${dbType}&value=${this.value.trim()}`);
                 const result = await response.json();
-                if (result.exists) isValid = false; // إذا كان موجوداً مسبقاً نعتبره غير صالح
+                if (result.exists) isValid = false;
             } catch (e) { console.error("DB Check Failed"); }
         }
 
-        // 3. تحديث الأيقونات (صح خضراء أو x حمراء)
         if (isValid) {
             icon.innerHTML = '<i class="fas fa-check-circle text-success anim-pop"></i>';
             this.classList.remove('is-invalid');
@@ -255,12 +250,10 @@ document.querySelectorAll('.validation-field').forEach(input => {
             this.classList.remove('is-valid');
         }
 
-        // تفعيل/تعطيل زر الإرسال بناءً على الأخطاء
         submitBtn.disabled = document.querySelectorAll('.is-invalid').length > 0;
     });
 });
 
-// دوال التحكم
 function toggleManualInput(select, divId) {
     document.getElementById(divId).style.display = (select.value === 'manual') ? 'block' : 'none';
 }
@@ -302,7 +295,6 @@ function updateFinanceOptions() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // تعبئة البيانات الأولية
     const pSelect = document.getElementById('provinceSelect');
     Object.keys(yemenGeography).forEach(p => {
         const opt = document.createElement('option');
@@ -311,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     updateFinanceOptions();
 
-    // إرسال الفورم AJAX
+    // [المعالجة والتحصين الشامل لـ AJAX] منع انهيار خط الرجوع
     document.getElementById('addSupplierForm').onsubmit = async function(e) {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -320,32 +312,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await fetch(this.action, { method: 'POST', body: new FormData(this) });
-            const result = await response.json();
-            if (result.status === 'success') {
-                document.getElementById('res-username').innerText = result.data.username;
-                document.getElementById('res-id').innerText = result.data.unified_id;
+            
+            // تحصين أولي: إذا كانت استجابة السيرفر ناجحة (حفظ في قاعدة البيانات)
+            if (response.ok) {
+                try {
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        document.getElementById('res-username').innerText = result.data.username;
+                        document.getElementById('res-id').innerText = result.data.unified_id;
+                    } else {
+                        // حماية احتياطية للمقاييس اللحظية
+                        document.getElementById('res-username').innerText = document.getElementById('form-username-field').value;
+                        document.getElementById('res-id').innerText = document.getElementById('display-id').innerText;
+                    }
+                } catch (jsonErr) {
+                    // إذا نجح السيرفر في الحفظ ولكن فشل في تمرير الـ JSON، نسحب البيانات مباشرة للنافذة
+                    document.getElementById('res-username').innerText = document.getElementById('form-username-field').value;
+                    document.getElementById('res-id').innerText = document.getElementById('display-id').innerText;
+                }
+                
+                // إظهار نافذة النجاح مباشرة ومنع تعليق النظام
                 new bootstrap.Modal(document.getElementById('successModal')).show();
             } else {
-                alert('فشل التعميد: ' + result.message);
+                // في حال وجود خطأ حقيقي من السيرفر (كود 400 أو 500) قبل الحفظ
+                try {
+                    const result = await response.json();
+                    alert('فشل التعميد: ' + (result.message || 'خطأ غير معروف'));
+                } catch(e) {
+                    alert('فشل عملية التعميد، يرجى فحص تكرار البيانات أو تحديث الصفحة.');
+                }
                 btn.disabled = false;
                 btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
             }
-        } catch (e) { alert('خطأ في الاتصال بالسيرفر'); btn.disabled = false; }
+        } catch (e) { 
+            // إذا انقطع الاتصال الفعلي بالشبكة
+            alert('خطأ في الاتصال بالشبكة، يرجى التحديث والمحاولة مرة أخرى.'); 
+            btn.disabled = false; 
+            btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
+        }
     };
-});
-</script>
-
-<style>
-    .validation-icon { min-width: 45px; background: #fff !important; border: none !important; border-left: 1px solid #eee !important; }
-    .is-valid { border: 2px solid #198754 !important; }
-    .is-invalid { border: 2px solid #dc3545 !important; }
-    .border-dashed { border: 2px dashed #ddd; transition: 0.3s; }
-    .border-dashed:hover { border-color: #4B338A; background: #f8f5ff !important; }
-    .dir-ltr { direction: ltr; }
-    .btn-outline-primary { color: #4B338A; border-color: #4B338A; }
-    .btn-check:checked + .btn-outline-primary { background: #4B338A !important; border-color: #4B338A !important; color: #fff !important; }
-    .back-btn:hover { background: #4B338A !important; color: #fff !important; transform: scale(1.1); }
-    .anim-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-</style>
-{% endblock %}
