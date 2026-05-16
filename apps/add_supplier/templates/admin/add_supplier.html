@@ -4,19 +4,19 @@
 
 {% block content %}
 <div class="container-fluid" id="main-content">
-    <div class="mb-4 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm border-end border-4" style="border-color: #4B338A !important;">
+    <div class="mb-4 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm border-end border-4" style="border-color: var(--royal-purple) !important;">
         <div class="d-flex align-items-center gap-3">
             <a href="javascript:history.back()" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm text-decoration-none border back-btn" style="width: 42px; height: 42px; transition: all 0.3s ease;" title="رجوع">
-                <i class="fas fa-arrow-right" style="color: #4B338A; font-size: 18px;"></i>
+                <i class="fas fa-arrow-right" style="color: var(--royal-purple); font-size: 18px;"></i>
             </a>
             <div>
-                <h2 class="fw-bold mb-0" style="color: #4B338A; font-size: 24px;">🛡️ تعميد مورد جديد</h2>
+                <h2 class="fw-bold mb-0" style="color: var(--royal-purple); font-size: 24px;">🛡️ تعميد مورد جديد</h2>
                 <p class="text-muted mb-0 small">نظام الأرشفة السيادي - منصة محجوب أونلاين 2026.</p>
             </div>
         </div>
         <div class="text-center p-2 border-start ps-4">
             <small class="d-block text-muted fw-bold">المعرف الموحد</small>
-            <span class="fs-4 fw-bold" style="color: #4B338A;" id="display-id">SUP-WEL-MAH963{{ next_id }}</span>
+            <span class="fs-4 fw-bold" style="color: var(--royal-purple);" id="display-id">SUP-WEL-MAH963{{ next_id }}</span>
         </div>
     </div>
 
@@ -26,9 +26,9 @@
 
         <div class="row g-4">
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
+                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid var(--royal-purple) !important;">
                     <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-user-shield fa-lg me-2" style="color: #4B338A;"></i>
+                        <i class="fas fa-user-shield fa-lg me-2" style="color: var(--royal-purple);"></i>
                         <h5 class="fw-bold mb-0">بيانات الوصول والتوثيق</h5>
                     </div>
                     
@@ -42,7 +42,7 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted small">كلمة مرور النظام</label>
-                        <input type="password" name="password" class="form-control bg-light border-0" placeholder="********" required>
+                        <input type="password" name="password" id="form-password-field" class="form-control bg-light border-0" placeholder="********" required>
                     </div>
 
                     <div class="mb-3">
@@ -69,7 +69,7 @@
                     <div class="mb-3">
                         <label class="form-label text-muted small">صورة الوثيقة (اختياري)</label>
                         <div class="p-3 border-dashed rounded text-center bg-light">
-                            <i class="fas fa-cloud-upload-alt mb-2 d-block" style="color: #4B338A; font-size: 24px;"></i>
+                            <i class="fas fa-cloud-upload-alt mb-2 d-block" style="color: var(--royal-purple); font-size: 24px;"></i>
                             <input type="file" name="identity_image" class="form-control form-control-sm border-0 bg-transparent">
                         </div>
                     </div>
@@ -77,9 +77,9 @@
             </div>
 
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
+                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid var(--royal-purple) !important;">
                     <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-address-card fa-lg me-2" style="color: #4B338A;"></i>
+                        <i class="fas fa-address-card fa-lg me-2" style="color: var(--royal-purple);"></i>
                         <h5 class="fw-bold mb-0">بيانات المالك والمنشأة</h5>
                     </div>
                     <div class="mb-3">
@@ -134,17 +134,17 @@
             </div>
 
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid #4B338A !important;">
+                <div class="card border-0 shadow-sm p-4 h-100" style="border-top: 5px solid var(--royal-purple) !important;">
                     <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-wallet fa-lg me-2" style="color: #4B338A;"></i>
+                        <i class="fas fa-wallet fa-lg me-2" style="color: var(--royal-purple);"></i>
                         <h5 class="fw-bold mb-0">الربط المالي والفئة</h5>
                     </div>
                     <div class="mb-3 text-center">
                         <div class="btn-group w-100">
                             <input type="radio" class="btn-check" name="fin_type" id="fin_bank" value="banks" onchange="updateFinanceOptions()" checked>
-                            <label class="btn btn-outline-primary" for="fin_bank">بنوك</label>
+                            <label class="btn btn-outline-primary" for="fin_bank" style="border-color: var(--royal-purple); color: var(--royal-purple);">بنوك</label>
                             <input type="radio" class="btn-check" name="fin_type" id="fin_exchange" value="exchange" onchange="updateFinanceOptions()">
-                            <label class="btn btn-outline-primary" for="fin_exchange">شركات</label>
+                            <label class="btn btn-outline-primary" for="fin_exchange" style="border-color: var(--royal-purple); color: var(--royal-purple);">شركات</label>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -174,7 +174,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="submitBtn" class="btn w-100 fw-bold py-3 mt-auto shadow" style="background: #4B338A; color: white; border-radius: 12px;">
+                    <button type="submit" id="submitBtn" class="btn w-100 fw-bold py-3 mt-auto shadow" style="background: var(--royal-purple); color: white; border-radius: 12px;">
                         اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>
                     </button>
                 </div>
@@ -186,17 +186,8 @@
 <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-body text-center p-5">
-                <i class="fas fa-check-circle fa-5x text-success mb-4 anim-pop"></i>
-                <h3 class="fw-bold mb-3" style="color: #4B338A;">تم التعميد بنجاح!</h3>
-                <div class="bg-light p-3 rounded-3 mb-4 text-start border-start border-4 border-success">
-                    <small class="d-block text-muted">اسم المستخدم:</small>
-                    <strong id="res-username" class="d-block mb-2 text-dark">-</strong>
-                    <small class="d-block text-muted">المعرف السيادي:</small>
-                    <strong id="res-id" class="d-block text-primary">-</strong>
+            <div class="modal-body p-4" id="successModalBody">
                 </div>
-                <button type="button" class="btn w-100 py-3 fw-bold" style="background: #4B338A; color: white; border-radius: 12px;" onclick="location.reload()">إغلاق ومتابعة</button>
-            </div>
         </div>
     </div>
 </div>
@@ -300,6 +291,16 @@ function updateFinanceOptions() {
     select.appendChild(mOpt);
 }
 
+// دالة النسخ اللحظي المتكاملة لكافة بيانات الاعتماد
+function copySupplierCredentials(user, id, pass) {
+    const textToCopy = `بيانات تعميد المورد في منصة محجوب أونلاين:\nاسم المستخدم: ${user}\nالمعرف السيادي: ${id}\nكلمة المرور: ${pass}`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("✅ تم نسخ النص بالكامل بنجاح في الحافظة!");
+    }).catch(err => {
+        console.error('فشل النسخ: ', err);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const pSelect = document.getElementById('provinceSelect');
     Object.keys(yemenGeography).forEach(p => {
@@ -323,20 +324,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: new FormData(this) 
             });
             
-            // درع الأمان: قراءة النص أولاً لتجنب الانهيار إذا كانت الاستجابة ليست JSON
             const responseText = await response.text();
             let result;
             
             try {
                 result = JSON.parse(responseText);
             } catch (jsonErr) {
-                // إذا لم تكن JSON، فهذا يعني أن هناك خطأ خادم داخلي صريح
                 throw new Error('فشل داخلي في السيرفر السحابي (500)، يرجى مراجعة Logs المنصة.');
             }
             
             if (response.ok && result.status === 'success') {
-                document.getElementById('res-username').innerText = result.data ? result.data.username : document.getElementById('form-username-field').value;
-                document.getElementById('res-id').innerText = result.data ? result.data.unified_id : document.getElementById('display-id').innerText;
+                const username = result.data ? result.data.username : document.getElementById('form-username-field').value;
+                const unifiedId = result.data ? result.data.unified_id : document.getElementById('display-id').innerText;
+                const password = document.getElementById('form-password-field').value;
+
+                // بناء واجهة الإشعار الرقمي الحوكمي المتكامل
+                const modalContent = `
+                    <div class="text-center mb-4">
+                        <div style="display: flex; justify-content: center; margin: 0 auto 15px;">
+                            <i class="fas fa-check-circle fa-5x text-success"></i>
+                        </div>
+                        <h3 class="fw-bold" style="color: var(--royal-purple);">تم التعميد بنجاح!</h3>
+                    </div>
+
+                    <div class="p-3 mb-3 border rounded-3 text-start bg-light" style="font-size: 0.95rem; border-left: 5px solid var(--royal-purple) !important;">
+                        <div class="mb-2">
+                            <strong>اسم المستخدم:</strong> <span class="text-dark fw-bold">${username}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>المعرف السيادي:</strong> <span class="text-primary fw-bold">${unifiedId}</span>
+                        </div>
+                        <div class="mb-0">
+                            <strong>كلمة المرور:</strong> <span class="text-danger fw-bold">${password}</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn w-100 mb-3 d-flex align-items-center justify-content-center gap-2" 
+                            style="background-color: var(--royal-purple); color: #fff; border-radius: 12px; padding: 12px; font-weight: 600;"
+                            onclick="copySupplierCredentials('${username}', '${unifiedId}', '${password}')">
+                        <i class="fas fa-copy"></i> نسخ بيانات الاعتماد كاملة
+                    </button>
+
+                    <div class="alert alert-warning text-center py-2 mb-3" style="font-size: 0.85rem; border-radius: 10px; font-weight: bold;">
+                        ⚠️ تنبيه: يرجى تغيير كلمة المرور المؤقتة فور تسجيل الدخول الأول.
+                    </div>
+
+                    <div class="text-center text-muted mb-3" style="font-size: 0.85rem; line-height: 1.6; font-weight: 600;">
+                        شكرًا لتسجيلك في منصة محجوب أونلاين<br>
+                        <span style="color: var(--mahjoub-gold); font-weight: 700;">المنصة اللامركزية لحوكمة التجارة</span>
+                    </div>
+
+                    <button type="button" class="btn w-100 py-2 btn-secondary fw-bold" style="border-radius: 12px;" onclick="location.reload()">إغلاق ومتابعة</button>
+                `;
+
+                document.getElementById('successModalBody').innerHTML = modalContent;
                 
                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                 successModal.show();
