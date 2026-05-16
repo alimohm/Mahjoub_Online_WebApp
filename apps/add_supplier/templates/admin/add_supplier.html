@@ -323,7 +323,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: new FormData(this) 
             });
             
-            const result = await response.json();
+            // درع الأمان: قراءة النص أولاً لتجنب الانهيار إذا كانت الاستجابة ليست JSON
+            const responseText = await response.text();
+            let result;
+            
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonErr) {
+                // إذا لم تكن JSON، فهذا يعني أن هناك خطأ خادم داخلي صريح
+                throw new Error('فشل داخلي في السيرفر السحابي (500)، يرجى مراجعة Logs المنصة.');
+            }
             
             if (response.ok && result.status === 'success') {
                 document.getElementById('res-username').innerText = result.data ? result.data.username : document.getElementById('form-username-field').value;
@@ -337,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
             }
         } catch (e) { 
-            alert('حدث خطأ أثناء معالجة الطلب السحابي، يرجى إعادة المحاولة.'); 
+            alert(e.message || 'حدث خطأ أثناء معالجة الطلب السحابي، يرجى إعادة المحاولة.'); 
             btn.disabled = false; 
             btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
         }
