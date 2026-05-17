@@ -1,23 +1,23 @@
 # coding: utf-8
-# 📦 محرك إدارة وتعميد الموردين - محجوب أونلاين 2026
+# 📦 محرك إدارة وتعميد الموردين - منصة محجوب أونلاين 2026
 
 from flask import Blueprint
 import os
 
-# 1. تحديد المسار المطلق للمجلد لضمان استقرار بيئة Linux
+# 1. تحديد المسار المطلق للمجلد لضمان استقرار قراءة القوالب على السيرفر السحابي
 current_dir = os.path.dirname(os.path.abspath(__file__))
 template_path = os.path.join(current_dir, 'templates')
 
-# 2. إنشاء البلوبرينت بالاسم المعتمد 'admin_suppliers' لمنع أخطاء الـ BuildError
+# 2. إنشاء وتعميد البلوبرينت بالاسم المعتمد في النواة ولوحة التحكم لمنع أخطاء الـ BuildError
 admin_suppliers = Blueprint(
     'admin_suppliers', 
     __name__, 
     template_folder=template_path
 )
 
-# 3. استدعاء المسارات بشكل متأخر وآمن لحماية العزل التام ومنع Circular Import
+# 3. استدعاء ملف المسارات (routes) بشكل متأخر وآمن لحماية العزل التام ومنع الـ Circular Import
 try:
     from . import routes
-    print("✅ تم ربط محرك الموردين بنجاح وعمّدت المسارات.")
+    print("✅ تم ربط محرك الموردين [admin_suppliers] بنجاح وعُمّدت كافة المسارات السيادية.")
 except ImportError as e:
-    print(f"⚠️ تنبيه: تعذر تحميل مسارات الموردين داخلياً: {e}")
+    print(f"⚠️ تنبيه حوكمي: تعذر تحميل مسارات الموردين داخلياً، تفاصيل الخطأ: {e}")
