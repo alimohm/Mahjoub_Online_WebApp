@@ -24,22 +24,22 @@ def create_app():
     login_manager.login_message = 'يرجى إثبات الهوية الرقمية للوصول إلى المنطقة السيادية.'
     login_manager.login_message_category = 'warning'
 
-    # 🔑 تعريف الـ user_loader لجلب الهوية من PostgreSQL
+    # 🔑 تعريف الـ user_loader لجلب الهوية من قاعدة البيانات وحل خطأ الـ Missing user_loader
     @login_manager.user_loader
     def load_user(user_id):
         from apps.models.admin_db import AdminUser
         return AdminUser.query.get(int(user_id))
 
-    # استيراد وتسجيل البلوبرينتس الفرعية بشكل آمن ومباشر
+    # استيراد البلوبرينتس الفرعية بشكل آمن ومباشر من حزمها المستقلة
     from apps.auth_portal import auth_blueprint
     from apps.admin_dashboard import admin_dashboard_blueprint
     
-    # التوجه مباشرة إلى ملف الروابط لحل تعارض الأسماء في add_supplier
-    from apps.add_supplier.routes import suppliers_blueprint
+    # 🎯 الاستيراد النقي والمطابق بالاسم الصريح المعتمد داخل ملف الـ routes الخاص بك
+    from apps.add_supplier.routes import admin_suppliers
 
-    # عزل المسارات برمجياً لضمان عدم التداخل وحماية هيكلية المنصة
+    # عزل وعميد المسارات برمجياً لضمان عدم التداخل وحماية هيكلية المنصة
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.register_blueprint(admin_dashboard_blueprint, url_prefix='/admin')
-    app.register_blueprint(suppliers_blueprint, url_prefix='/admin/suppliers')
+    app.register_blueprint(admin_suppliers, url_prefix='/admin/suppliers')
 
     return app
