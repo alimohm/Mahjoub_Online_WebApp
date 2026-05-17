@@ -6,44 +6,37 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 import jinja2
 
-# استيراد البلوبرينت المعزول الخاص بالموردين
+# استيراد البلوبرينت المعزول الخاص بالموردين وكائن قاعدة البيانات
 from . import admin_suppliers
-# استيراد كائن قاعدة البيانات والموديل الفعلي للموردين
 from apps import db
 from apps.models import Supplier  
 
-def generate_sovereign_id():
+def get_expected_sovereign_id():
     """
-    سحب آخر رقم مورد من قاعدة البيانات وزيادة العداد بمقدار 1 تلقائياً ليكون المعرف القادم دقيقاً.
-    النمط المعتمد والثابت بالداتابيز: SUP-WEL-MAH963
+    وظيفة عرض فقط (معاينة بالواجهة): تتوقع الرقم القادم بناءً على منطق الموديل العابر للأحداث.
+    النمط المعتمد: SUP-WEL-MAH963X
     """
-    prefix = "SUP-WEL-MAH963"
-    default_id = f"{prefix}19"
-    
     try:
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
-        
         if last_supplier and last_supplier.sovereign_id:
-            last_code = last_supplier.sovereign_id.strip()
-            if last_code.startswith(prefix):
-                num_part_str = last_code.replace(prefix, "")
-                if num_part_str.isdigit():
-                    next_num = int(num_part_str) + 1
-                    return f"{prefix}{next_num}"
+            try:
+                parts = last_supplier.sovereign_id.split('MAH963')
+                last_num = int(parts[-1])
+                return f"SUP-WEL-MAH963{last_num + 1}"
+            except (ValueError, IndexError):
+                return f"SUP-WEL-MAH963{(last_supplier.id or 0) + 1}"
     except Exception as e:
-        current_app.logger.error(f"❌ خطأ أثناء احتساب الرقم الحوكمي التالي: {str(e)}")
-    
-    return default_id
+        current_app.logger.error(f"❌ خطأ أثناء معاينة المعرف المتوقع: {str(e)}")
+    return "SUP-WEL-MAH9631"
 
 
-# ضبط الـ endpoint ليدعم الاسمين معاً لمنع خطأ الـ BuildError تماماً أثناء المزامنة على Railway
 @admin_suppliers.route('/add', methods=['GET', 'POST'], endpoint='add_supplier_page')
 @admin_suppliers.route('/add_legacy', methods=['GET', 'POST'], endpoint='add_supplier')
 @login_required
 def add_supplier_page():
     if request.method == 'POST':
         try:
-            # 1. استقبال البيانات السبعة الأساسية وبقية الحقول من الفورم
+            # 1. استقبال البيانات ومطابقتها لأعمدة الموديل الفعلي
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '').strip()
             identity_type = request.form.get('identity_type', '').strip()
@@ -59,35 +52,31 @@ def add_supplier_page():
             bank_name = request.form.get('bank_name', '').strip()
             bank_acc = request.form.get('bank_acc', '').strip()
             activity_type = request.form.get('activity_type', '').strip()
-            
-            # توليد المعرف السيادي بشكل آمن وصارم لمنع أي تلاعب أو تكرار
-            sovereign_id = generate_sovereign_id()
 
-            # 2. فحص أمني أخير للتأكد من عدم وجود تكرار قبل الحفظ الفعلي
+            # 2. فحص أمني صارم أخير لحماية الحقول السبعة قبل الـ Commit
             check_fields = {
-                "اسم المستخدم": Supplier.query.filter_by(username=username).first(),
-                "رقم الوثيقة": Supplier.query.filter_by(identity_number=identity_number).first(),
-                "اسم المالك": Supplier.query.filter_by(owner_name=owner_name).first(),
-                "الاسم التجاري": Supplier.query.filter_by(trade_name=trade_name).first(),
-                "هاتف المالك": Supplier.query.filter_by(owner_phone=owner_phone).first(),
-                "هاتف المنشأة": Supplier.query.filter_by(shop_phone=shop_phone).first(),
-                "رقم الحساب": Supplier.query.filter_by(bank_acc=bank_acc).first()
+                "username": (Supplier.query.filter_by(username=username).first(), "اسم المستخدم (Login)"),
+                "identity_number": (Supplier.query.filter_by(identity_number=identity_number).first(), "رقم الوثيقة / الهوية"),
+                "owner_name": (Supplier.query.filter_by(owner_name=owner_name).first(), "اسم المالك الكامل"),
+                "trade_name": (Supplier.query.filter_by(trade_name=trade_name).first(), "الاسم التجاري للمنشأة"),
+                "owner_phone": (Supplier.query.filter_by(owner_phone=owner_phone).first(), "رقم هاتف المالك"),
+                "shop_phone": (Supplier.query.filter_by(shop_phone=shop_phone).first(), "هاتف المنشأة (محل)"),
+                "bank_acc": (Supplier.query.filter_by(bank_acc=bank_acc).first(), "رقم الحساب")
             }
-            
-            for field_title, exists in check_fields.items():
+
+            for key, (exists, field_title) in check_fields.items():
                 if exists:
                     return jsonify({
                         "status": "error",
-                        "message": f"عذراً، حقل ({field_title}) مسجل مسبقاً في النظام ولا يمكن تكراره."
+                        "message": f"عذراً، حقل ({field_title}) مسجل مسبقاً في المنصة ومحفوظ!"
                     }), 400
 
-            # 3. تشفير كلمة المرور وتجهيز الكائن للحفظ
+            # 3. تشفير كلمة المرور وبناء كائن المورد متوافقاً مع أسماء أعمدة الموديل
             hashed_password = generate_password_hash(password)
             
             new_supplier = Supplier(
-                sovereign_id=sovereign_id,
                 username=username,
-                password=hashed_password,
+                password_hash=hashed_password,  # تم التعديل لتطابق اسم العمود بالموديل password_hash
                 identity_type=identity_type,
                 identity_number=identity_number,
                 owner_name=owner_name,
@@ -100,42 +89,42 @@ def add_supplier_page():
                 fin_type=fin_type,
                 bank_name=bank_name,
                 bank_acc=bank_acc,
-                activity_type=activity_type
+                activity_type=activity_type,
+                registration_source='لوحة التحكم', # تم التوليد عبر الإدارة
+                created_by_id=current_user.id if hasattr(current_user, 'id') else None
             )
 
-            # التعامل مع الملفات المرفوعة (صورة الوثيقة) إن وجدت
+            # معالجة صورة الوثيقة الرمزية إن وجدت
             if 'identity_image' in request.files:
                 file = request.files['identity_image']
                 if file and file.filename != '':
-                    # هنا يمكنك تضمين دالة الحفظ الخاصة بك مثل: save_file(file)
                     # new_supplier.identity_image = secure_filename(file.filename)
                     pass
 
-            # 4. تعميد الحفظ النهائي في قاعدة البيانات
+            # 4. الحفظ في قاعدة البيانات (سيتكفل الموديل بتوليد sovereign_id عبر الـ Event تلقائياً)
             db.session.add(new_supplier)
             db.session.commit()
 
             return jsonify({
                 "status": "success",
-                "message": "تم تعميد المورد وحفظه في قاعدة البيانات الحوكمية بنجاح.",
+                "message": "تم تعميد المورد بنجاح وحفظه بنيوياً في قاعدة البيانات.",
                 "data": {
-                    "username": username, 
-                    "sovereign_id": sovereign_id
+                    "username": new_supplier.username,
+                    "sovereign_id": new_supplier.sovereign_id  # تم سحبه بعد الـ commit بنجاح
                 }
             }), 200
 
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ خطأ أثناء حفظ المورد في الداتابيز: {str(e)}")
+            current_app.logger.error(f"❌ خطأ أثناء حفظ المورد في قاعدة البيانات: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": f"حدث خطأ داخلي أثناء معالجة البيانات: {str(e)}"
+                "message": f"خطأ في معالجة قاعدة البيانات: {str(e)}"
             }), 500
 
-    # عرض الصفحة (GET)
-    sovereign_id = generate_sovereign_id()
+    # مرحلة الـ GET لعرض الصفحة
+    sovereign_id = get_expected_sovereign_id()
     
-    # تأمين إرسال متغيرات فارغة لـ CSRF لتجنب الانهيار إذا لم تكن الإضافة مثبتة في بيئة معينة
     csrf_val = ""
     try:
         if 'csrf' in current_app.extensions:
@@ -154,8 +143,8 @@ def add_supplier_page():
 @login_required
 def check_duplicate():
     """
-    الفحص الفوري واللحظي عبر قاعدة البيانات للحقول السبعة لمنع التكرار البنيوي في المنصة.
-    إذا كانت القيمة موجودة مسبقاً ترجع (exists: true) لتظهر إشارة الخطر (X) في الواجهة فوراً.
+    الفحص الفوري واللحظي الصارم عبر السيرفر للحقول السبعة المطلوبة لمنع التكرار البنيوي.
+    إذا كانت القيمة موجودة مسبقاً ترجع الاستجابة True لتظهر علامة (X) الحمراء في الواجهة فوراً.
     """
     check_type = request.args.get('type')
     value = request.args.get('value', '').strip()
@@ -165,7 +154,7 @@ def check_duplicate():
         
     exists = False
     try:
-        # ربط شروط الفحص للحقول السبعة مباشرة بالموديل (Supplier) والتحقق من التكرار
+        # هنا تم مطابقة شروط الـ IF لتطابق أسماء الحقول السبعة بدقة متناهية
         if check_type == 'username':
             exists = Supplier.query.filter_by(username=value).first() is not None
             
@@ -186,9 +175,13 @@ def check_duplicate():
             
         elif check_type == 'bank_acc':
             exists = Supplier.query.filter_by(bank_acc=value).first() is not None
+            
+        else:
+            current_app.logger.warning(f"⚠️ نوع فحص غير مدعوم في النظام: {check_type}")
 
     except Exception as e:
-        current_app.logger.error(f"❌ خطأ في فحص التكرار اللحظي داخل قاعدة البيانات للحقل {check_type}: {str(e)}")
-        return jsonify({"exists": False, "error": "Database query error"}), 500
+        current_app.logger.error(f"❌ خطأ أثناء الاستعلام عن حقل [{check_type}] في الداتابيز: {str(e)}")
+        return jsonify({"exists": False, "error": "Database error"}), 500
         
+    # إرجاع النتيجة للـ الجافاسكربت (إذا وجد الحقل سيرسل true وتتحول العلامة إلى X تلقائياً)
     return jsonify({"exists": exists})
