@@ -22,3 +22,4 @@ Pillow==10.3.0
 # أدوات مساعدة للتحقق من صحة البيانات
 email-validator==2.1.1
 PyGithub
+Flask-Migrate==4.1.0
