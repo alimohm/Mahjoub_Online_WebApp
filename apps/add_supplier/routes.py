@@ -358,3 +358,102 @@ def sync_legacy_wallets():
         db.session.rollback()
         current_app.logger.error(f"❌ خطأ بنيوي حاد في استعلام الجداول الحوكمية: {str(e)}")
         return jsonify({"status": "error", "message": f"فشلت المزامنة الرقمية المباشرة المحصنة: {str(e)}"}), 500
+
+@admin_suppliers.route('/sync-wallets', methods=['GET'])
+@login_required
+def sync_legacy_wallets():
+    """
+    سكربت سيادي حوكمي نهائي ومطور 100%.
+    يفحص بنية الجدول في PostgreSQL أولاً ليعرف العمود الحقيقي (wallet_id أو wallet_number).
+    ينفذ إدخالاً مباشراً ومضموناً يتفادى كسر الجلسات أو التخمين البرمجي تماماً.
+    """
+    if not hasattr(current_user, 'id'):
+        return jsonify({"status": "error", "message": "غير مصرح لك بتنفيذ هذه العملية السيادية."}), 403
+
+    try:
+        # 1. فحص أعمدة جدول supplier_wallets في قاعدة البيانات الحالية مسبقاً
+        columns_query = db.session.execute(
+            db.text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'supplier_wallets'
+            """)
+        ).fetchall()
+        
+        # تحويل الأعمدة المسترجعة إلى قائمة نصوص لتسهيل الفحص
+        existing_columns = [col[0] for col in columns_query]
+        
+        # تحديد العمود المتواجد فعلياً في قاعدة البيانات
+        if 'wallet_id' in existing_columns:
+            target_column = 'wallet_id'
+        elif 'wallet_number' in existing_columns:
+            target_column = 'wallet_number'
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": "خطأ بنيوي حاد: لم يتم العثور على حقل المعرف المالي (wallet_id أو wallet_number) داخل الجدول."
+            }), 500
+
+        # 2. جلب الموردين مباشرة عبر SQL لتفادي مشاكل النماذج
+        suppliers_query = db.session.execute(
+            db.text("SELECT id, sovereign_id FROM suppliers")
+        ).fetchall()
+        
+        created_count = 0
+
+        for sup_id, sovereign_id in suppliers_query:
+            # تنظيف الجلسة لضمان استقرار المعاملات
+            db.session.rollback()
+
+            # 3. الفحص اللحظي: هل يمتلك المورد محفظة مسبقاً؟
+            check_query = db.session.execute(
+                db.text("SELECT id FROM supplier_wallets WHERE supplier_id = :sup_id"),
+                {"sup_id": sup_id}
+            ).fetchone()
+
+            if not check_query:
+                sovereign_id_str = sovereign_id.strip() if sovereign_id else ""
+                match = re.search(r'\d+$', sovereign_id_str)
+                
+                if match:
+                    supplier_number = match.group()
+                else:
+                    supplier_number = str(sup_id)
+
+                wallet_num = f"WEL-MAH{supplier_number}"
+
+                # 4. بناء استعلام ديناميكي آمن 100% بناءً على العمود الحقيقي المكتشف في الخطوة الأولى
+                insert_query = db.text(dedent(f"""
+                    INSERT INTO supplier_wallets (
+                        supplier_id, {target_column},
+                        yer_total, yer_available, yer_pending, yer_withdrawn,
+                        sar_total, sar_available, sar_pending, sar_withdrawn,
+                        usd_total, usd_available, usd_pending, usd_withdrawn
+                    ) VALUES (
+                        :supplier_id, :wallet_param,
+                        0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0
+                    )
+                """))
+
+                # تنفيذ الاستعلام الآمن وحفظه فوراً
+                db.session.execute(insert_query, {"supplier_id": sup_id, "wallet_param": wallet_num})
+                db.session.commit()
+                created_count += 1
+
+        if created_count > 0:
+            return jsonify({
+                "status": "success",
+                "message": f"تم بنجاح اكتشاف الحقل المستهدف [{target_column}] وتوليد عدد ({created_count}) محفظة مالية للموردين القدامى بنجاح حوكمي مطلق."
+            }), 200
+        else:
+            return jsonify({
+                "status": "success",
+                "message": "فحص النظام مكتمل بحوكمة تامة: جميع الموردين الحاليين يمتلكون محافظ مالية مسبقاً."
+            }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"❌ خطأ بنيوي في الفحص الديناميكي للجداول: {str(e)}")
+        return jsonify({"status": "error", "message": f"فشلت المزامنة الرقمية الذكية: {str(e)}"}), 500
