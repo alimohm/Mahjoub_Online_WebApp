@@ -20,8 +20,8 @@
         </div>
     </div>
 
-    <form id="addSupplierForm" method="POST" enctype="multipart/form-data" action="{{ url_for('admin_suppliers.add_supplier') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form id="addSupplierForm" method="POST" enctype="multipart/form-data" action="{{ url_for('admin_suppliers.add_supplier_page') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
         <input type="hidden" name="sovereign_id" value="{{ sovereign_id }}">
 
         <div class="row g-4">
@@ -203,7 +203,7 @@ const yemenGeography = {
 
 const financeData = {
     banks: ["بنك القطيبي الإسلامي", "بنك الشمول الإسلامي", "مصرف الكريمي", "بنك عدن الإسلامي", "بنك التضامن"],
-    exchange: ["شركة القطيبي للصرافة", "شركة بن دول للصرافة", "شركة الشامل للصرافة", "شركة النجم للصرافة"]
+    exchange: ["شركة القطيبي للصرافة", "شركة بن دول للصرافة", "شركة الشمل للصرافة", "شركة النجم للصرافة"]
 };
 
 const debounceTimers = {};
@@ -230,7 +230,6 @@ document.querySelectorAll('.validation-field').forEach(input => {
                 return;
             }
 
-            // الفحص البنيوي للمدخلات
             switch(type) {
                 case 'name': 
                     isFormatValid = value.split(/\s+/).filter(word => word.length > 0).length >= 3; 
@@ -242,7 +241,7 @@ document.querySelectorAll('.validation-field').forEach(input => {
                     isFormatValid = value.length >= 5; 
                     break;
                 case 'phone': 
-                    isFormatValid = /^[7][0-4,7-8][0-9]{7}$/.test(value); // حوكمة أرقام الجوال باليمن (77, 73, 71, 70)
+                    isFormatValid = /^[7][0-4,7-8][0-9]{7}$/.test(value);
                     break;
                 case 'acc': 
                     isFormatValid = value.length >= 5; 
@@ -253,7 +252,6 @@ document.querySelectorAll('.validation-field').forEach(input => {
 
             let isFinalValid = isFormatValid;
 
-            // فحص الداتابيز الفوري عبر المسار المعزول لمنع التكرار الرقمي
             if (isFormatValid && dbType) {
                 try {
                     const response = await fetch(`/admin/suppliers/check-duplicate?type=${dbType}&value=${encodeURIComponent(value)}`);
@@ -270,7 +268,6 @@ document.querySelectorAll('.validation-field').forEach(input => {
                 }
             }
 
-            // تحديث مؤشرات الواجهة البصرية
             if (isFinalValid) {
                 icon.innerHTML = '<i class="fas fa-check-circle text-success" style="font-size: 16px;"></i>';
                 this.classList.remove('is-invalid');
@@ -290,8 +287,6 @@ function updateSubmitButtonState() {
     const submitBtn = document.getElementById('submitBtn');
     const totalValidFields = document.querySelectorAll('.validation-field.is-valid').length;
     const hasErrors = document.querySelectorAll('.is-invalid').length > 0;
-    
-    // عدد الحقول الأساسية الخاضعة للفحص الكلي هي 7 حقول رئيسية معتمدة بالـ الكلاس
     const requiredValidationCount = 7; 
 
     if (totalValidFields === requiredValidationCount && !hasErrors) {
