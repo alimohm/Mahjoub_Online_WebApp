@@ -16,11 +16,14 @@ def get_expected_sovereign_id():
     """
     سحب آخر معرف سيادي مسجل في قاعدة البيانات بدقة من خلال قراءة الجزء الرقمي 
     الأخير وزيادته بمقدار 1، ليعرض للمسؤول في الواجهة المعرف المتوقع تماماً.
+    🛡️ تم تحصينه بطلب حقول مخصصة لمنع استدعاء الأعمدة المفقودة مؤقتاً أثناء الإقلاع.
     """
     default_prefix = "SUP-WEL-MAH"
     try:
-        # جلب آخر مورد تم تسجيله بناءً على أعلى رقم ID في الجدول
-        last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
+        # جلب الحقول المحددة والأساسية فقط لقطع الطريق على استدعاء حقل status غير المتواجد
+        last_supplier = db.session.query(Supplier.id, Supplier.sovereign_id)\
+                                  .order_by(Supplier.id.desc())\
+                                  .first()
         
         if last_supplier and last_supplier.sovereign_id:
             sovereign_str = last_supplier.sovereign_id.strip()
@@ -86,14 +89,15 @@ def add_supplier_page():
                     }), 400
 
             # 2. فحص الحقول السبعة بشكل صارم في الخلفية قبل إتمام الحفظ لمنع تجاوز التكرار
+            # 🛡️ تم تعديل الفحص للاستعلام عن الـ ID فقط لضمان عدم حدوث تعارض مع أعمدة مفقودة
             check_fields = {
-                "username": (Supplier.query.filter_by(username=username).first(), "اسم المستخدم (Login)"),
-                "identity_number": (Supplier.query.filter_by(identity_number=identity_number).first(), "رقم الوثيقة / الهوية"),
-                "owner_name": (Supplier.query.filter_by(owner_name=owner_name).first(), "اسم المالك الكامل"),
-                "trade_name": (Supplier.query.filter_by(trade_name=trade_name).first(), "الاسم التجاري للمنشأة"),
-                "owner_phone": (Supplier.query.filter_by(owner_phone=owner_phone).first(), "رقم هاتف المالك"),
-                "shop_phone": (Supplier.query.filter_by(shop_phone=shop_phone).first(), "هاتف المنشأة (محل)"),
-                "bank_acc": (Supplier.query.filter_by(bank_acc=bank_acc).first(), "رقم الحساب")
+                "username": (db.session.query(Supplier.id).filter_by(username=username).first(), "اسم المستخدم (Login)"),
+                "identity_number": (db.session.query(Supplier.id).filter_by(identity_number=identity_number).first(), "رقم الوثيقة / الهوية"),
+                "owner_name": (db.session.query(Supplier.id).filter_by(owner_name=owner_name).first(), "اسم المالك الكامل"),
+                "trade_name": (db.session.query(Supplier.id).filter_by(trade_name=trade_name).first(), "الاسم التجاري للمنشأة"),
+                "owner_phone": (db.session.query(Supplier.id).filter_by(owner_phone=owner_phone).first(), "رقم هاتف المالك"),
+                "shop_phone": (db.session.query(Supplier.id).filter_by(shop_phone=shop_phone).first(), "هاتف المنشأة (محل)"),
+                "bank_acc": (db.session.query(Supplier.id).filter_by(bank_acc=bank_acc).first(), "رقم الحساب")
             }
 
             for key, (exists, field_title) in check_fields.items():
@@ -170,6 +174,7 @@ def check_duplicate():
     """
     مستمع الفحص الفوري واللحظي المباشر لقاعدة البيانات لضمان الحوكمة وسرعة الاستجابة.
     تم تطوير الاستجابة لتعود بـ 'exists': true في حال التكرار أو الفراغ الخادع لمنع علامات الصح.
+    🛡️ تم تحصينه بطلب حقل الـ ID فقط لضمان الفحص اللحظي الآمن دون استدعاء الحقول المتغيرة.
     """
     check_type = request.args.get('type')
     value = request.args.get('value', '').strip()
@@ -180,27 +185,27 @@ def check_duplicate():
         
     is_duplicate = False
     try:
-        # ربط دقيق وشامل للحقول السبعة بمسميات الواجهة لمنع التكرار البنيوي
+        # ربط دقيق وشامل للحقول السبعة بمسميات الواجهة لمنع التكرار البنيوي عبر الـ ID حصراً
         if check_type == 'username':
-            is_duplicate = Supplier.query.filter_by(username=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(username=value).first() is not None
             
         elif check_type == 'identity_number':
-            is_duplicate = Supplier.query.filter_by(identity_number=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(identity_number=value).first() is not None
             
         elif check_type == 'owner_name':
-            is_duplicate = Supplier.query.filter_by(owner_name=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(owner_name=value).first() is not None
             
         elif check_type == 'trade_name':
-            is_duplicate = Supplier.query.filter_by(trade_name=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(trade_name=value).first() is not None
             
         elif check_type == 'owner_phone':
-            is_duplicate = Supplier.query.filter_by(owner_phone=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(owner_phone=value).first() is not None
             
         elif check_type == 'shop_phone':
-            is_duplicate = Supplier.query.filter_by(shop_phone=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(shop_phone=value).first() is not None
             
         elif check_type == 'bank_acc':
-            is_duplicate = Supplier.query.filter_by(bank_acc=value).first() is not None
+            is_duplicate = db.session.query(Supplier.id).filter_by(bank_acc=value).first() is not None
             
         else:
             current_app.logger.warning(f"⚠️ نوع فحص غير مدعوم في منصة محجوب: {check_type}")
