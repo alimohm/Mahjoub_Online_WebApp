@@ -14,11 +14,11 @@ from apps.models import Supplier
 
 def get_expected_sovereign_id():
     """
-    سحب آخر معرف سيادي مسجل في قاعدة البيانات، استخراج الجزء الرقمي منه، 
-    وزيادته بمقدار 1 ليظهر بالبادئة المعتمدة الجديدة للموردين: SUP-MAH96320
+    سحب آخر معرف سيادي مسجل في قاعدة البيانات بدقة من خلال قراءة الجزء الرقمي 
+    الأخير وزيادته بمقدار 1، ليعرض للمسؤول في الواجهة المعرف المتوقع تماماً (مثل SUP-WEL-MAH9638).
     🛡️ تم تحصينه بطلب حقول مخصصة لمنع استدعاء الأعمدة المفقودة مؤقتاً أثناء الإقلاع.
     """
-    default_prefix = "SUP-MAH"
+    default_prefix = "SUP-WEL-MAH"
     try:
         # جلب الحقول المحددة والأساسية فقط لقطع الطريق على استدعاء حقل status غير المتواجد
         last_supplier = db.session.query(Supplier.id, Supplier.sovereign_id)\
@@ -33,17 +33,23 @@ def get_expected_sovereign_id():
             if match:
                 last_num = int(match.group())
                 next_num = last_num + 1
+                
+                # استخراج البادئة النصية الديناميكية التي تسبق الرقم مباشرة (مثل SUP-WEL-MAH)
+                prefix_match = re.match(r'^(.*?)(\d+)$', sovereign_str)
+                if prefix_match:
+                    return f"{prefix_match.group(1)}{next_num}"
+                
                 return f"{default_prefix}{next_num}"
         
-        # ملاذ آمن: في حال وجود سجلات لا تطابق النمط المعتاد في النظام
+        # ملاذ آمن: في حال وجود سجلات لا تطابق النمط المعتاد في النظام (نبدأ بعد السجل الأخير الحالي)
         if last_supplier:
-            return f"{default_prefix}96320"
+            return f"{default_prefix}96338"
 
     except Exception as e:
         current_app.logger.error(f"❌ خطأ أثناء احتساب المعرف السيادي القادم: {str(e)}")
     
     # في حال كان الجدول فارغاً تماماً في البداية
-    return f"{default_prefix}96320"
+    return f"{default_prefix}96338"
 
 
 @admin_suppliers.route('/add', methods=['GET', 'POST'], endpoint='add_supplier_page')
@@ -90,7 +96,7 @@ def add_supplier_page():
                     }), 400
 
             # 2. فحص الحقول السبعة بشكل صارم في الخلفية قبل إتمام الحفظ لمنع تجاوز التكرار
-            # 🛡️ تم تعديل الفحص للاستعلام عن الـ ID فقط لضشان عدم حدوث تعارض مع أعمدة مفقودة
+            # 🛡️ تم تعديل الفحص للاستعلام عن الـ ID فقط لضمان عدم حدوث تعارض مع أعمدة مفقودة
             check_fields = {
                 "username": (db.session.query(Supplier.id).filter_by(username=username).first(), "اسم المستخدم (Login)"),
                 "identity_number": (db.session.query(Supplier.id).filter_by(identity_number=identity_number).first(), "رقم الوثيقة / الهوية"),
@@ -135,17 +141,17 @@ def add_supplier_page():
 
             # 4. تعميد المورد مؤقتاً في الجلسة لتوليد المعرفات والحقول التلقائية
             db.session.add(new_supplier)
-            db.session.flush()  # يسحب المعرف السيادي الفريد والـ ID المتناسق رقمياً بنمط SUP-MAH96320
+            db.session.flush()  # يسحب المعرف السيادي الفريد والـ ID المتناسق رقمياً
 
-            # 5. 💳 محرك المحفظة الموحد (استدعاء داخلي محمي لتجنب الانهيار الدائري)
+            # 5. 💳 محرك المحفظة الموحد (استدعاء داخلي محمي لتجنب الانهيار الدائري لربطه بجدول supplier_wallets)
             from apps.models.wallet_db import Wallet
             
-            # استخراج الجزء الرقمي المشترك والموحد (مثل 96320 من معرف SUP-MAH96320)
+            # استخراج الجزء الرقمي المتسلسل التلقائي المولد (مثل 9638)
             supplier_number = re.search(r'\d+$', new_supplier.sovereign_id).group()
             
             supplier_wallet = Wallet(
                 supplier_id=new_supplier.id,
-                # ربط رقم المحفظة ليتطابق بالبادئة المالية الفارق والرقمنة الموحدة: WEL-MAH96320
+                # ربط رقم المحفظة بالبادئة المالية المحددة والرقمنة الموحدة المتناسقة: WEL-MAH9638
                 wallet_number=f"WEL-MAH{supplier_number}",
                 
                 # تهيئة أرصدة العملات الثلاث بحسابات صفرية جاهزة للضخ المالي المستقبلي
