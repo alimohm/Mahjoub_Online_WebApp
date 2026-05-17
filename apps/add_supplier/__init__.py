@@ -3,13 +3,12 @@
 
 from flask import Blueprint
 
-# تعريف البلوبرينت بشكل مستقل تماماً
-# تمت إزالة تخصيص المجلد الفرعي للقوالب لكي يقرأ Flask تلقائياً من المجلد الرئيسي الموحد
+# إنشاء كائن البلوبرينت الخاص بإضافة الموردين لـ "منصة محجوب أونلاين"
 admin_suppliers = Blueprint(
-    'admin_suppliers',
-    __name__,
-    url_prefix='/admin/suppliers'
+    'admin_suppliers', 
+    __name__, 
+    template_folder='templates'
 )
 
-# الاستدعاء المتأخر للمسارات في نهاية الملف لكسر حلقة الاستيراد الدائري (Circular Import)
-from apps.add_supplier import routes
+# استدعاء ملف الـ routes في الأسفل لحقن المسارات داخل البلوبرينت بعد إنشائه
+from . import routes
