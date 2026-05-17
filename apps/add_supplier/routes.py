@@ -5,7 +5,7 @@ import os
 import secrets
 from flask import render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -25,7 +25,7 @@ def add_supplier():
     """
     if request.method == 'POST':
         try:
-            # 1. استقبال البيانات الأساسية وتطهيرها من الفراغات
+            # 1. استقبال البيانات الأساسية وتطهيرها من الفراغات (Sanitization)
             username = request.form.get('username', '').strip()
             trade_name = request.form.get('trade_name', '').strip()
             password = request.form.get('password')
@@ -113,11 +113,11 @@ def add_supplier():
                 fin_type=request.form.get('fin_type'),
                 bank_name=bank_name,
                 bank_acc=bank_acc,
-                status='نشط',                    # تعيين تلقائي مباشر
-                rank_grade='أساسي',               # تعيين تلقائي مباشر
+                status='نشط',                                    # تعيين تلقائي مباشر
+                rank_grade='أساسي',                               # تعيين تلقائي مباشر
                 registration_source='لوحة التحكم', 
                 created_by_id=getattr(current_user, 'id', None), 
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)            # تحديث للأسلوب البرمجي الحديث لعام 2026
             )
 
             # 6. الحفظ النهائي المؤكد في قاعدة البيانات
@@ -126,7 +126,7 @@ def add_supplier():
 
             return jsonify({
                 'status': 'success',
-                'message': 'تم تعميد المورد بنجاح في نظام الأرشفة برتبة أساسي وحالة نشطة',
+                'message': 'تم تعميد Mورد بنجاح في نظام الأرشفة برتبة أساسي وحالة نشطة',
                 'data': {
                     'username': new_supplier.username,
                     'sovereign_id': new_supplier.sovereign_id
@@ -135,7 +135,7 @@ def add_supplier():
 
         except Exception as e:
             db.session.rollback()
-            print(f"Critical Error in add_supplier: {str(e)}")
+            current_app.logger.error(f"Critical Error in add_supplier: {str(e)}")
             return jsonify({'status': 'error', 'message': f'فشل في عملية التعميد: {str(e)}'}), 500
 
     # -------------------------------------------------------------------------
@@ -155,7 +155,7 @@ def add_supplier():
 
         next_sovereign_id = f"SUP-WEL-MAH963{next_num}"
     except Exception as e:
-        print(f"Error fetching next_sovereign_id prediction: {str(e)}")
+        current_app.logger.error(f"Error fetching next_sovereign_id prediction: {str(e)}")
         next_sovereign_id = "SUP-WEL-MAH96319"
     
     return render_template('admin/add_supplier.html', sovereign_id=next_sovereign_id)
@@ -175,7 +175,7 @@ def check_duplicate():
         if not check_type or not value:
             return jsonify({'exists': False, 'valid': True, 'message': 'الحقل فارغ'})
 
-        # حوكمة إضافية في الـ Back-end لاسم المستخدم
+        # حوكمة إضافية في الـ Back-end لاسم المستخدم لضمان سلامة البنية
         if check_type == 'username' and len(value) < 3:
             return jsonify({'exists': True, 'valid': False, 'message': 'اسم المستخدم قصير جداً'})
 
@@ -194,7 +194,7 @@ def check_duplicate():
         elif check_type == 'bank_acc':
             exists = Supplier.query.filter_by(bank_acc=value).first() is not None
 
-        # إرجاع رد مطابق 100% لمنطق معالجة الأخطاء بالجافاسكريبت
+        # إرجاع رد مطابق 100% لمنطق معالجة الأخطاء بالجافاسكريبت المطور بالفرونت إند
         return jsonify({'exists': exists, 'valid': not exists})
         
     except Exception as e:
