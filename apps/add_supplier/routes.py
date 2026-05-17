@@ -9,9 +9,8 @@ from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 
-# استخدام الاستيراد النسبي الصارم لمنع انهيار الـ Boot في Railway
+# استيراد نسبي آمن لكائن قاعدة البيانات لتجنب قفل الحزمة
 from .. import db  
-from ..models.supplier_db import Supplier 
 
 # استيراد كائن البلوبرينت المعرّف في الـ __init__.py الفرعي
 from . import admin_suppliers
@@ -23,6 +22,9 @@ def add_supplier():
     """
     محرك تعميد الموردين لـ "منصة محجوب أونلاين"
     """
+    # 🚨 استيراد متأخر داخل الدالة لمنع الـ Circular Import نهائياً أثناء الإقلاع
+    from apps.models.supplier_db import Supplier
+
     if request.method == 'POST':
         try:
             username = request.form.get('username', '').strip()
@@ -118,7 +120,7 @@ def add_supplier():
 
             return jsonify({
                 'status': 'success',
-                'message': 'تم تعميد المورد بنجاح في نظام الأرشفة برتبة أساسي وحالة نشطة',
+                'message': 'تم تعميد المورد بنجاح في نظام الأرشفة',
                 'data': {
                     'username': new_supplier.username,
                     'sovereign_id': new_supplier.sovereign_id
@@ -130,9 +132,6 @@ def add_supplier():
             current_app.logger.error(f"Critical Error in add_supplier: {str(e)}")
             return jsonify({'status': 'error', 'message': f'فشل في عملية التعميد: {str(e)}'}), 500
 
-    # -------------------------------------------------------------------------
-    # في حالة طلب الصفحة (GET)
-    # -------------------------------------------------------------------------
     try:
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         if last_supplier and last_supplier.sovereign_id and 'SUP-WEL-MAH963' in last_supplier.sovereign_id:
@@ -158,15 +157,14 @@ def check_duplicate():
     """
     نظام الفحص اللحظي المطور للتأكد من فرادة البيانات قبل الاعتماد النهائي
     """
+    from apps.models.supplier_db import Supplier
+
     try:
         check_type = request.args.get('type')
         value = request.args.get('value', '').strip()
 
         if not check_type or not value:
-            return jsonify({'exists': False, 'valid': False, 'status': 'empty', 'message': 'الحقل فارغ'})
-
-        if check_type == 'username' and len(value) < 3:
-            return jsonify({'exists': True, 'valid': False, 'status': 'invalid', 'message': 'اسم المستخدم قصير جداً'})
+            return jsonify({'exists': False, 'valid': False, 'status': 'empty'})
 
         exists = False
         if check_type == 'username':
@@ -185,10 +183,8 @@ def check_duplicate():
         return jsonify({
             'exists': exists, 
             'valid': not exists,
-            'status': 'duplicate' if exists else 'unique',
-            'message': 'البيانات مسجلة مسبقاً!' if exists else 'البيانات متاحة للاستخدام'
+            'status': 'duplicate' if exists else 'unique'
         })
         
     except Exception as e:
-        current_app.logger.error(f"Check duplicate raw database error for {check_type}: {str(e)}")
-        return jsonify({'exists': False, 'valid': False, 'status': 'error', 'error': str(e)})
+        return jsonify({'exists': False, 'valid': False, 'status': 'error'})
