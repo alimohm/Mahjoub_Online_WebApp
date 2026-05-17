@@ -17,41 +17,39 @@ from apps.add_supplier import admin_suppliers
 @login_required 
 def add_supplier():
     """
-    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل لـ "محجوب أونلاين"
+    محرك تعميد الموردين: يقوم بمعالجة البيانات وحفظها في السجل لـ "منصة محجوب أونلاين"
     """
     if request.method == 'POST':
         try:
-            # 1. استقبال البيانات الأساسية وتطهيرها
+            # 1. استقبال البيانات الأساسية وتطهيرها من الفراغات
             username = request.form.get('username', '').strip()
             trade_name = request.form.get('trade_name', '').strip()
             password = request.form.get('password')
             identity_number = request.form.get('identity_number', '').strip()
+            bank_acc = request.form.get('bank_acc', '').strip()
 
-            # 2. التحقق النهائي (Back-end Validation) المحصن تماماً لمنع التكرار والانكسار
-            try:
-                if username and Supplier.query.filter_by(username=username).first():
-                    return jsonify({'status': 'error', 'message': 'فشل التعميد: اسم المستخدم مسجل مسبقاً!'}), 400
-                
-                if trade_name and Supplier.query.filter_by(trade_name=trade_name).first():
-                    return jsonify({'status': 'error', 'message': 'فشل التعميد: الاسم التجاري مسجل مسبقاً!'}), 400
+            # 2. التحقق النهائي الصارم والثابت عند الإرسال (Back-end Validation) لمنع التكرار تماماً
+            if username and Supplier.query.filter_by(username=username).first():
+                return jsonify({'status': 'error', 'message': 'فشل التعميد: اسم المستخدم مسجل مسبقاً!'}), 400
+            
+            if trade_name and Supplier.query.filter_by(trade_name=trade_name).first():
+                return jsonify({'status': 'error', 'message': 'فشل التعميد: الاسم التجاري مسجل مسبقاً!'}), 400
 
-                if identity_number and Supplier.query.filter_by(identity_number=identity_number).first():
-                    return jsonify({'status': 'error', 'message': 'فشل التعميد: رقم الوثيقة أو الهوية مسجل مسبقاً!'}), 400
-            except Exception as db_err:
-                # حماية مرنة: في حال وجود اختلاف مؤقت في هيكل الجداول أو الحقول أثناء الفحص المبدئي،
-                # نقوم بطباعة الخطأ في الـ Logs لتتبعه دون أن نقطع عملية التسجيل الأساسية.
-                print(f"Validation Log: Temporary skip column validation -> {str(db_err)}")
+            if identity_number and Supplier.query.filter_by(identity_number=identity_number).first():
+                return jsonify({'status': 'error', 'message': 'فشل التعميد: رقم الوثيقة أو الهوية مسجل مسبقاً!'}), 400
+
+            if bank_acc and Supplier.query.filter_by(bank_acc=bank_acc).first():
+                return jsonify({'status': 'error', 'message': 'فشل التعميد: رقم الحساب البنكي مسجل لمورد آخر مسبقاً!'}), 400
 
             # 3. معالجة حقول الإدخال اليدوي الديناميكية وتطابقها مع الواجهة المحدثة
             identity_type = request.form.get('identity_type')
             bank_name = request.form.get('bank_name')
-            activity_type = request.form.get('activity_type', '').strip() # تعديل المسمى ليتوافق مع الـ HTML والموديل
+            activity_type = request.form.get('activity_type', '').strip()
 
             # 4. تشفير كلمة المرور وتجهيز الكائن
             hashed_pw = generate_password_hash(password)
             
-            # ⚠️ لاحظ: يتم تمرير قيمة مؤقتة للحقل السيادي ليتم استبدالها بشكل قطعي 
-            # عبر دالة الـ Event Listener التلقائية المخزنة في موديل قاعدة البيانات قبل الحفظ الفعلي.
+            # يتم تمرير قيمة مؤقتة للحقل السيادي ليتم استبدالها بشكل قطعي عبر الـ Event Listener المخزن في القاعدة
             new_supplier = Supplier(
                 sovereign_id="PENDING", 
                 username=username,
@@ -65,10 +63,10 @@ def add_supplier():
                 owner_phone=request.form.get('owner_phone', '').strip(),
                 province=request.form.get('province'),
                 district=request.form.get('district'),
-                address_detail=request.form.get('address_detail'), # تعديل ليتطابق مع name="address_detail" في الـ HTML
+                address_detail=request.form.get('address_detail'),
                 fin_type=request.form.get('fin_type'),
                 bank_name=bank_name,
-                bank_acc=request.form.get('bank_acc', '').strip(),
+                bank_acc=bank_acc,
                 status='المراجعة',        # إجبار إسناد حالة البدء الافتراضية لحوكمة النظام
                 rank_grade='ريادي',       # إجبار إسناد رتبة المورد الأولى للتحكم بالصلاحيات
                 registration_source='لوحة التحكم', # تحديد ولادة الحساب من الإدارة
@@ -83,7 +81,7 @@ def add_supplier():
                     # هنا يمكن إضافة منطق الحفظ الفعلي للصور لاحقاً
                     pass
 
-            # 6. الحفظ النهائي الصارم والمؤكد في قاعدة البيانات
+            # 6. الحفظ النهائي المؤكد في قاعدة البيانات
             db.session.add(new_supplier)
             db.session.commit() # هنا تتدخل دالة الجلب لتثبيت الرقم الحقيقي المحدث في السلسلة
 
@@ -126,7 +124,7 @@ def add_supplier():
         next_sovereign_id = f"SUP-WEL-MAH963{next_num}"
     except Exception as e:
         print(f"Error fetching next_sovereign_id prediction: {str(e)}")
-        # قيمة استباقية ذكية في حال وقوع أي استثناء عابر أثناء الاتصال
+        # قيمة استباقية ذكية في حال وقوع أي استثناء عابر أثناء الاتصال بناءً على لوحة التحكم
         next_sovereign_id = "SUP-WEL-MAH96319"
     
     # تمرير المتغير الموحد والمطابق للواجهة لمنع ظهور أي تشوهات أو فراغات رقمية
@@ -137,7 +135,8 @@ def add_supplier():
 @login_required
 def check_duplicate():
     """
-    نظام الفحص اللحظي الآمن: يتصل به الـ JavaScript لإظهار علامات الصح والخطأ ✅❌
+    نظام الفحص اللحظي الآمن والمطور: يتصل به الـ JavaScript عند الكتابة لإظهار (✅/❌)
+    ويشمل (اسم المستخدم، الاسم التجاري، هاتف المحل، رقم الهوية، ورقم الحساب البنكي) لمنع التكرار نهائياً
     """
     try:
         check_type = request.args.get('type')
@@ -146,12 +145,13 @@ def check_duplicate():
         if not check_type or not value:
             return jsonify({'exists': False})
 
-        # خريطة الحقول المسموح بفحص تكرارها
+        # خريطة الحقول الشاملة والمحمية بالكامل لمنع تكرار أي بيانات في محل آخر
         field_map = {
             'username': Supplier.username,
             'trade_name': Supplier.trade_name,
             'shop_phone': Supplier.shop_phone,
-            'identity_number': Supplier.identity_number
+            'identity_number': Supplier.identity_number,
+            'bank_acc': Supplier.bank_acc  # حماية السيادة المالية لمنع تكرار الحساب البنكي لأي مورد آخر
         }
 
         target_field = field_map.get(check_type)
@@ -163,6 +163,6 @@ def check_duplicate():
         return jsonify({'exists': exists})
         
     except Exception as e:
-        # حماية سيادية: يمنع انكسار واجهة المستخدم ويضمن سلاسة تدفق البيانات في الواجهة
+        # حماية سيادية: يمنع انكسار واجهة المشرف ويضمن استقرار السيرفر عند حدوث خطأ عابر
         print(f"Check duplicate error for {check_type}: {str(e)}")
         return jsonify({'exists': False, 'error': str(e)})
