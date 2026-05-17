@@ -12,7 +12,8 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__)
+    # تعيين مجلد القوالب العام كخلفية احتياطية للتطبيق كاملاً
+    app = Flask(__name__, template_folder='templates')
     app.config.from_object(Config)
 
     # تهيئة الإضافات بربطها بالتطبيق الحالي
@@ -30,17 +31,18 @@ def create_app():
         from apps.models.admin_db import AdminUser
         return AdminUser.query.get(int(user_id))
 
-    # استيراد البلوبرينتس الفرعية بشكل آمن ومباشر
+    # 📥 استيراد البلوبرينتس الفرعية بشكل آمن ومباشر لمنع التداخل الدائري
     from apps.auth_portal import auth_blueprint
     from apps.admin_dashboard import admin_dashboard_blueprint
     
-    # 🎯 الاستيراد الصحيح والنقي مباشرة من مجلد الحزمة (الذي يحتوي على البلوبرينت الأصلي)
+    # 🎯 الاستيراد الصحيح والنقي مباشرة من مجلد حزمة الموردين المعزولة
     from apps.add_supplier import admin_suppliers
 
-    # تسجيل وعزل المسارات برمجياً لضمان استقرار المنصة
+    # ⚙️ تسجيل وعزل المسارات برمجياً لضمان استقرار المنصة بالكامل
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.register_blueprint(admin_dashboard_blueprint, url_prefix='/admin')
-app.register_blueprint(admin_suppliers, url_for_security="/admin/suppliers") # أو حسب سياق التسجيل لديك
     
+    # 📦 تسجيل محرك الموردين السيادي بمسار مخصص يطابق طلبات الـ Fetch في الواجهة
+    app.register_blueprint(admin_suppliers, url_prefix='/admin/suppliers')
 
     return app
