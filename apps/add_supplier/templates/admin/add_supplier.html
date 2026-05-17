@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="text-center p-2 border-start ps-4">
-            <small class="d-block text-muted fw-bold">المعرف الموحد</small>
+            <small class="d-block text-muted fw-bold">المعرف المتوقع</small>
             <span class="fs-4 fw-bold" style="color: var(--royal-purple);" id="display-id">{{ sovereign_id }}</span>
         </div>
     </div>
@@ -128,7 +128,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">العنوان بالتفصيل</label>
-                        <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="الشارع، بجوار..." required></textarea>
+                        <textarea name="address_detail" class="form-control bg-light border-0" rows="2" placeholder="الشارع، بجوار..." required></textarea>
                     </div>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                     
                     <div class="mb-4">
                         <label class="form-label text-muted small">فئة المورد</label>
-                        <select name="category" id="categorySelect" class="form-select bg-light border-0 mb-2" onchange="toggleManualInput(this, 'catManual')" required>
+                        <select name="activity_type" id="categorySelect" class="form-select bg-light border-0 mb-2" onchange="toggleManualInput(this, 'catManual')" required>
                             <option value="مورد جملة">مورد جملة</option>
                             <option value="مورد تجزئة">مورد تجزئة</option>
                             <option value="manual">أخرى (إدخال يدوي)...</option>
@@ -311,13 +311,15 @@ function copySupplierCredentials(user, id, pass) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const pSelect = document.getElementById('provinceSelect');
-    Object.keys(yemenGeography).forEach(p => {
-        const opt = document.createElement('option');
-        const optText = document.createTextNode(p);
-        opt.value = p;
-        opt.appendChild(optText);
-        pSelect.appendChild(opt);
-    });
+    if(pSelect) {
+        Object.keys(yemenGeography).forEach(p => {
+            const opt = document.createElement('option');
+            const optText = document.createTextNode(p);
+            opt.value = p;
+            opt.appendChild(optText);
+            pSelect.appendChild(opt);
+        });
+    }
     updateFinanceOptions();
 
     document.getElementById('addSupplierForm').onsubmit = async function(e) {
@@ -343,7 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (response.ok && result.status === 'success') {
                 const username = result.data ? result.data.username : document.getElementById('form-username-field').value;
-                const unifiedId = result.data ? result.data.unified_id : document.getElementById('display-id').innerText;
+                // تعديل قراءة حقل الـ sovereign_id الراجع بدقة من السيرفر لمنع تضارب الأسماء مستقبلاً
+                const unifiedId = result.data ? (result.data.sovereign_id || result.data.unified_id) : document.getElementById('display-id').innerText;
                 const password = document.getElementById('form-password-field').value;
 
                 const modalContent = `
