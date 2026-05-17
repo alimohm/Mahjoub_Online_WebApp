@@ -2,7 +2,7 @@
 # coding: utf-8
 
 from flask import render_template, request, jsonify
-from flask_login import login_required
+from flask_login import login_required, current_user
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
@@ -25,7 +25,6 @@ def add_supplier():
             username = request.form.get('username', '').strip()
             trade_name = request.form.get('trade_name', '').strip()
             password = request.form.get('password')
-            unified_id = request.form.get('sovereign_id') # استقبال المعرف السيادي الموحد المستقر
             identity_number = request.form.get('identity_number', '').strip()
 
             # 2. التحقق النهائي (Back-end Validation) المحصن تماماً لمنع التكرار والانكسار
@@ -43,34 +42,37 @@ def add_supplier():
                 # نقوم بطباعة الخطأ في الـ Logs لتتبعه دون أن نقطع عملية التسجيل الأساسية.
                 print(f"Validation Log: Temporary skip column validation -> {str(db_err)}")
 
-            # 3. معالجة حقول الإدخال اليدوي الديناميكية
+            # 3. معالجة حقول الإدخال اليدوي الديناميكية وتطابقها مع الواجهة المحدثة
             identity_type = request.form.get('identity_type')
             bank_name = request.form.get('bank_name')
-            category = request.form.get('category', '').strip()
+            activity_type = request.form.get('activity_type', '').strip() # تعديل المسمى ليتوافق مع الـ HTML والموديل
 
             # 4. تشفير كلمة المرور وتجهيز الكائن
             hashed_pw = generate_password_hash(password)
             
+            # ⚠️ لاحظ: تم إزالة حقل sovereign_id من التهيئة وتمريره كـ "قيمة مؤقتة فارغة" 
+            # أو تركه ليحسب تلقائياً بفضل دالة الـ Event Listener المربوطة بـ before_insert
             new_supplier = Supplier(
-                sovereign_id=unified_id, # المعرف الموحد المتسلسل تلقائياً
+                sovereign_id="PENDING", # سيقوم الموديل باستبداله تلقائياً بكسر من الثانية قبل الـ commit
                 username=username,
                 password_hash=hashed_pw,
                 identity_type=identity_type,
                 identity_number=identity_number,
-                activity_type=category,
+                activity_type=activity_type,
                 owner_name=request.form.get('owner_name', '').strip(),
                 trade_name=trade_name,
                 shop_phone=request.form.get('shop_phone', '').strip(),
                 owner_phone=request.form.get('owner_phone', '').strip(),
                 province=request.form.get('province'),
                 district=request.form.get('district'),
-                address_detail=request.form.get('address'),
+                address_detail=request.form.get('address_detail'), # تعديل ليتطابق مع name="address_detail" في الـ HTML
                 fin_type=request.form.get('fin_type'),
                 bank_name=bank_name,
                 bank_acc=request.form.get('bank_acc', '').strip(),
-                status='المراجعة',       # إجبار إسناد حالة البدء الافتراضية لحوكمة النظام
-                rank_grade='ريادي',      # إجبار إسناد رتبة المورد الأولى للتحكم بالصلاحيات
+                status='المراجعة',        # إجبار إسناد حالة البدء الافتراضية لحوكمة النظام
+                rank_grade='ريادي',       # إجبار إسناد رتبة المورد الأولى للتحكم بالصلاحيات
                 registration_source='لوحة التحكم', # تحديد ولادة الحساب من الإدارة
+                created_by_id=getattr(current_user, 'id', None), # إسناد معرّف المشرف الحالي الذي قام بالتعميد للحوكمة الرقمية
                 created_at=datetime.utcnow()
             )
 
@@ -83,15 +85,15 @@ def add_supplier():
 
             # 6. الحفظ النهائي الصارم والمؤكد في قاعدة البيانات
             db.session.add(new_supplier)
-            db.session.commit()
+            db.session.commit() # في هذه اللحظة تتدخل دالة auto_generate_sovereign_id وتضع الرقم الحقيقي المحدث
 
             # إرجاع استجابة نجاح صريحة وقطعية لتغلق الـ JavaScript نافذة "جاري المعالجة" بنجاح
             return jsonify({
                 'status': 'success',
                 'message': 'تم تعميد المورد بنجاح في نظام الأرشفة',
                 'data': {
-                    'username': username,
-                    'unified_id': unified_id
+                    'username': new_supplier.username,
+                    'sovereign_id': new_supplier.sovereign_id # يعود الرقم المتسلسل الفعلي المولد من قاعدة البيانات مباشرة
                 }
             }), 200
 
@@ -100,12 +102,24 @@ def add_supplier():
             print(f"Critical Error in add_supplier: {str(e)}")
             return jsonify({'status': 'error', 'message': f'فشل في عملية التعميد: {str(e)}'}), 500
 
-    # في حالة GET: استدعاء محرك الترقيم السيادي والمستقر من قاعدة البيانات لتحديد الرقم التالي المتاح فوراً
+    # -------------------------------------------------------------------------
+    # في حالة GET: حساب التنبؤ الرقمي السيادي والمستقر من قاعدة البيانات للعرض فقط
+    # -------------------------------------------------------------------------
     try:
-        next_sovereign_id = Supplier.generate_sovereign_id()
+        last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
+        if last_supplier and last_supplier.sovereign_id and 'MAH963' in last_supplier.sovereign_id:
+            try:
+                last_num = int(last_supplier.sovereign_id.split('MAH963')[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = (last_supplier.id or 0) + 1
+        else:
+            next_num = (last_supplier.id or 0) + 1 if last_supplier else 1
+
+        next_sovereign_id = f"SUP-WEL-MAH963{next_num}"
     except Exception as e:
-        print(f"Error fetching next_sovereign_id: {str(e)}")
-        next_sovereign_id = "MO-2026-1"
+        print(f"Error fetching next_sovereign_id prediction: {str(e)}")
+        next_sovereign_id = "SUP-WEL-MAH9631"
     
     # [تحديث الحماية السحابية]: تمرير المتغير الموحد والمطابق للواجهة لضمان عدم حدوث فراغات في الأرقام
     return render_template('admin/add_supplier.html', sovereign_id=next_sovereign_id)
