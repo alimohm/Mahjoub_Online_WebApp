@@ -234,6 +234,7 @@ document.querySelectorAll('.validation-field').forEach(input => {
         debounceTimers[fieldName] = setTimeout(async () => {
             let isFormatValid = false;
 
+            // حوكمة الفراغات: إذا فرغ الحقل تماماً، يتم تصفير الحالة بدون إعطاء صح أو خطأ
             if (value === "") {
                 icon.innerHTML = '<i class="fas fa-minus text-muted"></i>';
                 this.classList.remove('is-valid', 'is-invalid');
@@ -241,6 +242,7 @@ document.querySelectorAll('.validation-field').forEach(input => {
                 return;
             }
 
+            // الفحص النمطي والشكلي للمدخلات قبل الذهاب للسيرفر
             switch(type) {
                 case 'name': 
                     isFormatValid = value.split(/\s+/).filter(word => word.length > 0).length >= 3; 
@@ -263,12 +265,13 @@ document.querySelectorAll('.validation-field').forEach(input => {
 
             let isFinalValid = isFormatValid;
 
+            // إذا كان التنسيق الشكلي صحيحاً، يتم الاستعلام الفوري من السيرفر للتأكد من عدم التكرار
             if (isFormatValid && dbType) {
                 try {
-                    // ربط دقيق بمسار الاستعلام اللحظي المباشر لقاعدة البيانات
                     const response = await fetch(`/admin/suppliers/check-duplicate?type=${dbType}&value=${encodeURIComponent(value)}`);
                     const result = await response.json();
                     
+                    // إذا عاد السيرفر بـ exists: true (موجود أو فارغ مضلل) يُسقط صلاحية الحقل فوراً
                     if (result.exists === true || String(result.exists).toLowerCase() === "true") {
                         isFinalValid = false; 
                     } else {
@@ -280,6 +283,7 @@ document.querySelectorAll('.validation-field').forEach(input => {
                 }
             }
 
+            // حقن الأيقونات والحالات البصرية بدقة لمنع التمرير المزيف
             if (isFinalValid) {
                 icon.innerHTML = '<i class="fas fa-check-circle text-success" style="font-size: 16px;"></i>';
                 this.classList.remove('is-invalid');
@@ -300,7 +304,7 @@ function updateSubmitButtonState() {
     const totalValidFields = document.querySelectorAll('.validation-field.is-valid').length;
     const hasErrors = document.querySelectorAll('.is-invalid').length > 0;
     
-    // فحص صارم للحقول السبعة لمنع تجاوز التثبيت الحوكمي في المنصة
+    // شرط حوكمي صارم: يجب أن تكون الحقول السبعة السيادية مضاءة بالأخضر بالكامل وبدون أي أخطاء
     const requiredValidationCount = 7; 
 
     if (totalValidFields === requiredValidationCount && !hasErrors) {
@@ -418,13 +422,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <div class="p-3 mb-3 border rounded-3 text-start bg-light" style="font-size: 0.95rem; border-left: 5px solid var(--royal-purple) !important;">
-                        <div class="mb-2">
+                        <div class="mb-2" style="text-align: right; direction: rtl;">
                             <strong>اسم المستخدم:</strong> <span class="text-dark fw-bold">${username}</span>
                         </div>
-                        <div class="mb-2">
+                        <div class="mb-2" style="text-align: right; direction: rtl;">
                             <strong>المعرف السيادي:</strong> <span class="text-primary fw-bold">${unifiedId}</span>
                         </div>
-                        <div class="mb-0">
+                        <div class="mb-0" style="text-align: right; direction: rtl;">
                             <strong>كلمة المرور:</strong> <span class="text-danger fw-bold">${password}</span>
                         </div>
                     </div>
@@ -441,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <div class="text-center text-muted mb-3" style="font-size: 0.85rem; line-height: 1.6; font-weight: 600;">
                         شكرًا لتسجيلك في منصة محجوب أونلاين<br>
-                        <span style="color: var(--mahjoub-gold); font-weight: 700;">المنصة اللامركزية لحوكمة التجارة الرقمية</span>
+                        <span style="color: var(--royal-purple); font-weight: 700;">المنصة اللامركزية لحوكمة التجارة الرقمية</span>
                     </div>
 
                     <a href="${window.location.pathname}" class="btn w-100 py-2 btn-secondary fw-bold text-decoration-none text-center" style="border-radius: 12px;">إغلاق ومتابعة</a>
@@ -451,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                 successModal.show();
-            } else {
+            </div> else {
                 alert('فشل التعميد: ' + (result.message || 'يرجى مراجعة البيانات المدخلة.'));
                 btn.disabled = false;
                 updateSubmitButtonState();
