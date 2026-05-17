@@ -38,11 +38,17 @@ def create_app():
     # 🎯 الاستيراد الصحيح والنقي مباشرة من مجلد حزمة الموردين المعزولة
     from apps.add_supplier import admin_suppliers
 
+    # 💳 استيراد محرك الحوكمة المالية والمحافظ المحدث
+    from apps.wallet import admin_wallet
+
     # ⚙️ تسجيل وعزل المسارات برمجياً لضمان استقرار المنصة بالكامل
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.register_blueprint(admin_dashboard_blueprint, url_prefix='/admin')
     
     # 📦 تسجيل محرك الموردين السيادي بمسار مخصص يطابق طلبات الـ Fetch في الواجهة
     app.register_blueprint(admin_suppliers, url_prefix='/admin/suppliers')
+
+    # 💰 تسجيل محرك المحافظ والعمليات المادية الثلاثية في النواة
+    app.register_blueprint(admin_wallet)
 
     return app
