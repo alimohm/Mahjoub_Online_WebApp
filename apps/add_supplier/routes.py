@@ -157,8 +157,8 @@ def add_supplier():
         current_app.logger.error(f"Error fetching next_sovereign_id prediction: {str(e)}")
         next_sovereign_id = "SUP-WEL-MAH96319"
     
-    # استدعاء ملف القالب المباشر المتواجد في مجلد القوالب الرئيسي للمشروع لتفادي الـ TemplateNotFound نهائياً
-    return render_template('add_supplier.html', sovereign_id=next_sovereign_id)
+    # استدعاء ملف القالب الموجه بدقة إلى المجلد الفرعي لتجنب الـ TemplateNotFound نهائياً
+    return render_template('admin/add_supplier.html', sovereign_id=next_sovereign_id)
 
 
 @admin_suppliers.route('/check-duplicate', methods=['GET'])
