@@ -3,11 +3,13 @@
 
 from flask import render_template, request, jsonify, current_app, url_for
 from flask_login import login_required, current_user
+from werkzeug.security import generate_password_hash
 import jinja2
 
 # استيراد البلوبرينت المعزول الخاص بالموردين
 from . import admin_suppliers
-# 💡 استيراد موديل قاعدة البيانات الفعلي لديك ليعمل الفحص بشكل صحيح
+# استيراد كائن قاعدة البيانات والموديل الفعلي للموردين
+from apps import db
 from apps.models import Supplier  
 
 def generate_sovereign_id():
@@ -34,24 +36,103 @@ def generate_sovereign_id():
     return default_id
 
 
-# ضبط الـ endpoint ليدعم الاسمين معاً لمنع خطأ الـ BuildError تماماً أثناء المزامنة
+# ضبط الـ endpoint ليدعم الاسمين معاً لمنع خطأ الـ BuildError تماماً أثناء المزامنة على Railway
 @admin_suppliers.route('/add', methods=['GET', 'POST'], endpoint='add_supplier_page')
 @admin_suppliers.route('/add_legacy', methods=['GET', 'POST'], endpoint='add_supplier')
 @login_required
 def add_supplier_page():
     if request.method == 'POST':
-        # استقبال البيانات من الفورم عند الحفظ
-        username = request.form.get('username')
-        sovereign_id = request.form.get('sovereign_id')
-        
-        # [منطق الحفظ في قاعدة البيانات هنا]
-        
-        return jsonify({
-            "status": "success",
-            "message": "تم تعميد المورد بنجاح في النظام الحوكمي الموحد.",
-            "data": {"username": username, "sovereign_id": sovereign_id}
-        }), 200
+        try:
+            # 1. استقبال البيانات السبعة الأساسية وبقية الحقول من الفورم
+            username = request.form.get('username', '').strip()
+            password = request.form.get('password', '').strip()
+            identity_type = request.form.get('identity_type', '').strip()
+            identity_number = request.form.get('identity_number', '').strip()
+            owner_name = request.form.get('owner_name', '').strip()
+            trade_name = request.form.get('trade_name', '').strip()
+            owner_phone = request.form.get('owner_phone', '').strip()
+            shop_phone = request.form.get('shop_phone', '').strip()
+            province = request.form.get('province', '').strip()
+            district = request.form.get('district', '').strip()
+            address_detail = request.form.get('address_detail', '').strip()
+            fin_type = request.form.get('fin_type', '').strip()
+            bank_name = request.form.get('bank_name', '').strip()
+            bank_acc = request.form.get('bank_acc', '').strip()
+            activity_type = request.form.get('activity_type', '').strip()
+            
+            # توليد المعرف السيادي بشكل آمن وصارم لمنع أي تلاعب أو تكرار
+            sovereign_id = generate_sovereign_id()
 
+            # 2. فحص أمني أخير للتأكد من عدم وجود تكرار قبل الحفظ الفعلي
+            check_fields = {
+                "اسم المستخدم": Supplier.query.filter_by(username=username).first(),
+                "رقم الوثيقة": Supplier.query.filter_by(identity_number=identity_number).first(),
+                "اسم المالك": Supplier.query.filter_by(owner_name=owner_name).first(),
+                "الاسم التجاري": Supplier.query.filter_by(trade_name=trade_name).first(),
+                "هاتف المالك": Supplier.query.filter_by(owner_phone=owner_phone).first(),
+                "هاتف المنشأة": Supplier.query.filter_by(shop_phone=shop_phone).first(),
+                "رقم الحساب": Supplier.query.filter_by(bank_acc=bank_acc).first()
+            }
+            
+            for field_title, exists in check_fields.items():
+                if exists:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"عذراً، حقل ({field_title}) مسجل مسبقاً في النظام ولا يمكن تكراره."
+                    }), 400
+
+            # 3. تشفير كلمة المرور وتجهيز الكائن للحفظ
+            hashed_password = generate_password_hash(password)
+            
+            new_supplier = Supplier(
+                sovereign_id=sovereign_id,
+                username=username,
+                password=hashed_password,
+                identity_type=identity_type,
+                identity_number=identity_number,
+                owner_name=owner_name,
+                trade_name=trade_name,
+                owner_phone=owner_phone,
+                shop_phone=shop_phone,
+                province=province,
+                district=district,
+                address_detail=address_detail,
+                fin_type=fin_type,
+                bank_name=bank_name,
+                bank_acc=bank_acc,
+                activity_type=activity_type
+            )
+
+            # التعامل مع الملفات المرفوعة (صورة الوثيقة) إن وجدت
+            if 'identity_image' in request.files:
+                file = request.files['identity_image']
+                if file and file.filename != '':
+                    # هنا يمكنك تضمين دالة الحفظ الخاصة بك مثل: save_file(file)
+                    # new_supplier.identity_image = secure_filename(file.filename)
+                    pass
+
+            # 4. تعميد الحفظ النهائي في قاعدة البيانات
+            db.session.add(new_supplier)
+            db.session.commit()
+
+            return jsonify({
+                "status": "success",
+                "message": "تم تعميد المورد وحفظه في قاعدة البيانات الحوكمية بنجاح.",
+                "data": {
+                    "username": username, 
+                    "sovereign_id": sovereign_id
+                }
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"❌ خطأ أثناء حفظ المورد في الداتابيز: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": f"حدث خطأ داخلي أثناء معالجة البيانات: {str(e)}"
+            }), 500
+
+    # عرض الصفحة (GET)
     sovereign_id = generate_sovereign_id()
     
     # تأمين إرسال متغيرات فارغة لـ CSRF لتجنب الانهيار إذا لم تكن الإضافة مثبتة في بيئة معينة
@@ -74,7 +155,7 @@ def add_supplier_page():
 def check_duplicate():
     """
     الفحص الفوري واللحظي عبر قاعدة البيانات للحقول السبعة لمنع التكرار البنيوي في المنصة.
-    إذا كانت القيمة موجودة مسبقاً ترجع (exists: true) لتظهر إشارة الخطر (X) في الواجهة.
+    إذا كانت القيمة موجودة مسبقاً ترجع (exists: true) لتظهر إشارة الخطر (X) في الواجهة فوراً.
     """
     check_type = request.args.get('type')
     value = request.args.get('value', '').strip()
