@@ -40,6 +40,8 @@ def create_app():
     # تسجيل وعزل المسارات برمجياً لضمان استقرار المنصة
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.register_blueprint(admin_dashboard_blueprint, url_prefix='/admin')
-    app.register_blueprint(admin_suppliers, url_prefix='/admin/suppliers')
+    from apps.add_supplier import admin_suppliers
+app.register_blueprint(admin_suppliers, url_for_security="/admin/suppliers") # أو حسب سياق التسجيل لديك
+    
 
     return app
