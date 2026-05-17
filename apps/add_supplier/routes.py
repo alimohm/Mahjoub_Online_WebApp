@@ -165,6 +165,9 @@ def add_supplier_page():
             try:
                 db.session.execute(insert_query, {"supplier_id": new_supplier.id, "wallet_number": wallet_num})
             except Exception:
+                # تصفير المعاملة المكسورة فوراً لفتح الطريق للـ Fallback النظيف بدون خطأ الـ Transcation Aborted
+                db.session.rollback()
+                
                 # خيار بديل آمن (Fallback) في حال استخدام اسم الحقل wallet_id بقاعدة البيانات
                 insert_query_fallback = db.text(dedent("""
                     INSERT INTO supplier_wallets (
@@ -263,9 +266,9 @@ def check_duplicate():
 @login_required
 def sync_legacy_wallets():
     """
-    سكربت سيادي حوكمي نهائي ومضمون 100%.
-    يخاطب قاعدة بيانات PostgreSQL مباشرة عبر Raw SQL لتوليد المحافظ المالية للموردين القدامى،
-    متجاوزاً القيود الهيكلية والتعارضات البرمجية للأعمدة.
+    سكربت سيادي حوكمي نهائي ومطور 100%.
+    يخاطب قاعدة بيانات PostgreSQL مباشرة ويقوم بعمل تصفير للجلسات المكسورة (Rollback)
+    لتجنب خطأ InFailedSqlTransaction، مما يضمن حقن المحافظ للموردين بسلاسة كاملة.
     """
     if not hasattr(current_user, 'id'):
         return jsonify({"status": "error", "message": "غير مصرح لك بتنفيذ هذه العملية السيادية."}), 403
@@ -275,7 +278,10 @@ def sync_legacy_wallets():
         created_count = 0
 
         for supplier in all_suppliers:
-            # الفحص المباشر عبر SQL لمعرفة هل يمتلك المورد محفظة في جدول supplier_wallets
+            # 1. تنظيف الجلسة قبل الفحص لضمان بيئة عمل نقية
+            db.session.rollback()
+
+            # 2. الفحص المباشر عبر SQL لمعرفة هل يمتلك المورد محفظة في جدول supplier_wallets
             check_query = db.session.execute(
                 db.text("SELECT id FROM supplier_wallets WHERE supplier_id = :sup_id"),
                 {"sup_id": supplier.id}
@@ -292,15 +298,15 @@ def sync_legacy_wallets():
 
                 wallet_num = f"WEL-MAH{supplier_number}"
 
-                # استعلام إدخال مباشر (Raw SQL Insert)
-                insert_query = db.text(dedent("""
+                # المحاولة الأولى: استخدام الحقل الأكثر احتمالاً wallet_id بناءً على تتبع الاستعلام الأخير
+                insert_query_primary = db.text(dedent("""
                     INSERT INTO supplier_wallets (
-                        supplier_id, wallet_number,
+                        supplier_id, wallet_id,
                         yer_total, yer_available, yer_pending, yer_withdrawn,
                         sar_total, sar_available, sar_pending, sar_withdrawn,
                         usd_total, usd_available, usd_pending, usd_withdrawn
                     ) VALUES (
-                        :supplier_id, :wallet_number,
+                        :supplier_id, :wallet_id,
                         0.0, 0.0, 0.0, 0.0,
                         0.0, 0.0, 0.0, 0.0,
                         0.0, 0.0, 0.0, 0.0
@@ -308,30 +314,38 @@ def sync_legacy_wallets():
                 """))
 
                 try:
-                    db.session.execute(insert_query, {"supplier_id": supplier.id, "wallet_number": wallet_num})
-                except Exception:
-                    insert_query_fallback = db.text(dedent("""
+                    db.session.execute(insert_query_primary, {"supplier_id": supplier.id, "wallet_id": wallet_num})
+                    db.session.commit() # تعميد فوري لكل مورد على حدة لعدم تعليق الجلسة
+                except Exception as e1:
+                    # في حال فشلت المحاولة الأولى، نغلق الجلسة المكسورة فوراً ونفتح واحدة جديدة ونظيفة
+                    db.session.rollback()
+
+                    # المحاولة البديلة: استخدام حقل wallet_number
+                    insert_query_backup = db.text(dedent("""
                         INSERT INTO supplier_wallets (
-                            supplier_id, wallet_id,
+                            supplier_id, wallet_number,
                             yer_total, yer_available, yer_pending, yer_withdrawn,
                             sar_total, sar_available, sar_pending, sar_withdrawn,
                             usd_total, usd_available, usd_pending, usd_withdrawn
                         ) VALUES (
-                            :supplier_id, :wallet_id,
+                            :supplier_id, :wallet_number,
                             0.0, 0.0, 0.0, 0.0,
                             0.0, 0.0, 0.0, 0.0,
                             0.0, 0.0, 0.0, 0.0
                         )
                     """))
-                    db.session.execute(insert_query_fallback, {"supplier_id": supplier.id, "wallet_id": wallet_num})
+                    db.session.execute(insert_query_backup, {"supplier_id": supplier.id, "wallet_number": wallet_num})
+                    db.session.commit()
 
                 created_count += 1
 
+        # التأكيد النهائي بعد انتهاء الحلقة
+        db.session.commit()
+
         if created_count > 0:
-            db.session.commit()
             return jsonify({
                 "status": "success",
-                "message": f"تم بنجاح تعميد السجلات وتوليد عدد ({created_count}) محفظة مالية للموردين القدامى."
+                "message": f"تم بنجاح كسر جمود المعاملات المعلقة وتوليد عدد ({created_count}) محفظة مالية للموردين القدامى بنجاح."
             }), 200
         else:
             return jsonify({
@@ -341,5 +355,5 @@ def sync_legacy_wallets():
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"❌ خطأ سيادي أثناء المزامنة المباشرة للمحافظ: {str(e)}")
-        return jsonify({"status": "error", "message": f"فشلت المزامنة المباشرة: {str(e)}"}), 500
+        current_app.logger.error(f"❌ خطأ بنيوي أثناء معالجة معاملات المحافظ: {str(e)}")
+        return jsonify({"status": "error", "message": f"فشلت المزامنة المباشرة المحصنة: {str(e)}"}), 500
