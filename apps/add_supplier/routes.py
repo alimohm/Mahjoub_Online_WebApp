@@ -29,6 +29,14 @@ def add_supplier_page():
     """
     عرض صفحة تعميد المورد (GET) ومعالجة طلب الحفظ والتعميد السحابي الفعلي في قاعدة البيانات (POST).
     """
+    
+    # 🚀 هندسة الإصلاح الذاتي تلقائياً عند أول استدعاء للمسار لضمان إدراج الحقل في PostgreSQL السحابية
+    try:
+        db.session.execute(db.text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS wallet_code VARCHAR(50) UNIQUE;"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     if request.method == 'POST':
         try:
             # 1. استقبال البيانات الأساسية من النموذج وتنظيفها
@@ -92,18 +100,11 @@ def add_supplier_page():
                     else:
                         return jsonify({"status": "error", "message": "⚠️ صيغة الملف المرفوع غير مدعومة سيادياً، يرجى رفع صورة أو ملف PDF."}), 400
 
-            # 5. نظام التوليد التتابعي الذكي (العداد المتغير: 1، 2، 3...)
-            try:
-                current_count = db.session.query(Supplier).count()
-            except Exception:
-                current_count = 0
-
-            # حساب التسلسل القادم مباشرة (المورد الأول يعطي 0 + 1 = 1)
-            next_id_sequence = current_count + 1
-
-            # دمج البادئة الثابتة تماماً مع المتغير التتابعي الخالص لإنتاج الهوية الرقمية والمحفظة
-            generated_sovereign_id = f"SUP-MAH963{next_id_sequence}"
-            generated_wallet_code = f"WEL-MAH963{next_id_sequence}"
+            # 5. استدعاء المولد الديناميكي الآمن من الموديل مباشرة لمنع تداخل الحقول (Race Condition)
+            generated_sovereign_id = Supplier.generate_next_sovereign_id()
+            # استخراج الرقم التتابعي النقي لربطه بكود المحفظة بشكل متناسق وثابت
+            serial_num = generated_sovereign_id.split('MAH963')[-1] if 'MAH963' in generated_sovereign_id else str(secrets.token_hex(4))
+            generated_wallet_code = f"WEL-MAH963{serial_num}"
 
             # 6. تشفير كلمة المرور لحماية الهوية الرقمية للمورد
             hashed_password = generate_password_hash(password)
@@ -185,18 +186,12 @@ def check_duplicate():
     if not check_type or not value:
         return jsonify({"exists": False, "error": "المعاملات البرمجية المطلوبة ناقصة"}), 400
 
-    exists = False
+    # حماية الفحص لمنع تلاعب المدخلات
+    if check_type not in ['username', 'identity_number', 'owner_phone', 'trade_name', 'bank_acc']:
+        return jsonify({"exists": False, "error": "نوع الفحص غير مدعوم هندسياً"}), 400
 
-    # الفحص الفعلي المباشر داخل الجداول وعزل المدخلات المتطابقة
-    if check_type == 'username':
-        exists = db.session.query(Supplier).filter_by(username=value).first() is not None
-    elif check_type == 'identity_number':
-        exists = db.session.query(Supplier).filter_by(identity_number=value).first() is not None
-    elif check_type == 'owner_phone':
-        exists = db.session.query(Supplier).filter_by(owner_phone=value).first() is not None
-    elif check_type == 'trade_name':
-        exists = db.session.query(Supplier).filter_by(trade_name=value).first() is not None
-    elif check_type == 'bank_acc':
-        exists = db.session.query(Supplier).filter_by(bank_acc=value).first() is not None
-
-    return jsonify({"exists": bool(exists)})
+    try:
+        exists = db.session.query(Supplier).filter(getattr(Supplier, check_type) == value).first() is not None
+        return jsonify({"exists": bool(exists)})
+    except Exception:
+        return jsonify({"exists": False, "error": "فشل فحص قاعدة البيانات اللحظي"}), 500
