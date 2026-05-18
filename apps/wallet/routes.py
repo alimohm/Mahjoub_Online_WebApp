@@ -1,246 +1,139 @@
 # coding: utf-8
-# 🔑 محرك العمليات المالية والتحكم بالمحافظ - منصة محجوب أونلاين 2026
+# 💳 محرك الحوكمة المالية والمسارات السيادية للمحافظ - منصة محجوب أونلاين 2026
 
-from flask import render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from apps import db
 from apps.models.wallet_db import Wallet, WalletTransaction
-from apps.models.supplier_db import Supplier  # استدعاء موديل المورد الفوري
-from . import admin_wallet  
-from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import func
-from sqlalchemy import or_
+from apps.models.supplier_db import Supplier
 
-@admin_wallet.route('/overview', methods=['GET'])
+# إنشاء البلوبرينت الخاص بإدارة الحسابات المادية
+admin_wallet = Blueprint('admin_wallet', __name__, template_folder='templates')
+
+@admin_wallet.route('/admin/wallet/overview', methods=['GET'])
 @login_required
-def overview():
+def wallet_overview():
     """
-    الواجهة السيادية الموحدة لإدارة وحوكمة المحافظ المالية للإدارة العليا.
-    مؤمنة بالكامل ضد حقول التداخل البرمجي القاتلة N+1.
+    شاشة فحص وجرد الحسابات المادية:
+    تستقبل طلبات التفتيش الفوري بناءً على اسم المتجر أو المعرف السيادي أو كود المحفظة.
     """
-    try:
-        # 1. احتساب المؤشرات المالية الكلية للمنصة (الريال اليمني)
-        yer_totals = db.session.query(
-            func.coalesce(func.sum(Wallet.yer_total), 0.0),
-            func.coalesce(func.sum(Wallet.yer_available), 0.0),
-            func.coalesce(func.sum(Wallet.yer_pending), 0.0)
-        ).first()
+    # التأكد من الصلاحيات السيادية للمستخدم (Owner أو Admin)
+    if current_user.role not in ['Owner', 'Admin']:
+        flash('غير مسموح لك بامتلاك صلاحية دخول الفضاء المالي.', 'danger')
+        return redirect(url_for('admin_dashboard.dashboard'))
 
-        # 2. احتساب المؤشرات المالية الكلية للمنصة (الريال السعودي)
-        sar_totals = db.session.query(
-            func.coalesce(func.sum(Wallet.sar_total), 0.0),
-            func.coalesce(func.sum(Wallet.sar_available), 0.0),
-            func.coalesce(func.sum(Wallet.sar_pending), 0.0)
-        ).first()
+    search_query = request.args.get('search', '').strip()
+    
+    # بناء استعلام جلب المحافظ الأساسي مع ربط جدول الموردين لمنع استهلاك السيرفر (Eager Loading)
+    query = Wallet.query.join(Supplier, Wallet.supplier_id == Supplier.id)
 
-        # 3. احتساب المؤشرات المالية الكلية للمنصة (الدولار الأمريكي)
-        usd_totals = db.session.query(
-            func.coalesce(func.sum(Wallet.usd_total), 0.0),
-            func.coalesce(func.sum(Wallet.usd_available), 0.0),
-            func.coalesce(func.sum(Wallet.usd_pending), 0.0)
-        ).first()
-
-        # 4. جلب طلبات السحب المعلقة لعرضها في الجداول المستقلة مع تحميل العلاقات مسبقاً تفادياً لـ N+1
-        pending_withdrawals = db.session.query(WalletTransaction)\
-            .options(joinedload(WalletTransaction.wallet).joinedload(Wallet.supplier))\
-            .filter(WalletTransaction.tx_type == 'withdrawal', WalletTransaction.tx_status == 'pending')\
-            .order_by(WalletTransaction.created_at.desc())\
-            .all()
-
-        platform_metrics = {
-            "YER": {"total": yer_totals[0] or 0.0, "available": yer_totals[1] or 0.0, "pending": yer_totals[2] or 0.0},
-            "SAR": {"total": sar_totals[0] or 0.0, "available": sar_totals[1] or 0.0, "pending": sar_totals[2] or 0.0},
-            "USD": {"total": usd_totals[0] or 0.0, "available": usd_totals[1] or 0.0, "pending": usd_totals[2] or 0.0}
-        }
-
-        return render_template(
-            'admin/overview.html',
-            metrics=platform_metrics,
-            pending_tx=pending_withdrawals,
-            owner=current_user
+    # تطبيق التفتيش الذكي إذا وجد نص بحث
+    if search_query and search_query != '#':
+        query = query.filter(
+            (Supplier.trade_name.like(f'%{search_query}%')) |
+            (Supplier.sovereign_id.like(f'%{search_query}%')) |
+            (Wallet.wallet_code.like(f'%{search_query}%'))
         )
 
-    except Exception as e:
-        current_app.logger.error(f"❌ خطأ حوكمي أثناء تشغيل واجهة المحافظ: {str(e)}")
-        return f"<h3>خطأ مالي في السيرفر الداخلي للعملات:</h3> <p>{str(e)}</p>", 500
+    # جلب جميع المحافظ الحية المتوافقة
+    wallets = query.all()
+
+    return render_template('admin/overview.html', wallets=wallets)
 
 
-@admin_wallet.route('/api/search', methods=['GET'])
+@admin_wallet.route('/api/wallet/<string:wallet_code>/balance', methods=['GET'])
 @login_required
-def search_wallets():
+def get_wallet_balance_api(wallet_code):
     """
-    نظام استدعاء وفحص المحافظ الديناميكي المتوافق مع واجهة overview.html.
-    يدعم جلب المعرف السيادي الحقيقي المخزن في قاعدة البيانات (مثل SUP-WEL-MAHxxxx).
+    واجهة برمجة تطبيقات (API) آمنة لجلب كشف الحساب المالي الفوري للمحفظة بجيسون نقي.
     """
-    query = request.args.get('query', '').strip()
-    if not query:
-        return jsonify({'status': 'success', 'wallets': []})
+    if current_user.role not in ['Owner', 'Admin']:
+        return jsonify({"status": "error", "message": "صلاحية سيادية مرفوضة"}), 403
+
+    wallet = Wallet.query.filter_by(wallet_code=wallet_code).first()
+    
+    if not wallet:
+        return jsonify({"status": "error", "message": "المحفظة المالية غير موجودة بالنظام"}), 404
+
+    # تصدير البيانات بالقاموس المحدث المستقر لضمان القراءة الصافية بالواجهات
+    return jsonify({
+        "status": "success",
+        "data": wallet.to_dict()
+    })
+
+
+@admin_wallet.route('/admin/wallet/adjust', methods=['POST'])
+@login_required
+def adjust_balance():
+    """
+    مسار إدارة المخازن المالية (إيداع، سحب، تعديل أرصدة) من قبل الإدارة العليا.
+    """
+    if current_user.role != 'Owner':
+        flash('هذا الإجراء يتطلب سلطة المالك السيادية المطلقة.', 'danger')
+        return redirect(url_for('admin_wallet.wallet_overview'))
+
+    wallet_id = request.form.get('wallet_id')
+    currency = request.form.get('currency')  # 'YER', 'SAR', 'USD'
+    action_type = request.form.get('action_type')  # 'deposit', 'withdrawal'
+    amount_str = request.form.get('amount', '0')
 
     try:
-        # فحص بنية الجداول الحية في قاعدة البيانات ديناميكياً لتفادي التعارض مع حقول السيرفر
-        supplier_columns = Supplier.__table__.columns.keys()
-        
-        # بناء الاستعلام بناءً على طلب واجهة العرض
-        if query == '#':
-            suppliers = db.session.query(Supplier).all()
-        else:
-            filters = []
-            if 'username' in supplier_columns:
-                filters.append(Supplier.username.ilike(f'%{query}%'))
-            if 'name' in supplier_columns:
-                filters.append(Supplier.name.ilike(f'%{query}%'))
-            if 'store_name' in supplier_columns:
-                filters.append(Supplier.store_name.ilike(f'%{query}%'))
-            if 'sovereign_id' in supplier_columns:
-                filters.append(Supplier.sovereign_id.ilike(f'%{query}%'))
-
-            # التحقق من حقول الهاتف المتوقعة لتجنب أخطاء الفقدان
-            if 'phone' in supplier_columns:
-                filters.append(Supplier.phone.ilike(f'%{query}%'))
-            if 'mobile' in supplier_columns:
-                filters.append(Supplier.mobile.ilike(f'%{query}%'))
-            if 'phone_number' in supplier_columns:
-                filters.append(Supplier.phone_number.ilike(f'%{query}%'))
-
-            if not filters:
-                return jsonify({'status': 'success', 'wallets': []})
+        amount = float(amount_str)
+        if amount <= 0:
+            flash('يجب أن تكون القيمة المالية أكبر من صفر.', 'warning')
+            return redirect(url_for('admin_wallet.wallet_overview'))
             
-            suppliers = db.session.query(Supplier).filter(or_(*filters)).all()
+        wallet = Wallet.query.get(wallet_id)
+        if not wallet:
+            flash('المحفظة المستهدفة غير مسجلة في الفضاء الحالي.', 'danger')
+            return redirect(url_for('admin_wallet.wallet_overview'))
 
-        wallets_list = []
-        for sup in suppliers:
-            # سحب المحفظة المرتبطة بمعرف المورد المباشر
-            wallet = db.session.query(Wallet).filter(Wallet.supplier_id == sup.id).first()
-            
-            # استخراج القيم المتوفرة بأمان وتجنب الانهيار في حال كانت القيمة Null
-            trade_name = getattr(sup, 'username', getattr(sup, 'name', getattr(sup, 'store_name', 'مورد غير مسمى')))
-            owner_phone = getattr(sup, 'phone', getattr(sup, 'mobile', getattr(sup, 'phone_number', 'بدون هاتف')))
-            
-            # سحب المعرف السيادي المخزن حقيقياً في قاعدة البيانات (مثل: SUP-WEL-MAH9631)
-            sovereign_id = getattr(sup, 'sovereign_id', f"SUP-ID-{sup.id:04d}")
-            
-            # استخراج الرتبة السيادية إذا كانت مدمجة، أو وضع رتبة افتراضية ذكية
-            rank_grade = getattr(sup, 'rank_grade', getattr(sup, 'role', 'مورد سيادي'))
-
-            wallets_list.append({
-                'wallet_id': wallet.id if wallet else f"⏳ غير منشأة",
-                'trade_name': trade_name,  
-                'sovereign_id': sovereign_id,
-                'owner_phone': owner_phone,
-                'rank_grade': rank_grade,
-                
-                # أرصدة الريال اليمني
-                'yer_total': float(wallet.yer_total) if wallet else 0.0,
-                'yer_available': float(wallet.yer_available) if wallet else 0.0,
-                'yer_pending': float(wallet.yer_pending) if wallet else 0.0,
-                
-                # أرصدة الريال السعودي
-                'sar_total': float(wallet.sar_total) if wallet else 0.0,
-                'sar_available': float(wallet.sar_available) if wallet else 0.0,
-                'sar_pending': float(wallet.sar_pending) if wallet else 0.0,
-                
-                # أرصدة الدولار الأمريكي
-                'usd_total': float(wallet.usd_total) if wallet else 0.0,
-                'usd_available': float(wallet.usd_available) if wallet else 0.0,
-                'usd_pending': float(wallet.usd_pending) if wallet else 0.0,
-            })
-
-        return jsonify({'status': 'success', 'wallets': wallets_list})
-
-    except Exception as e:
-        current_app.logger.error(f"❌ خطأ أثناء استدعاء وسحب بيانات المحافظ: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-
-@admin_wallet.route('/approve-withdrawal', methods=['POST'])
-@login_required
-def approve_withdrawal():
-    """
-    محرك التعميد المالي: الموافقة على طلب السحب وتحديث قاعدة البيانات.
-    """
-    tx_id = request.form.get('tx_id')
-    if not tx_id:
-        return jsonify({"status": "error", "message": "المعرف الفريد للعملية مفقود."}), 400
-
-    try:
-        transaction = WalletTransaction.query.with_for_update().get(tx_id)
-        if not transaction or transaction.tx_status != 'pending':
-            return jsonify({"status": "error", "message": "العملية غير موجودة أو معمدة مسبقاً."}), 400
-
-        wallet = Wallet.query.with_for_update().get(transaction.wallet_id)
-        currency = transaction.currency
-        amount = transaction.amount
-
+        # المعالجة الذكية حسب خزنة العملة المحددة
         if currency == 'YER':
-            if wallet.yer_pending < amount:
-                return jsonify({"status": "error", "message": "رصيد الريال اليمني المعلق غير كافٍ."}), 400
-            wallet.yer_pending -= amount
-            wallet.yer_total -= amount
-            wallet.yer_withdrawn += amount
+            if action_type == 'deposit':
+                wallet.yer_balance = float(wallet.yer_balance) + amount
+            elif action_type == 'withdrawal':
+                if wallet.yer_available < amount:
+                    flash('رصيد الريال اليمني المتاح لا يكفي لإتمام هذه الحركة.', 'danger')
+                    return redirect(url_for('admin_wallet.wallet_overview'))
+                wallet.yer_balance = float(wallet.yer_balance) - amount
+
         elif currency == 'SAR':
-            if wallet.sar_pending < amount:
-                return jsonify({"status": "error", "message": "رصيد الريال السعودي المعلق غير كافٍ."}), 400
-            wallet.sar_pending -= amount
-            wallet.sar_total -= amount
-            wallet.sar_withdrawn += amount
+            if action_type == 'deposit':
+                wallet.sar_balance = float(wallet.sar_balance) + amount
+            elif action_type == 'withdrawal':
+                if wallet.sar_available < amount:
+                    flash('رصيد الريال السعودي المتاح لا يكفي لإتمام هذه الحركة.', 'danger')
+                    return redirect(url_for('admin_wallet.wallet_overview'))
+                wallet.sar_balance = float(wallet.sar_balance) - amount
+
         elif currency == 'USD':
-            if wallet.usd_pending < amount:
-                return jsonify({"status": "error", "message": "رصيد الدولار المعلق غير كافٍ."}), 400
-            wallet.usd_pending -= amount
-            wallet.usd_total -= amount
-            wallet.usd_withdrawn += amount
-
-        transaction.tx_status = 'completed'
-        transaction.approved_by_id = current_user.id if hasattr(current_user, 'id') else None
+            if action_type == 'deposit':
+                wallet.usd_balance = float(wallet.usd_balance) + amount
+            elif action_type == 'withdrawal':
+                if wallet.usd_available < amount:
+                    flash('رصيد الدولار الأمريكي المتاح لا يكفي لإتمام هذه الحركة.', 'danger')
+                    return redirect(url_for('admin_wallet.wallet_overview'))
+                wallet.usd_balance = float(wallet.usd_balance) - amount
         
+        # تدوين سجل المعاملة الحركية لتوثيق الحوكمة والتدقيق المالي مستقبلاً
+        tx_log = WalletTransaction(
+            wallet_id=wallet.id,
+            transaction_type=action_type,
+            currency=currency,
+            amount=amount,
+            description=f"تعديل إداري مباشر من لوحة تحكم المالك السيادي"
+        )
+        
+        db.session.add(tx_log)
         db.session.commit()
-        return jsonify({"status": "success", "message": f"تم تعميد الحوالة بنجاح برقم مرجع: {transaction.transaction_ref}"}), 200
+        
+        flash(f'تمت معالجة القيمة المادية بجاح؛ وتحديث كشف {currency} للمحفظة {wallet.wallet_code}.', 'success')
 
+    except ValueError:
+        flash('خطأ حوكمي: صيغة المبلغ المدخل غير صالحة برمجياً.', 'danger')
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"❌ خطأ مالي أثناء تعميد السحب: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        flash(f'تعذر إتمام الموازنة المالية بسبب عطل داخلي: {e}', 'danger')
 
-
-@admin_wallet.route('/reject-withdrawal', methods=['POST'])
-@login_required
-def reject_withdrawal():
-    """
-    رفض طلب السحب وإعادة المبالغ المحتجزة للرصيد المتاح.
-    """
-    tx_id = request.form.get('tx_id')
-    reason = request.form.get('reason', 'تم الرفض من قبل الإدارة العليا').strip()
-
-    if not tx_id:
-        return jsonify({"status": "error", "message": "المعرف الفريد للعملية مفقود."}), 400
-
-    try:
-        transaction = WalletTransaction.query.with_for_update().get(tx_id)
-        if not transaction or transaction.tx_status != 'pending':
-            return jsonify({"status": "error", "message": "العملية غير صالحة لإجراء الرفض."}), 400
-
-        wallet = Wallet.query.with_for_update().get(transaction.wallet_id)
-        currency = transaction.currency
-        amount = transaction.amount
-
-        if currency == 'YER':
-            wallet.yer_pending -= amount
-            wallet.yer_available += amount
-        elif currency == 'SAR':
-            wallet.sar_pending -= amount
-            wallet.sar_available += amount
-        elif currency == 'USD':
-            wallet.usd_pending -= amount
-            wallet.usd_available += amount
-
-        transaction.tx_status = 'rejected'
-        transaction.description = f"{transaction.description} | سبب الرفض: {reason}"
-        transaction.approved_by_id = current_user.id if hasattr(current_user, 'id') else None
-        
-        db.session.commit()
-        return jsonify({"status": "success", "message": "تم رفض طلب السحب وإعادة المبالغ بنجاح."}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"❌ خطأ أثناء إسقاط العملية المالية: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return redirect(url_for('admin_wallet.wallet_overview'))
