@@ -31,7 +31,7 @@
         {% if csrf_token is defined %}
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% else %}
-            <input type="hidden" name="csrf_token" value="{{ backup_csrf }}">
+            <input type="hidden" name="backup_csrf" value="{{ backup_csrf }}">
         {% endif %}
         
         <input type="hidden" name="sovereign_id" value="{{ sovereign_id }}">
@@ -135,13 +135,13 @@
                         <div class="col-6">
                             <label class="form-label text-muted small">المحافظة</label>
                             <select name="province" id="provinceSelect" class="form-select bg-light border-0" onchange="updateDistrictOptions()" required>
-                                <option value="" selected disabled>اختر...</option>
+                                <option value="" selected disabled>اختر المحافظة</option>
                             </select>
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small">المديرية</label>
                             <select name="district" id="districtSelect" class="form-select bg-light border-0" required>
-                                <option value="" selected disabled>حدد المحافظة</option>
+                                <option value="" selected disabled>حدد المحافظة أولاً</option>
                             </select>
                         </div>
                     </div>
@@ -168,14 +168,16 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small">جهة التحويل</label>
-                        <select name="bank_name" id="financeSelect" class="form-select bg-light border-0 mb-2" onchange="toggleManualInput(this, 'finManual')" required></select>
+                        <select name="bank_name" id="financeSelect" class="form-select bg-light border-0 mb-2" onchange="toggleManualInput(this, 'finManual')" required>
+                            <option value="" selected disabled>اختر جهة التحويل...</option>
+                        </select>
                         <div id="finManual" style="display: none;">
                             <input type="text" class="form-control border-primary" placeholder="اسم الجهة..." oninput="syncManualValue(this, 'financeSelect')">
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label text-muted small">رقم الحساب</label>
+                        <label class="form-label text-muted small">رقم الحساب المالي</label>
                         <div class="input-group">
                             <input type="text" name="bank_acc" class="form-control bg-light border-0 fw-bold validation-field" data-valid="acc" data-db-check="bank_acc" required>
                             <span class="input-group-text bg-light border-0 validation-icon"><i class="fas fa-minus text-muted"></i></span>
@@ -212,6 +214,7 @@
 </div>
 
 <script>
+// البنية الجغرافية لليمن المعتمدة في منصة محجوب
 const yemenGeography = {
     "الحديدة": ["الخوخة", "حيس", "باجل", "زبيد", "المراوعة", "القناوص", "بيت الفقيه"],
     "عدن": ["المنصورة", "الشيخ عثمان", "كريتر", "البريقة", "المعلا", "التواهي", "خور مكسر"],
@@ -224,6 +227,7 @@ const yemenGeography = {
     "شبوة": ["عتق", "بيحان", "عزان", "رضوم"]
 };
 
+// مصفوفة الجهات المالية والبنوك المحدثة 
 const financeData = {
     banks: ["بنك القطيبي الإسلامي", "بنك الشمول الإسلامي", "مصرف الكريمي", "بنك عدن الإسلامي", "بنك التضامن", "بنك اليمن والكويت"],
     exchange: ["شركة القطيبي للصرافة", "شركة بن دول للصرافة", "شركة الشمل للصرافة", "شركة النجم للصرافة", "شركة العمقي للصرافة"]
@@ -231,6 +235,7 @@ const financeData = {
 
 const debounceTimers = {};
 
+// محرك الاستعلام اللحظي المباشر لقاعدة البيانات مع الفحص الصارم للصيغ والقيود
 document.querySelectorAll('.validation-field').forEach(input => {
     input.addEventListener('input', function() {
         const fieldName = this.getAttribute('name');
@@ -275,6 +280,7 @@ document.querySelectorAll('.validation-field').forEach(input => {
 
             let isFinalValid = isFormatValid;
 
+            // تنفيذ استعلام قاعدة البيانات لمنع التكرار وحماية الحوكمة الحية
             if (isFormatValid && dbType) {
                 try {
                     const response = await fetch(`/admin/suppliers/check-duplicate?type=${dbType}&value=${encodeURIComponent(value)}`);
@@ -332,6 +338,7 @@ function syncManualValue(input, selectId) {
     select.value = input.value;
 }
 
+// دالة تحديث خيارات المديرية بناءً على المحافظة المختارة
 function updateDistrictOptions() {
     const p = document.getElementById('provinceSelect').value;
     const dSelect = document.getElementById('districtSelect');
@@ -346,23 +353,25 @@ function updateDistrictOptions() {
     }
 }
 
+// دالة تحديث خيارات الجهات المالية (بنوك أو شركات صرافة)
 function updateFinanceOptions() {
     const type = document.querySelector('input[name="fin_type"]:checked').value;
     const select = document.getElementById('financeSelect');
     select.innerHTML = '<option value="" selected disabled>اختر جهة التحويل...</option>';
-    financeData[type].forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item;
-        opt.textContent = item;
-        select.appendChild(opt);
-    });
+    if (financeData[type]) {
+        financeData[type].forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item;
+            opt.textContent = item;
+            select.appendChild(opt);
+        });
+    }
     const mOpt = document.createElement('option');
     mOpt.value = 'manual';
-    mOpt.textContent = 'أخرى (إدخل يدوي)...';
+    mOpt.textContent = 'أخرى (إدخال يدوي)...';
     select.appendChild(mOpt);
 }
 
-// تعديل رسالة النسخ لتشمل المعرفين بشكل مستقل ومنظم
 function copySupplierCredentials(user, supId, walId, pass) {
     const textToCopy = `✨ تم تعميدك بنجاح في منصة محجوب أونلاين ✨\n\n` +
                        `🔐 بيانات الاعتماد والوصول الخاصة بك:\n` +
@@ -382,9 +391,11 @@ function copySupplierCredentials(user, supId, walId, pass) {
     });
 }
 
+// تشغيل وتغذية حقول الاختيار فور جاهزية مستند الـ DOM لمنع الاختفاء واحتواء الخلل
 document.addEventListener('DOMContentLoaded', () => {
     const pSelect = document.getElementById('provinceSelect');
     if(pSelect) {
+        pSelect.innerHTML = '<option value="" selected disabled>اختر المحافظة...</option>';
         Object.keys(yemenGeography).forEach(p => {
             const opt = document.createElement('option');
             opt.value = p;
@@ -392,6 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
             pSelect.appendChild(opt);
         });
     }
+    
+    // حقن وتفعيل البيانات المالية الافتراضية
     updateFinanceOptions();
 
     document.getElementById('addSupplierForm').onsubmit = async function(e) {
@@ -417,8 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (response.ok && result.status === 'success') {
                 const username = result.data ? result.data.username : document.getElementById('form-username-field').value;
-                
-                // استخراج الرقم المتسلسل الصافي لصناعة المعرفات المنفصلة
                 const baseSovereign = result.data ? (result.data.sovereign_id || result.data.unified_id || "") : document.getElementById('display-supplier-id').innerText;
                 const cleanNum = baseSovereign.replace('SUP-WEL-', '').replace('SUP-', '').replace('WEL-', '');
                 
@@ -426,7 +437,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const finalWalletId = `WEL-${cleanNum}`;
                 const password = document.getElementById('form-password-field').value;
 
-                // واجهة الـ Modal المحدثة والمقسمة للهويات بشكل كامل وعزلها
                 const modalContent = `
                     <div class="text-center mb-4">
                         <div style="display: flex; justify-content: center; margin: 0 auto 15px;">
@@ -469,10 +479,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
 
                 document.getElementById('successModalBody').innerHTML = modalContent;
-                
                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                 successModal.show();
-            </div> else {
+            } else {
                 alert('فشل التعميد: ' + (result.message || 'يرجى مراجعة البيانات المدخلة.'));
                 btn.disabled = false;
                 updateSubmitButtonState();
