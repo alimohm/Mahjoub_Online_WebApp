@@ -386,10 +386,9 @@ function copySupplierCredentials(user, supId, walId, pass) {
     });
 }
 
-// دالة مخصصة لجلب المعاينة الحقيقية المتوقعة من السيرفر عند فتح الصفحة
+// 🌐 دالة مخصصة ومعدلة لجلب المعاينة الحقيقية المتوقعة من السيرفر عند فتح الصفحة
 async function fetchNextExpectedSequence() {
     try {
-        // الفحص بالاعتماد على الفلتر لتوليد الاسم المتوقع للمورد القادم هندسياً
         const response = await fetch('/admin/suppliers/check-duplicate?type=get_next_sequence');
         if (response.ok) {
             const result = await response.json();
@@ -399,9 +398,9 @@ async function fetchNextExpectedSequence() {
             }
         }
     } catch (e) {
-        // إبقاء العرض الاحتياطي في حال تعذر الاتصال اللحظي بالسيرفر
-        document.getElementById('display-supplier-id').textContent = "SUP-MAH963+";
-        document.getElementById('display-wallet-id').textContent = "WEL-MAH963+";
+        // إبقاء العرض الاحتياطي التتابعي الافتراضي في حال تعذر الاتصال اللحظي بالسيرفر
+        document.getElementById('display-supplier-id').textContent = "SUP-MAH9631";
+        document.getElementById('display-wallet-id').textContent = "WEL-MAH9631";
     }
 }
 
