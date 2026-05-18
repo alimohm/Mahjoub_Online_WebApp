@@ -1,6 +1,5 @@
-
 # coding: utf-8
-# 🔑 مستند النموذج المالي والمحافظ الحوكمية الموحدة - منصة محجوب أونلاين 2026
+# 🔑 مستند النموذج المالي والمحافظ الحوكمة الموحدة - منصة محجوب أونلاين 2026
 
 from apps import db
 from datetime import datetime
@@ -78,9 +77,11 @@ class Wallet(db.Model):
             "usd_pending": float(self.usd_pending)
         }
 
+# 🛡️ الحصانة الهيكلية: تعريف الكنية السيادية لقطع دابر خطأ الـ ImportError في المنظومة
+SupplierWallet = Wallet
 
 # =========================================================================
-# 📊 كلاس سجل الحركات المالية الجديد - يتم تخليقه بالهيكل المصفّر الجديد
+# 📊 كلاس سجل الحركات المالية الموحد - تخليق فوري متوافق مع الحوكمة المالية
 # =========================================================================
 class WalletTransaction(db.Model):
     __tablename__ = 'wallet_transactions_log' # اسم جديد محصن لمنع التداخل مع المحذوف
@@ -105,7 +106,7 @@ from apps.models.supplier_db import Supplier
 def auto_create_supplier_wallet(mapper, connection, target):
     """
     مراقب حوكمي صارم يعمل فوراً أثناء عملية ولادة حساب المورد (after_insert).
-    يضمن مطابقة رقم المحفظة للمعرف السيادي للمورد بشكل متزامن وثابت.
+    يضمن مطابقة رقم المحفظة للمعرف السيادي للمورد بشكل متزامن وثابت مع أعمدة الجدول الحقيقي.
     """
     if target.sovereign_id and 'MAH963' in target.sovereign_id:
         serial_num = target.sovereign_id.split('MAH963')[-1]
@@ -119,21 +120,3 @@ def auto_create_supplier_wallet(mapper, connection, target):
         wallet_table.insert().values(
             supplier_id=target.id,
             wallet_code=generated_wallet_code,
-            yer_total=0.00,
-            yer_available=0.00,
-            yer_withdrawn=0.00,
-            yer_pending=0.00,
-            sar_total=0.00,
-            sar_available=0.00,
-            sar_withdrawn=0.00,
-            sar_pending=0.00,
-            usd_total=0.00,
-            usd_available=0.00,
-            usd_withdrawn=0.00,
-            usd_pending=0.00,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-    )
-
-event.listen(Supplier, 'after_insert', auto_create_supplier_wallet)
