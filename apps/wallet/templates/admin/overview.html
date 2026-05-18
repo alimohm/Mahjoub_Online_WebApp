@@ -1,208 +1,154 @@
-{% extends "admin_base.html" %}
+{% extends "admin_dashboard/base.html" %}
 
-{% block title %}الفضاء المالي الحوكمي | محجوب أونلاين{% endblock %}
+{% block title %}منظومة حوكمة وفحص المحافظ المالية{% endblock %}
 
 {% block content %}
-<div class="space-y-8 p-4 md:p-6 bg-gray-50/50 min-h-screen">
+<div class="container-fluid py-4" style="background-color: #000000; min-height: 100vh; color: #FFFFFF;">
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-8 border-purple-700 relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.01]">
-            <div class="absolute -left-4 -bottom-4 text-purple-600 opacity-5 transform -rotate-12"><i class="fa-solid fa-money-bill-wave text-9xl"></i></div>
-            <div class="flex justify-between items-start mb-4">
-                <span class="text-[11px] font-black text-purple-700 uppercase tracking-widest bg-purple-50 px-3 py-1 rounded-full border border-purple-100">الريال اليمني (YER)</span>
-                <i class="fa-solid fa-building-columns text-purple-700 text-xl"></i>
-            </div>
-            <div class="space-y-2.5">
-                <div class="flex justify-between items-baseline"><span class="text-xs text-gray-500 font-bold">إجمالي الأرصدة:</span><span class="text-lg font-black text-purple-950">{{ "{:,.2f}".format(metrics.YER.total) }}</span></div>
-                <div class="flex justify-between items-baseline"><span class="text-xs text-purple-700 font-bold">المتاح للسحب:</span><span class="text-md font-bold text-purple-900">{{ "{:,.2f}".format(metrics.YER.available) }}</span></div>
-                <div class="flex justify-between items-baseline"><span class="text-xs text-amber-600 font-bold">المعلق قيد المعالجة:</span><span class="text-md font-bold text-amber-600">{{ "{:,.2f}".format(metrics.YER.pending) }}</span></div>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-8 border-purple-950 relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.01]">
-            <div class="absolute -left-4 -bottom-4 text-purple-950 opacity-5 transform -rotate-12"><i class="fa-solid fa-coins text-9xl"></i></div>
-            <div class="flex justify-between items-start mb-4">
-                <span class="text-[11px] font-black text-purple-900 uppercase tracking-widest bg-purple-900/5 px-3 py-1 rounded-full border border-purple-900/10">الريال السعودي (SAR)</span>
-                <i class="fa-solid fa-coins text-purple-900 text-xl"></i>
-            </div>
-            <div class="space-y-2.5">
-                <div class="flex justify-between items-baseline"><span class="text-xs text-gray-500 font-bold">إجمالي الأرصدة:</span><span class="text-lg font-black text-purple-950">{{ "{:,.2f}".format(metrics.SAR.total) }}</span></div>
-                <div class="flex justify-between items-baseline"><span class="text-xs text-purple-700 font-bold">المتاح للسحب:</span><span class="text-md font-bold text-purple-900">{{ "{:,.2f}".format(metrics.SAR.available) }}</span></div>
-                <div class="flex justify-between items-baseline"><span class="text-xs text-amber-600 font-bold">المعلق قيد المعالجة:</span><span class="text-md font-bold text-amber-600">{{ "{:,.2f}".format(metrics.SAR.pending) }}</span></div>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-8 border-purple-500 relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.01]">
-            <div class="absolute -left-4 -bottom-4 text-purple-500 opacity-5 transform -rotate-12"><i class="fa-solid fa-dollar-sign text-9xl"></i></div>
-            <div class="flex justify-between items-start mb-4">
-                <span class="text-[11px] font-black text-purple-600 uppercase tracking-widest bg-purple-500/5 px-3 py-1 rounded-full border border-purple-500/10">الدولار الأمريكي (USD)</span>
-                <i class="fa-solid fa-dollar-sign text-purple-600 text-xl"></i>
-            </div>
-            <div class="space-y-2.5">
-                <div class="flex justify-between items-baseline"><span class="text-xs text-gray-500 font-bold">إجمالي الأرصدة:</span><span class="text-lg font-black text-purple-950">${{ "{:,.2f}".format(metrics.USD.total) }}</span></div>
-                <div class="flex justify-between items-baseline"><span class="text-xs text-purple-700 font-bold">المتاح للسحب:</span><span class="text-md font-bold text-purple-900">${{ "{:,.2f}".format(metrics.USD.available) }}</span></div>
-                <div class="flex justify-between items-baseline"><span class="text-xs text-amber-600 font-bold">المعلق قيد المعالجة:</span><span class="text-md font-bold text-amber-600">${{ "{:,.2f}".format(metrics.USD.pending) }}</span></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #4B0082, #000000); border-left: 5px solid #8A2BE2 !important;">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h2 class="fw-bold mb-1 text-white">
+                            <i class="fas fa-wallet me-2" style="color: #8A2BE2;"></i> 
+                            منظومة جلب وتدقيق أرصدة الموردين وحسابات المحافظ
+                        </h2>
+                        <p class="text-white-50 mb-0">البحث الفوري باسم المتجر التجاري، المعرف السيادي، أو إرسال الرمز (#) لجرد المحافظ كاملاً.</p>
+                    </div>
+                    <div class="spinner-grow text-light" role="status" style="background-color: #8A2BE2;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b border-gray-100">
-            <div>
-                <h2 class="text-md font-black text-gray-900 flex items-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass-dollar text-purple-700 text-lg"></i>
-                    نظام استدعاء وفحص المحافظ الموحد للمنشآت
-                </h2>
-                <p class="text-xs text-gray-400 font-medium mt-0.5">البحث الفوري باسم المتجر التجاري، المعرف السيادي، أو إرسال الرمز (#) لجرد السيرفر كاملاً.</p>
-            </div>
-            <div class="w-full lg:w-[450px] flex gap-2">
-                <div class="relative flex-1">
-                    <input type="text" id="walletQueryInput" placeholder="أدخل اسم المتجر، المعرف السيادي، أو رمز #..." 
-                           class="w-full pl-4 pr-10 py-2.5 bg-gray-50/80 border border-gray-200 rounded-xl font-bold text-xs focus:border-purple-700 focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none transition-all">
-                    <i class="fa-solid fa-search absolute right-3.5 top-3.5 text-gray-400 text-xs"></i>
-                </div>
-                <button onclick="executeWalletSearch()" class="px-5 bg-purple-950 hover:bg-purple-900 text-white rounded-xl text-xs font-black shadow-sm transition-all whitespace-nowrap">
-                    تفتيش فوري
-                </button>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 p-3" style="background-color: #121212; border: 1px solid #222222 !important;">
+                <form method="GET" action="{{ url_for('admin_wallet.wallet_overview') }}" class="row g-3 align-items-center">
+                    <div class="col-md-9">
+                        <div class="input-group">
+                            <span class="input-group-text border-0" style="background-color: #1A1A1A; color: #8A2BE2;">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control border-0 text-white" 
+                                   placeholder="أدخل اسم المورد، المعرف السيادي (مثل: SUP-MAH9631)..." 
+                                   value="{{ request.args.get('search', '') }}"
+                                   style="background-color: #1A1A1A; color: white !important;">
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-grid">
+                        <button type="submit" class="btn fw-bold text-white transition-all" 
+                                style="background-color: #4B0082; border: 1px solid #8A2BE2;">
+                            <i class="fas fa-filter me-1"></i> تفتيش فوري
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
+    </div>
 
-        <div class="overflow-x-auto rounded-xl border border-gray-100 shadow-sm">
-            <table class="w-full text-right border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 text-gray-500 text-[11px] font-black border-b border-gray-100 uppercase tracking-wider">
-                        <th class="p-3.5">معرف كود المحفظة</th>
-                        <th class="p-3.5">اسم المتجر / المنشأة التجارية</th>
-                        <th class="p-3.5">هاتف المنشأة (محل)</th>
-                        <th class="p-3.5">الرتبة السيادية واللقب</th>
-                        <th class="p-3.5 text-center bg-purple-50/50 text-purple-950">كشف الريال اليمني (YER)</th>
-                        <th class="p-3.5 text-center bg-purple-900/5 text-purple-950">كشف الريال السعودي (SAR)</th>
-                        <th class="p-3.5 text-center bg-purple-500/5 text-purple-950">كشف الدولار الأمريكي (USD)</th>
-                        <th class="p-3.5 text-center">إجراءات التحكم والخصم</th>
-                    </tr>
-                </thead>
-                <tbody id="walletsResultBody" class="text-xs font-bold divide-y divide-gray-50">
-                    <tr>
-                        <td colspan="8" class="p-12 text-center text-gray-400 font-medium">
-                            <i class="fa-solid fa-store text-4xl mb-3 block text-purple-900/10"></i>
-                            قم بإدخل استعلام التفتيش في الحقل المخصص أعلاه لجلب حسابات المنشآت التجارية والموردين حياً.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="background-color: #121212; border: 1px solid #222222 !important;">
+                <div class="card-header border-0 bg-transparent py-3">
+                    <h5 class="mb-0 fw-bold" style="color: #8A2BE2;">⚡ فضاء الحسابات والأرصدة المستقرة</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0 text-center" style="background-color: #121212;">
+                        <thead style="background-color: #1A1A1A; color: #8A2BE2;">
+                            <tr>
+                                <th class="py-3 border-0">معرف كود المحفظة</th>
+                                <th class="py-3 border-0">اسم المتجر / المنشأة التجارية</th>
+                                <th class="py-3 border-0">المورد والبيان السيادي</th>
+                                <th class="py-3 border-0">هاتف التاجر</th>
+                                <th class="py-3 border-0 text-success">كشف الريال اليمني (YER)</th>
+                                <th class="py-3 border-0 text-warning">كشف الريال السعودي (SAR)</th>
+                                <th class="py-3 border-0 text-info">كشف الدولار الأمريكي (USD)</th>
+                                <th class="py-3 border-0">إجراءات الحوكمة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if wallets %}
+                                {% for wallet in wallets %}
+                                <tr style="border-bottom: 1px solid #1A1A1A;">
+                                    <td class="fw-bold text-white border-0">
+                                        <span class="badge px-3 py-2" style="background-color: #1A1A1A; border: 1px solid #4B0082; color: #8A2BE2;">
+                                            {{ wallet.wallet_code }}
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold border-0 text-white">
+                                        {{ wallet.supplier.trade_name if wallet.supplier else 'منشأة غير معرفة' }}
+                                    </td>
+                                    <td class="border-0">
+                                        <div class="text-white small fw-bold">{{ wallet.supplier.sovereign_id if wallet.supplier else 'N/A' }}</div>
+                                        <div class="badge bg-dark mt-1 text-muted small" style="border: 1px solid #333;">
+                                            {{ wallet.supplier.rank_grade if wallet.supplier else 'ريادي' }}
+                                        </div>
+                                    </td>
+                                    <td class="border-0 text-white-50">
+                                        {{ wallet.supplier.shop_phone if wallet.supplier and wallet.supplier.shop_phone else 'بدون هاتف' }}
+                                    </td>
+                                    
+                                    <td class="border-0 text-success fw-bold">
+                                        <div class="fs-5">YER {{ "{:,.2f}".format(wallet.yer_balance) }}</div>
+                                        <div class="small text-muted fw-normal">متاح: {{ "{:,.2f}".format(wallet.yer_available) }}</div>
+                                        <div class="small text-danger fw-normal">معلق: {{ "{:,.2f}".format(wallet.yer_reserved) }}</div>
+                                    </td>
+                                    
+                                    <td class="border-0 text-warning fw-bold">
+                                        <div class="fs-5">SAR {{ "{:,.2f}".format(wallet.sar_balance) }}</div>
+                                        <div class="small text-muted fw-normal">متاح: {{ "{:,.2f}".format(wallet.sar_available) }}</div>
+                                        <div class="small text-danger fw-normal">معلق: {{ "{:,.2f}".format(wallet.sar_reserved) }}</div>
+                                    </td>
+                                    
+                                    <td class="border-0 text-info fw-bold">
+                                        <div class="fs-5">$ {{ "{:,.2f}".format(wallet.usd_balance) }}</div>
+                                        <div class="small text-muted fw-normal">متاح: {{ "{:,.2f}".format(wallet.usd_available) }}</div>
+                                        <div class="small text-danger fw-normal">معلق: {{ "{:,.2f}".format(wallet.usd_reserved) }}</div>
+                                    </td>
+                                    
+                                    <td class="border-0">
+                                        <button class="btn btn-sm text-white px-3 fw-bold disabled" 
+                                                style="background-color: #1A1A1A; border: 1px solid #333333; cursor: not-allowed;">
+                                            <i class="fas fa-hand-holding-usd me-1"></i> سحب الرصيد
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="py-5 text-muted border-0 bg-transparent">
+                                        <i class="fas fa-folder-open fa-3x mb-3 d-block" style="color: #4B0082;"></i>
+                                        لا توجد محافظ حية مطابقة لبيانات البحث الحالي في الفضاء المالي.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<script>
-    function executeWalletSearch() {
-        const query = document.getElementById('walletQueryInput').value.trim();
-        if(!query) return;
-
-        const tbody = document.getElementById('walletsResultBody');
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="p-12 text-center text-purple-950 font-bold bg-purple-50/10">
-                    <i class="fa-solid fa-circle-notch animate-spin text-2xl mb-2 text-purple-700 block"></i>
-                    جاري فحص دفاتر الأرصدة وسحب بيانات المنشآت المعتمدة سيادياً...
-                </td>
-            </tr>
-        `;
-
-        fetch(`/admin/wallet/api/search?query=${encodeURIComponent(query)}`)
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'success' && data.wallets.length > 0) {
-                tbody.innerHTML = '';
-                data.wallets.forEach(w => {
-                    // فرز واختيار لون رتبة المورد بناءً على مصفوفة النفوذ السيادية الفخمة
-                    let badgeClass = "bg-purple-900 text-white";
-                    if(w.rank_grade === 'ملكي') badgeClass = "bg-black text-amber-400 border border-amber-500/30";
-                    else if(w.rank_grade === 'سيادي') badgeClass = "bg-purple-950 text-purple-100";
-                    
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-purple-50/20 transition-all">
-                            <td class="p-3.5 font-mono text-purple-950">
-                                <span class="px-2 py-1 rounded-md bg-purple-50 text-purple-900 text-[11px] font-black border border-purple-100">
-                                    W-ID: ${w.wallet_id}
-                                </span>
-                            </td>
-                            
-                            <td class="p-3.5">
-                                <div class="font-black text-purple-950 text-sm">${w.trade_name ? w.trade_name : 'غير محدد'}</div>
-                                <div class="text-[10px] text-gray-400 font-mono tracking-wider mt-0.5">${w.sovereign_id}</div>
-                            </td>
-
-                            <td class="p-3.5 font-mono text-gray-600">
-                                ${w.shop_phone ? w.shop_phone : 'لا يوجد'}
-                            </td>
-                            
-                            <td class="p-3.5">
-                                <div class="flex flex-col gap-1 items-start">
-                                    <span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-black ${badgeClass} shadow-sm">
-                                        <i class="fa-solid fa-shield-halved text-[9px]"></i> ${w.rank_grade}
-                                    </span>
-                                    <span class="text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded font-medium">
-                                        اللقب: [ ${w.state_title || 'تحت التدقيق'} ]
-                                    </span>
-                                </div>
-                            </td>
-                            
-                            <td class="p-3.5 text-center bg-purple-50/20">
-                                <div class="text-purple-950 font-black text-sm">${w.yer_total.toLocaleString()} <span class="text-[10px] text-gray-400">YER</span></div>
-                                <div class="flex justify-center gap-3 mt-1 text-[10px] font-medium">
-                                    <span class="text-emerald-600">متاح: ${w.yer_available.toLocaleString()}</span>
-                                    <span class="text-amber-500">معلق: ${w.yer_pending.toLocaleString()}</span>
-                                </div>
-                            </td>
-
-                            <td class="p-3.5 text-center bg-purple-900/[0.01]">
-                                <div class="text-purple-950 font-black text-sm">${w.sar_total.toLocaleString()} <span class="text-[10px] text-gray-400">SAR</span></div>
-                                <div class="flex justify-center gap-3 mt-1 text-[10px] font-medium">
-                                    <span class="text-emerald-600">متاح: ${w.sar_available.toLocaleString()}</span>
-                                    <span class="text-amber-500">معلق: ${w.sar_pending.toLocaleString()}</span>
-                                </div>
-                            </td>
-
-                            <td class="p-3.5 text-center bg-purple-500/[0.01]">
-                                <div class="text-purple-950 font-black text-sm">$${w.usd_total.toLocaleString()}</div>
-                                <div class="flex justify-center gap-3 mt-1 text-[10px] font-medium">
-                                    <span class="text-emerald-600">متاح: $${w.usd_available.toLocaleString()}</span>
-                                    <span class="text-amber-500">معلق: $${w.usd_pending.toLocaleString()}</span>
-                                </div>
-                            </td>
-
-                            <td class="p-3.5 text-center">
-                                <button onclick="triggerDirectWithdrawalPrompt('${w.wallet_id}', '${w.trade_name}')" 
-                                        class="inline-flex items-center justify-center gap-1.5 bg-purple-950 hover:bg-black text-white px-3 py-2 rounded-xl shadow-sm transition-all text-xs font-black w-full max-w-[130px]">
-                                    <i class="fa-solid fa-money-bill-transfer text-[10px]"></i> تسوية وسحب
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="p-12 text-center text-amber-900 font-bold bg-amber-50/20">
-                            <i class="fa-solid fa-circle-exclamation text-2xl mb-1 text-amber-600 block"></i>
-                            لم نكتشف أي منشأة تجارية أو محفظة مطابقة لبيانات التفتيش المالي الحالية.
-                        </td>
-                    </tr>
-                `;
-            }
-        })
-        .catch(err => {
-            tbody.innerHTML = `<tr><td colspan="8" class="p-12 text-center text-rose-600 font-bold">❌ فشل الاستدعاء من السيرفر الرئيسي للمنصة: ${err}</td></tr>`;
-        });
+<style>
+    .transition-all {
+        transition: all 0.3s ease-in-out;
     }
-
-    function triggerDirectWithdrawalPrompt(walletId, tradeName) {
-        alert(`نظام التسوية المالي المباشر للمحفظة رقم [${walletId}] التابعة لمنشأة (${tradeName}) مستقر وجاهز لجدولة عمليات الخصم وسحب الرصيد.`);
+    .transition-all:hover {
+        background-color: #8A2BE2 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
     }
-
-    document.getElementById('walletQueryInput').addEventListener('keypress', function(e) {
-        if(e.key === 'Enter') executeWalletSearch();
-    });
-</script>
+    .table-hover tbody tr:hover {
+        background-color: #161616 !important;
+    }
+    input:focus {
+        box-shadow: 0 0 0 0.25rem rgba(138, 43, 226, 0.25) !important;
+        border: 1px solid #8A2BE2 !important;
+    }
+</style>
 {% endblock %}
