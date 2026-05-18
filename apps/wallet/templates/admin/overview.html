@@ -102,7 +102,7 @@
         background-color: #f8f9fa;
     }
     
-    /* حجب النتائج والبحث تلقائياً في البداية */
+    /* حجب صندوق النتائج افتراضياً حتى يبدأ الإدخال */
     #search_results_container {
         display: none;
     }
@@ -127,7 +127,7 @@
                 <small class="text-muted d-block mb-1">إجمالي المحافظ الرقمية</small>
                 <h4 class="font-weight-bold mb-2" id="total_wallets_count" style="color: var(--royal-purple);">⏳ جاري السحب...</h4>
                 <div class="d-flex justify-content-between border-top border-secondary border-opacity-10 pt-2" style="font-size: 0.85rem;">
-                    <span class="text-muted">المحافظ النشطة حلياً في المنصة</span>
+                    <span class="text-muted">المحافظ النشطة حالياً في المنصة</span>
                 </div>
             </div>
         </div>
@@ -184,7 +184,7 @@
     <div id="search_results_container">
         <div class="card bg-transparent border-0 mb-4">
             <div class="card-header bg-transparent p-0 mb-3">
-                <h5 class="m-0" style="color: var(--deep-purple); font-weight: 700;"><i class="fas fa-wallet me-2 text-warning"></i>المحافظ والبيانات المالية المطابقة المكتشفة</h5>
+                <h5 class="m-0" style="color: var(--deep-purple); font-weight: 700;"><i class="fas fa-wallet me-2 text-warning"></i> المحافظ والبيانات المالية المطابقة المكتشفة</h5>
             </div>
             <div class="table-responsive rounded-3 border">
                 <table class="table table-light-custom m-0" id="wallets_results_table">
@@ -203,6 +203,54 @@
                         </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div class="card bg-transparent border-0 mt-2">
+        <div class="card-header bg-transparent p-0 mb-3">
+            <h5 class="m-0" style="color: var(--deep-purple); font-weight: 700;"><i class="fas fa-file-invoice-dollar me-2 text-danger"></i> طلبات تعميد السحب المطابقة للفحص</h5>
+        </div>
+        <div class="table-responsive rounded-3 border">
+            <table class="table table-light-custom m-0">
+                <thead>
+                    <tr>
+                        <th>رقم المحفظة / العملية</th>
+                        <th>المورد والمنشأة التجاري</th>
+                        <th>الرتبة السيادية</th>
+                        <th>العملة</th>
+                        <th>المبلغ المطلوب</th>
+                        <th>هاتف المالك</th>
+                        <th>إجراء المعالجة الفورية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if pending_tx %}
+                        {% for tx in pending_tx %}
+                        <tr>
+                            <td><code style="color: var(--royal-purple);">W-ID: {{ tx.wallet_id }}</code> <br><small class="text-muted">{{ tx.transaction_ref }}</small></td>
+                            <td>
+                                <strong>{{ tx.wallet.supplier.username if tx.wallet.supplier else 'مورد نظام' }}</strong>
+                                <small class="text-muted d-block">ID: {{ tx.wallet.supplier_id }}</small>
+                            </td>
+                            <td><span class="rank-badge rank-siadi"><i class="fas fa-shield-alt me-1"></i> سيادي المظهر</span></td>
+                            <td><b class="text-uppercase">{{ tx.currency }}</b></td>
+                            <td class="text-danger fw-bold">{{ "{:,.2f}".format(tx.amount) }}</td>
+                            <td><small class="text-muted">{{ tx.wallet.supplier.phone if tx.wallet.supplier else 'لا يوجد' }}</small></td>
+                            <td>
+                                <button class="btn btn-sm btn-success px-3 me-1" onclick="approveTx('{{ tx.id }}')">تعميد</button>
+                                <button class="btn btn-sm btn-danger px-3" onclick="rejectTx('{{ tx.id }}')">إسقاط</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center p-4 text-muted">
+                                <i class="fas fa-check-circle me-2 text-success"></i> لا توجد طلبات سحب معلقة حالياً في النظام.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -269,7 +317,7 @@
                                 <small class="text-muted d-block">${w.sovereign_id}</small>
                             </td>
                             <td>
-                                <span class="rank-badge rank-siadi"><i class="fas fa-shield-alt me-1"></i>سيادي المظهر</span>
+                                <span class="rank-badge rank-siadi"><i class="fas fa-shield-alt me-1"></i>${w.rank_grade || 'سيادي المظهر'}</span>
                             </td>
                             <td>
                                 <div class="text-dark fw-bold">${w.yer_total.toLocaleString()} YER</div>
@@ -296,5 +344,35 @@
         })
         .catch(err => console.error('❌ خطأ في محرك جلب بيانات المحافظ:', err));
     });
+
+    // دوال الربط لإجراءات السحب (تعميد / إسقاط)
+    function approveTx(txId) {
+        if(!confirm('هل أنت متأكد من تعميد هذه العملية المالية رسمياً؟')) return;
+        const formData = new FormData();
+        formData.append('tx_id', txId);
+
+        fetch('/admin/wallet/approve-withdrawal', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            if(data.status === 'success') location.reload();
+        });
+    }
+
+    function rejectTx(txId) {
+        const reason = prompt('يرجى كتابة سبب رفض وإسقاط الحوالة:');
+        if (reason === null) return; 
+
+        const formData = new FormData();
+        formData.append('tx_id', txId);
+        formData.append('reason', reason);
+
+        fetch('/admin/wallet/reject-withdrawal', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            if(data.status === 'success') location.reload();
+        });
+    }
 </script>
 {% endblock %}
