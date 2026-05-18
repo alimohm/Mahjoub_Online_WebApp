@@ -4,7 +4,7 @@
 from apps import db
 from datetime import datetime
 from sqlalchemy import event
-from sqlalchemy.orm import validates  # استيراد نظام التحقق الصارم لـ SQLAlchemy
+from sqlalchemy.orm import validates, object_session  # استيراد أدوات التحقق والجلسات الذكية
 
 class Supplier(db.Model):
     __tablename__ = 'suppliers'
@@ -95,10 +95,7 @@ class Supplier(db.Model):
                 'suspended': 'معلق الحصانة'
             }
         }
-        # استدعاء قاموس الرتبة الحالية، والعودة إلى ريادي كملاذ آمن في حال عدم التطابق
         current_rank_dict = sovereign_matrix.get(self.rank_grade, sovereign_matrix['ريادي'])
-        
-        # إرجاع العبارة الفخمة المطابقة لحالة النظام الحالية
         return current_rank_dict.get(self.status, 'تحت التدقيق السيادي')
 
     # -------------------------------------------------------------------------
@@ -106,18 +103,13 @@ class Supplier(db.Model):
     # -------------------------------------------------------------------------
     @validates('username', 'identity_number', 'owner_name', 'owner_phone', 'trade_name', 'shop_phone', 'bank_acc')
     def validate_sovereign_fields(self, key, value):
-        # تحويل القيمة لنص وعمل تنظيف للمسافات الطرفية فوراً
         clean_value = str(value).strip() if value is not None else ""
-        
-        # إذا حاول المسؤول أو النظام تمرير حقل فارغ أو مسافات، يتم إسقاط العملية فوراً برفض برمجي
         if not clean_value:
             raise ValueError(f"خطأ حوكمي صارم: الحقل السيادي ({key}) لا يمكن أن يكون فارغاً أو يحتوي على مسافات فقط.")
-            
         return clean_value
 
     def to_dict(self):
         """تحويل البيانات إلى كود جيسون جاهز لإرساله لواجهات العرض والمودال"""
-        # اشتقاق الرقم التسلسلي لإظهار كود المحفظة التابع بدقة بصيغة WEL المتناسقة
         serial_num = self.sovereign_id.split('MAH963')[-1] if self.sovereign_id and 'MAH963' in self.sovereign_id else str(self.id)
         
         return {
@@ -130,7 +122,7 @@ class Supplier(db.Model):
             "shop_phone": self.shop_phone,
             "rank_grade": self.rank_grade,
             "status": self.status,
-            "state_title": self.state_title  # ستخرج للفرونت إند مثل: [حَصين] أو [مُطلق]
+            "state_title": self.state_title  
         }
 
     def __repr__(self):
@@ -138,31 +130,33 @@ class Supplier(db.Model):
 
 
 # -------------------------------------------------------------------------
-# 🛡️ نظام الحوكمة التلقائي: توليد المعرف السيادي الموحد قبل الحفظ في القاعدة
+# 🛡️ نظام الحوكمة التلقائي الآمن: توليد المعرف السيادي الموحد قبل الحفظ في القاعدة
 # -------------------------------------------------------------------------
 def auto_generate_sovereign_id(mapper, connection, target):
     """
-    دالة مراقبة (Event Listener) تعمل تلقائياً قبل الـ Insert لحساب التسلسل
-    السيادي الموحد للموردين بدون تكرار أو تداخل.
+    دالة مراقبة (Event Listener) مستقرة ومحمية، تستعين بـ Session الكائن نفسه
+    لمنع حدوث تعليق (Deadlock) في قواعد بيانات جيت هاب / ريلواي الحية.
     """
-    # استعلام لجلب آخر مورد تم تسجيله في النظام بناءً على الـ ID التلقائي
-    last_supplier = target.query.order_by(Supplier.id.desc()).first()
+    session = object_session(target)
+    if session is None:
+        # كحماية احتياطية في حال تعذر جلب الجلسة الحالية
+        target.sovereign_id = "SUP-MAH9631"
+        return
+
+    # الاستعلام الآمن من خلال الجلسة النشطة الحالية
+    last_supplier = session.query(Supplier).order_by(Supplier.id.desc()).first()
     
     if last_supplier and last_supplier.sovereign_id:
         try:
-            # فصل المعرف الحالي لاستخراج الرقم التسلسلي الأخير بعد بادئة التشفير
-            # صيغة المعرف المستهدفة: SUP-MAH9631، SUP-MAH9632 ... إلخ
             parts = last_supplier.sovereign_id.split('MAH963')
             last_num = int(parts[-1])
             next_num = last_num + 1
         except (ValueError, IndexError):
-            # في حال وجود صياغة غير متوقعة، يتم الاعتماد على المعرف الرقمي كملاذ آمن
             next_num = (last_supplier.id or 0) + 1
     else:
-        # إذا كان الجدول فارغاً تماماً (أول مورد في تاريخ المنصة)
         next_num = 1
 
-    # تركيب البنية السيادية الفخمة الموحدة وحقنها في الحقل المخصص مباشرة
+    # استبدال القيمة المبدئية المعطاة بالرقم التسلسلي الدقيق والنهائي
     target.sovereign_id = f"SUP-MAH963{next_num}"
 
 
