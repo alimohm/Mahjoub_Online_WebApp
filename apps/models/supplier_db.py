@@ -1,6 +1,7 @@
 # coding: utf-8
 # 🔑 مستند النموذج الحوكمي للموردين - منصة محجوب أونلاين 2026
 
+import random  # 🧠 استيراد مطلوب للمحرك الداخلي عند حدوث استثناء في التوليد
 from apps import db
 from datetime import datetime
 from sqlalchemy.orm import validates
@@ -10,9 +11,10 @@ class Supplier(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     sovereign_id = db.Column(db.String(50), unique=True, nullable=False, index=True) 
+    wallet_code = db.Column(db.String(50), unique=True, nullable=False)  # 💳 العمود المطلوب لربط كود المحفظة برمزها التتابعي المستقر
     
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)  # 🔒 الحقل الآمن المعتمد لتخزين الهاش المقابل لـ hashed_password
     identity_type = db.Column(db.String(50), nullable=False)    
     identity_number = db.Column(db.String(50), unique=True, nullable=False)  
     identity_image = db.Column(db.String(255))   
@@ -73,11 +75,10 @@ class Supplier(db.Model):
         return "SUP-MAH9631"
 
     def to_dict(self):
-        serial_num = self.sovereign_id.split('MAH963')[-1] if self.sovereign_id and 'MAH963' in self.sovereign_id else str(self.id)
         return {
             "id": self.id,
             "sovereign_id": self.sovereign_id,
-            "wallet_code": f"WEL-MAH963{serial_num}",
+            "wallet_code": self.wallet_code,
             "username": self.username,
             "owner_name": self.owner_name,
             "trade_name": self.trade_name,
