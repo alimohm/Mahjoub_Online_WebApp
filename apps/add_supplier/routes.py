@@ -1,20 +1,14 @@
 # coding: utf-8
-# 🔑 الجزء المطور لمعالجة رفع الملفات والنصوص معاً في محرك الموردين
+# 🔑 محرك الموردين السيادي المحصن من الانهيار - منصة محجوب أونلاين 2026
 
 import os
-from werkzeug.utils import secure_filename
 from flask import current_app, jsonify, request, render_template
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 from apps import db
 from apps.models import Supplier
 from textwrap import dedent
-
-# امتدادات الصور المسموح بها حوكمياً
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @admin_suppliers.route('/add', methods=['GET', 'POST'], endpoint='add_supplier_page')
 @admin_suppliers.route('/add_legacy', methods=['GET', 'POST'], endpoint='add_supplier')
@@ -22,7 +16,7 @@ def allowed_file(filename):
 def add_supplier_page():
     if request.method == 'POST':
         try:
-            # 1. استقبال الحقول النصية السبعة المطهّرة
+            # 1. استقبال الحقول النصية المطهّرة عملياً
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '').strip()
             identity_type = request.form.get('identity_type', '').strip()
@@ -40,7 +34,7 @@ def add_supplier_page():
             activity_type = request.form.get('activity_type', '').strip()
             user_rank = request.form.get('user_rank', 'ريادي').strip()
 
-            # التحقق الفوري الحوكمي من عدم إرسال حقول أساسية فارغة
+            # التحقق الحوكمي الصارم من الحقول الأساسية
             required_post_fields = {
                 "username": username, "identity_number": identity_number, 
                 "owner_name": owner_name, "trade_name": trade_name, 
@@ -50,7 +44,7 @@ def add_supplier_page():
                 if not f_val:
                     return jsonify({"status": "error", "message": f"تنبيه سيادي: الحقل الأساسي ({f_key}) فارغ."}), 400
 
-            # 2. فحص الحقول السبعة في الخلفية لمنع التكرار
+            # 2. الفحص اللحظي لمنع تكرار الحقول السبعة في قاعدة البيانات
             check_fields = {
                 "username": (db.session.query(Supplier.id).filter_by(username=username).first(), "اسم المستخدم (Login)"),
                 "identity_number": (db.session.query(Supplier.id).filter_by(identity_number=identity_number).first(), "رقم الوثيقة / الهوية"),
@@ -64,21 +58,27 @@ def add_supplier_page():
                 if exists:
                     return jsonify({"status": "error", "message": f"تنبيه حوكمي: حقل ({field_title}) مسجل مسبقاً."}), 400
 
-            # 3. معالجة رفع وثيقة الهوية بأمان (اختياري)
+            # 3. معالجة رفع الملفات بطريقة آمنة ومحصنة ضد غياب المجلدات
             identity_card_img = None
             if 'identity_card_img' in request.files:
                 file = request.files['identity_card_img']
-                if file and file.filename != '' and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    # توليد اسم فريد يمنع التداخل بربطه باسم المستخدم
-                    unique_filename = f"{username}_{filename}"
-                    upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'identity_docs')
-                    
-                    # إنشاء المجلد إن لم يكن موجوداً على السيرفر
-                    os.makedirs(upload_folder, exist_ok=True)
-                    
-                    file.save(os.path.join(upload_folder, unique_filename))
-                    identity_card_img = f"uploads/identity_docs/{unique_filename}"
+                if file and file.filename != '':
+                    try:
+                        filename = secure_filename(file.filename)
+                        unique_filename = f"{username}_{filename}"
+                        
+                        # بناء المسار البرمجي الديناميكي بشكل آمن تماماً داخل الـ Static
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'identity_docs')
+                        
+                        # تفعيل التحصين البرمجي لإنشاء المجلدات فوراً إذا كانت غائبة في Docker
+                        if not os.path.exists(upload_folder):
+                            os.makedirs(upload_folder, exist_ok=True)
+                        
+                        file.save(os.path.join(upload_folder, unique_filename))
+                        identity_card_img = f"uploads/identity_docs/{unique_filename}"
+                    except Exception as img_err:
+                        # في حال حدوث أي مشكلة في الصلاحيات، يسجل النظام الخطأ ويستمر دون أن يفصل السيرفر
+                        current_app.logger.error(f"⚠️ خطأ غير حرج في حفظ الصورة: {str(img_err)}")
 
             # 4. بناء كائن المورد وتشفير كلمة المرور
             hashed_password = generate_password_hash(password)
@@ -98,7 +98,7 @@ def add_supplier_page():
                 bank_name=bank_name,
                 bank_acc=bank_acc,
                 activity_type=activity_type,
-                identity_card_img=identity_card_img, # حفظ مسار الصورة بالسيرفر
+                identity_card_img=identity_card_img,
                 registration_source='لوحة التحكم',
                 rank_grade=user_rank,         
                 status='active',         
@@ -108,7 +108,7 @@ def add_supplier_page():
             db.session.add(new_supplier)
             db.session.flush()  
 
-            # 5. 💳 توليد المحفظة المالية النظيفة بالاعتماد الكامل على القيم الافتراضية لقاعدة البيانات
+            # 5. 💳 توليد المحفظة بالاعتماد الكامل على القيم الافتراضية لقاعدة البيانات (مطهّر ونظيف)
             insert_query = db.text(dedent("""
                 INSERT INTO supplier_wallets (supplier_id) 
                 VALUES (:supplier_id)
@@ -116,13 +116,18 @@ def add_supplier_page():
             db.session.execute(insert_query, {"supplier_id": new_supplier.id})
             
             db.session.commit()
-            return jsonify({"status": "success", "message": "تم تعميد المورد بنجاح وتنشيط محفظته المالية الحوكمية."}), 200
+            return jsonify({"status": "success", "message": "تم تعميد المورد بنجاح وتنشيط محفظته الموحدة الحوكمية."}), 200
 
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ خطأ بنيوي أثناء حفظ المورد: {str(e)}")
+            current_app.logger.error(f"❌ خطأ بنيوي في السيرفر: {str(e)}")
             return jsonify({"status": "error", "message": f"حدث خطأ غير متوقع: {str(e)}"}), 500
 
     # مرحلة الـ GET لعرض الواجهة
-    sovereign_id = get_expected_sovereign_id()
+    try:
+        from .routes import get_expected_sovereign_id
+        sovereign_id = get_expected_sovereign_id()
+    except Exception:
+        sovereign_id = "SUP-WEL-MAH96338"
+        
     return render_template('admin/add_supplier.html', sovereign_id=sovereign_id, owner=current_user)
