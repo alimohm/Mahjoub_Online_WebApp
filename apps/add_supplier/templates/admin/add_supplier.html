@@ -16,12 +16,12 @@
         </div>
         <div class="d-flex gap-4 text-center p-2 border-start ps-4">
             <div>
-                <small class="d-block text-muted fw-bold">معرف المورد (Expected)</small>
-                <span class="fs-4 fw-bold" style="color: var(--royal-purple);" id="display-supplier-id">SUP-MAH9631</span>
+                <small class="d-block text-muted fw-bold">معرف المورد (التالي متوقع)</small>
+                <span class="fs-4 fw-bold" style="color: var(--royal-purple);" id="display-supplier-id">SUP-MAH963+</span>
             </div>
             <div class="border-start ps-4">
-                <small class="d-block text-muted fw-bold">معرف المحفظة (Expected)</small>
-                <span class="fs-4 fw-bold text-success" id="display-wallet-id">WEL-MAH9631</span>
+                <small class="d-block text-muted fw-bold">معرف المحفظة (التالي متوقع)</small>
+                <span class="fs-4 fw-bold text-success" id="display-wallet-id">WEL-MAH963+</span>
             </div>
         </div>
     </div>
@@ -34,8 +34,8 @@
             <input type="hidden" name="backup_csrf" value="{{ backup_csrf }}">
         {% endif %}
         
-        <input type="hidden" name="sovereign_id" id="hidden-sovereign-id" value="SUP-MAH9631">
-        <input type="hidden" name="wallet_code" id="hidden-wallet-code" value="WEL-MAH9631">
+        <input type="hidden" name="sovereign_id" id="hidden-sovereign-id" value="">
+        <input type="hidden" name="wallet_code" id="hidden-wallet-code" value="">
 
         <div class="row g-4">
             <div class="col-md-4">
@@ -423,9 +423,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (response.ok && result.status === 'success') {
                 const username = document.getElementById('form-username-field').value;
-                const finalSupplierId = "SUP-MAH9631";
-                const finalWalletId = "WEL-MAH9631";
                 const password = document.getElementById('form-password-field').value;
+                
+                // 👑 استقبال المعرف السيادي وكود المحفظة المولدين حياً في السيرفر
+                const finalSupplierId = result.data.sovereign_id;
+                const finalWalletId = result.data.wallet_code;
 
                 const modalContent = `
                     <div class="text-center mb-4">
@@ -474,11 +476,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert('فشل التعميد: ' + (result.message || 'يرجى مراجعة البيانات المدخلة.'));
                 btn.disabled = false;
+                btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
                 updateSubmitButtonState();
             }
         } catch (e) { 
             alert(e.message || 'حدث خطأ أثناء معالجة الطلب السحابي، يرجى إعادة المحاولة.'); 
             btn.disabled = false; 
+            btn.innerHTML = 'اعتماد المورد الآن <i class="fas fa-paper-plane ms-2"></i>';
             updateSubmitButtonState();
         }
     };
