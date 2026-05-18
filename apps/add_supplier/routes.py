@@ -1,3 +1,4 @@
+# coding: utf-8
 import os
 import secrets
 from flask import Blueprint, render_template, request, jsonify, current_app, url_for
@@ -109,6 +110,7 @@ def add_supplier_page():
             db.session.flush()
 
             # تأسيس كائن المحفظة النقي والمستقر بالأرصدة التأسيسية
+            # يتم إسناد generated_sovereign_id كنص متطابق مئة بالمئة مع العمود السحابي المحدث
             new_wallet = Wallet(
                 wallet_code=generated_wallet_code,
                 supplier_id=generated_sovereign_id,
@@ -125,6 +127,7 @@ def add_supplier_page():
             return jsonify({
                 "status": "success",
                 "message": "تم الحفظ الفعلي وتعميد المحفظة بنجاح مطلق.",
+                "redirect_url": url_for('admin_dashboard.list_suppliers'),  # توجيه تلقائي ذكي بعد النجاح لقائمة الموردين
                 "data": {
                     "sovereign_id": generated_sovereign_id,
                     "wallet_code": generated_wallet_code
@@ -133,10 +136,12 @@ def add_supplier_page():
 
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"❌ خطأ تعميد المورد السحابي: {str(e)}")
             return jsonify({"status": "error", "message": f"فشل داخلي في السيرفر السحابي (500): {str(e)}"}), 500
         finally:
             db.session.close()  # 🔓 تحرير الاتصال فوراً لمنع أي تعليق مستقبلي
 
+    # في حالة طلب GET، نمرر الإعدادات إلى صفحة HTML العامة
     endpoints_config = {
         "add_supplier": url_for('admin_suppliers.add_supplier_page'),
         "check_duplicate": url_for('admin_suppliers.check_duplicate')
