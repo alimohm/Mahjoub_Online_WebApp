@@ -1,7 +1,7 @@
 # run.py
 # coding: utf-8
-# 🚀 المحرك التنفيذي لمنصة محجوب أونلاين 2026
-# التوثيق: القضاء على خطأ yer_total وتطهير الجداول المتعارضة فوراً
+# 🚀 المحرك التنفيذي وفرمان الحوكمة الشاملة لمنصة محجوب أونلاين 2026
+# التوثيق: إخضاع قاعدة البيانات وسحق تعارض جداول المحافظ والموردين قسرياً
 
 import os
 from apps import create_app, db
@@ -13,15 +13,18 @@ app = create_app()
 
 def initialize_sovereignty():
     """
-    دالة التطهير الحاسم: تقوم بحذف كافة الجداول المتعارضة القديمة قسرياً 
-    لإنهاء خطأ عدم التعرف على الخصائص المالية، وإعادة ولادة المنظومة الموحدة.
+    دالة التطهير المطلق: تعطيل القيود الهيكلية مؤقتاً لسحق الجداول القديمة 
+    وإعادة ولادة الفضاء الرقمي الموحد دون أي تعليق من PostgreSQL.
     """
     with app.app_context():
         try:
-            # 🚨 [خطوة التطهير القصوى]: مسح الجداول المتعارضة دون أي قيود
-            print("⏳ جاري سحق الجداول القديمة عبر CASCADE لمنع أخطاء الأرصدة الناقصة...")
+            print("⏳ جاري إخضاع قاعدة البيانات وتعطيل قيود الفحص اللحظي...")
             
-            # تنفيذ مسح جذري لإخلاء مساحة للموديل الجديد المحدث
+            # 🚨 [خطوة الإخضاع الحاسمة]: تأجيل فحص قيود المفاتيح الأجنبية لمنع اعتراض عملية الـ DROP
+            db.session.execute(text("SET CONSTRAINTS ALL DEFERRED;"))
+            
+            # 🚨 [خطوة التطهير القصوى]: مسح الجداول المتعارضة عبر CASCADE لقطع دابر الامتدادات القديمة
+            print("⏳ جاري سحق الجداول القديمة عبر CASCADE لمنع أخطاء الأرصدة الناقصة...")
             db.session.execute(text("DROP TABLE IF EXISTS wallet_transactions CASCADE;"))
             db.session.execute(text("DROP TABLE IF EXISTS supplier_wallets CASCADE;"))
             db.session.execute(text("DROP TABLE IF EXISTS wallets CASCADE;"))
@@ -30,7 +33,7 @@ def initialize_sovereignty():
             
             print("✨ تم تطهير قاعدة البيانات بالكامل من السجلات المتعارضة.")
 
-            # استدعاء محلي للموديلات لتوثيق الـ Event Listeners
+            # استدعاء محلي للموديلات لتوثيق الـ Event Listeners والربط الهيكلي الجديد
             from apps.models.admin_db import AdminUser
             from apps.models.supplier_db import Supplier
             from apps.models.wallet_db import Wallet
