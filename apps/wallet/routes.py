@@ -155,19 +155,3 @@ def adjust_balance():
         flash(f'تعذر تعديل الرصيد بسبب عطل في الربط الهيكلي: {e}', 'danger')
 
     return redirect(url_for('admin_wallet.overview'))
-
-@admin_wallet.route('/admin/wallet/clean-db-temporary')
-@login_required
-def clean_db_temporary():
-    """ مسار سيادي مؤقت لحذف الجدول القديم من داخل السيرفر مباشرة دون الحاجة لروابط خارجية """
-    if current_user.role != 'Owner':
-        return "صلاحية مرفوضة", 403
-    
-    try:
-        # تنفيذ أمر الحذف القسري عبر النواة مباشرة
-        db.session.execute(db.text("DROP TABLE IF EXISTS wallet_transactions CASCADE;"))
-        db.session.commit()
-        return "🔥 تم فرمان الحذف القسري للجدول القديم بنجاح! يمكنك إزالة هذا المسار الآن."
-    except Exception as e:
-        db.session.rollback()
-        return f"⚠️ تعذر الحذف: {str(e)}"
