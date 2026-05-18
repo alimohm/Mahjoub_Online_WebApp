@@ -20,6 +20,12 @@ def create_app():
     # نقوم بحقن ترميز الـ UTF-8 مباشرة في محرك الـ JSON الخاص بـ Flask لضمان طباعة النصوص العربية بنقاء كامل
     app.json.ensure_ascii = False
 
+    # 🛡️ استدعاء الموديلات الحوكمة هنا لإجبار Flask و SQLAlchemy على تسجيل أحداث توليد المعرفات والمحافظ تلقائياً
+    with app.app_context():
+        from apps.models.admin_db import AdminUser
+        from apps.models.supplier_db import Supplier
+        from apps.models.wallet_db import Wallet
+
     # تهيئة الإضافات بربطها بالتطبيق الحالي
     db.init_app(app)
     login_manager.init_app(app)
