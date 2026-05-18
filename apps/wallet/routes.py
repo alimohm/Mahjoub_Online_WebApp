@@ -27,7 +27,7 @@ def overview():
     # التأكد من الصلاحيات السيادية للمستخدم (Owner أو Admin)
     if current_user.role not in ['Owner', 'Admin']:
         flash('غير مسموح لك بامتلاك صلاحية دخول الفضاء المالي.', 'danger')
-        return redirect(url_for('admin_dashboard.dashboard'))
+        return redirect(url_for('admin_dashboard.dashboard_home'))
 
     search_query = request.args.get('search', '').strip()
     
@@ -107,10 +107,10 @@ def adjust_balance():
             
         wallet = Wallet.query.get(wallet_id)
         if not wallet:
-            flash('المحفظة المستهدفة غير مسجلة في الفضاء الحالي.', 'danger')
+            flash('المحفظة المستهدفة غير مسجلة in الفضاء الحالي.', 'danger')
             return redirect(url_for('admin_wallet.overview'))
 
-        # التعديل المباشر والآمن للأرصدة عبر الـ fallback الحامي لمنع خطأ 'yer_total'
+        # التعديل المباشر والآمن للأرصدة عبر الـ fallback الحامي لمنع خطأ الحقول المفقودة
         if currency == 'YER':
             current_bal = float(getattr(wallet, 'yer_balance', 0.0))
             if action_type == 'deposit':
@@ -157,7 +157,7 @@ def adjust_balance():
         db.session.commit()
         
         flash(f'تم تحديث كشف حساب المحفظة {wallet.wallet_code} بنجاح وتصفير التعارضات.', 'success')
-
+س
     except ValueError:
         flash('خطأ: صيغة المبلغ المدخل غير صالحة.', 'danger')
     except Exception as e:
