@@ -27,18 +27,26 @@ def create_app():
     # 🛡️ استدعاء النماذج الحوكمة فوراً بعد التهيئة لإجبار Flask و SQLAlchemy 
     # على تسجيل الجداول وأحداث توليد المعرفات والمحافظ تلقائياً في سياق النواة
     with app.app_context():
-        from apps.models import admin_db
-        from apps.models import supplier_db
-        from apps.models import wallet_db
+        # 🎯 تعديل حاسم لكسر الـ Circular Import: استيراد ملفات الموديلات فراداً وبشكل دقيق ومباشر
+        import apps.models.admin_db
+        import apps.models.supplier_db
+        import apps.models.wallet_db
         print("🛡️ تم تعميد النماذج وإخضاع ملفات قواعد البيانات لسياق الـ SQLAlchemy بنجاح.")
         
-        # 🔥 الإجراء الحوكمي الحاسم: إجبار المحرك على بناء الجداول فوراً إذا لم تكن موجودة
+        # 🔥 الإجراء الحوكمي الحاسم: إجبار المحرك على بناء الجداول فوراً وحقن الأعمدة سحابياً إن نقصت
         try:
             db.create_all()
+            # حقن تأميني فوري للأعمدة لمنع خطأ الـ UndefinedColumn في قاعدة البيانات السحابية
+            db.session.execute(db.text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS wallet_code VARCHAR(50) UNIQUE;"))
+            db.session.execute(db.text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'نشطة';"))
+            db.session.commit()
             print("🚀 سيادة وحوكمة: تم فحص قاعدة البيانات وإنشاء جداول الموردين والمحافظ والمشرفين بنجاح تنفيذي مطلق.")
         except Exception as e:
-            app.logger.error(f"❌ تعذر توليد الجداول برمجياً أثناء الإقلاع: {str(e)}")
-    
+            db.session.rollback()
+            app.logger.error(f"❌ تعذر توليد أو تحديث الجداول برمجياً أثناء الإقلاع: {str(e)}")
+        finally:
+            db.session.close() # 🔓 تحرير فوري للاتصال لمنع الـ Locks والـ Deadlock عند الإقلاع
+
     # 🛡️ الحماية السيادية: تحديد المسار الكامل لـ Flask-Login
     login_manager.login_view = 'auth_portal.login'
     login_manager.login_message = 'يرجى إثبات الهوية الرقمية للوصول إلى المنطقة السيادية.'
