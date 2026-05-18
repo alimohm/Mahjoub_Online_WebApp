@@ -54,8 +54,8 @@ def create_app():
     from apps.auth_portal import auth_blueprint
     from apps.admin_dashboard import admin_dashboard_blueprint
     
-    # 🎯 الاستيراد الصحيح والنقي مباشرة من مجلد حزمة الموردين المعزولة
-    from apps.add_supplier import admin_suppliers
+    # 🎯 التعديل الحاسم الأول: استيراد البلوبرينت الصحيح بالاسم المعرّف داخل الـ routes
+    from apps.add_supplier.routes import admin_suppliers_bp
 
     # 💳 الاستيراد الحاسم والسيادي لمحرك المحافظ من مسار الحزمة التابع لـ routes
     from apps.wallet.routes import admin_wallet
@@ -64,8 +64,8 @@ def create_app():
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.register_blueprint(admin_dashboard_blueprint, url_prefix='/admin')
     
-    # 📦 تسجيل محرك الموردين السيادي بمسار مخصص يطابق طلبات الـ Fetch في الواجهة
-    app.register_blueprint(admin_suppliers, url_prefix='/admin/suppliers')
+    # 📦 التعديل الحاسم الثاني: تسجيل البلوبرينت بدون url_prefix لمنع تداخل المسارات وحل مشكلة الـ 404 والـ BuildError
+    app.register_blueprint(admin_suppliers_bp)
 
     # 💰 تعميد وتسجيل محرك المحافظ والعمليات المادية الثلاثية بشكل رسمي في النواة
     app.register_blueprint(admin_wallet)
