@@ -19,9 +19,9 @@ app = create_app()
 
 def initialize_sovereignty():
     """
-    دالة التطهير والتحصين المطلق:
-    تتحاشى استدعاء الموديلات المنهارة برمجياً وتنفذ تصفيراً سيادياً مباشراً 
-    لقاعدة البيانات لإنهاء تعارض 'yer_total' و 'WalletTransaction' للأبد.
+    دالة التطهير والتحصين المطلق لعام 2026:
+    تتحاشى استدعاء الموديلات المنهارة برمجياً، تسحق الجداول الجوفاء،
+    وتقوم بتوليد الهيكل المالي الثلاثي بأعمدته الكاملة مباشرة من الموديلات النظيفة.
     """
     with app.app_context():
         try:
@@ -30,8 +30,8 @@ def initialize_sovereignty():
             # 🚨 [خطوة الإخضاع الحاسمة]: تأجيل وفصل فحص قيود المفاتيح الأجنبية لمنع اعتراض عملية الـ DROP
             db.session.execute(text("SET CONSTRAINTS ALL DEFERRED;"))
             
-            # 🚨 [خطوة التصفير التام]: سحق الجداول القديمة المسببة للأخطاء الهيكلية عبر CASCADE
-            print("⏳ جاري سحق الجداول القديمة عبر CASCADE لمنع أخطاء الأرصدة الناقصة...")
+            # 🚨 [خطوة التصفير التام]: سحق الجداول القديمة أو الجوفاء لمنع أخطاء الأرصدة والأعمدة الناقصة
+            print("⏳ جاري سحق الجداول القديمة عبر CASCADE لولادة الهيكل الجديد على نظافة...")
             db.session.execute(text("DROP TABLE IF EXISTS wallet_transactions_log CASCADE;"))
             db.session.execute(text("DROP TABLE IF EXISTS wallet_transactions CASCADE;"))
             db.session.execute(text("DROP TABLE IF EXISTS supplier_wallets CASCADE;"))
@@ -41,25 +41,11 @@ def initialize_sovereignty():
             
             print("✨ تم تطهير فضاء الجداول بالكامل وسحق البيانات المتعارضة.")
 
-            # [إعادة البناء الهيكلي]: تشييد الجداول بالبنية الحوكمة الصافية والجديدة تماماً
-            print("⏳ جاري مواءمة وبناء الهيكلية السيادية للمحافظ والموردين...")
+            # [إعادة البناء الهيكلي النقي]: تشييد الجداول كاملة بأعمدتها السيادية من واقع ملفات الـ Models مباشرة
+            print("⏳ جاري مواءمة وبناء الهيكلية السيادية للمحافظ والموردين مجدداً...")
             db.create_all()
-            
-            # [تحديث أعمدة الحوكمة]: إعداد جدول الموردين (Suppliers) الجديد وحقن الحقول اللوجستية
-            print("🛡️ جاري مواءمة الأعمدة الحوكمة للجدول السيادي...")
-            alter_query = """
-            ALTER TABLE suppliers 
-            ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active',
-            ADD COLUMN IF NOT EXISTS rank_grade VARCHAR(50) DEFAULT 'ريادي',
-            ADD COLUMN IF NOT EXISTS registration_source VARCHAR(100) DEFAULT 'لوحة التحكم',
-            ADD COLUMN IF NOT EXISTS created_by_id INTEGER,
-            ADD COLUMN IF NOT EXISTS updated_by_id INTEGER,
-            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-            """
-            db.session.execute(text(alter_query))
             db.session.commit()
-            print("🚀 تم بناء البنية وجداول الفضاء المالي بنجاح تام.")
+            print("🚀 تم بناء البنية وجداول الفضاء المالي بكافة أعمدتها بنجاح تام.")
             
             # استدعاء الموديل الخاص بالمشرفين فقط لتأمين حساب المالك دون التسبب في تعارض المحافظ
             from apps.models.admin_db import AdminUser
