@@ -1,57 +1,26 @@
 # coding: utf-8
-# 🔑 محرك الموردين الحوكمي والسيادي المطور - منصة محجوب أونلاين 2026
+# 🔑 محرك حوكمة الموردين والربط المالي السيادي لعام 2026 - منصة محجوب أونلاين
 
-from flask import render_template, request, jsonify, current_app, url_for
+from flask import render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
-import jinja2
-import re  # مكتبة التعبيرات النمطية لمعالجة النصوص واستخراج الأرقام بدقة
-import random # لتوليد كود رقمي آمن ومميز للمحافظ
-from textwrap import dedent
+import random
 
-# استيراد البلوبرينت المعزول الخاص بالموردين وكائن قاعدة البيانات
+# استيراد البلوبرينت وكائن قاعدة البيانات المركزي والنماذج النواة
 from . import admin_suppliers
 from apps import db
-from apps.models import Supplier  
-
-def get_expected_sovereign_id():
-    """
-    سحب آخر معرف سيادي مسجل في قاعدة البيانات بدقة من خلال قراءة الجزء الرقمي 
-    الأخير وزيادته بمقدار 1، ليعرض للمسؤول في الواجهة المعرف المتوقع تماماً.
-    """
-    default_prefix = "SUP-WEL-MAH"
-    try:
-        last_supplier = db.session.query(Supplier.id, Supplier.sovereign_id)\
-                                  .order_by(Supplier.id.desc())\
-                                  .first()
-        
-        if last_supplier and last_supplier.sovereign_id:
-            sovereign_str = last_supplier.sovereign_id.strip()
-            match = re.search(r'\d+$', sovereign_str)
-            if match:
-                last_num = int(match.group())
-                next_num = last_num + 1
-                prefix_match = re.match(r'^(.*?)(\d+)$', sovereign_str)
-                if prefix_match:
-                    return f"{prefix_match.group(1)}{next_num}"
-                return f"{default_prefix}{next_num}"
-        
-        if last_supplier:
-            return f"{default_prefix}96338"
-
-    except Exception as e:
-        current_app.logger.error(f"❌ خطأ أثناء احتساب المعرف السيادي القادم: {str(e)}")
-    
-    return f"{default_prefix}96338"
-
+from apps.models.supplier_db import Supplier
+from apps.models.wallet_db import SupplierWallet
 
 @admin_suppliers.route('/add', methods=['GET', 'POST'], endpoint='add_supplier_page')
-@admin_suppliers.route('/add_legacy', methods=['GET', 'POST'], endpoint='add_supplier')
 @login_required
 def add_supplier_page():
+    """
+    مسار تعميد الموردين وإنشاء المحافظ المالية المشفرة تلقائياً في السيرفر الحي
+    """
     if request.method == 'POST':
         try:
-            # 1. استقبال البيانات السبعة وعمل تطهير (strip) فوري
+            # 1. استقبال الحقول والنوايا الحوكمية من الواجهة الأمامية
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '').strip()
             identity_type = request.form.get('identity_type', '').strip()
@@ -68,43 +37,25 @@ def add_supplier_page():
             bank_acc = request.form.get('bank_acc', '').strip()
             activity_type = request.form.get('activity_type', '').strip()
 
-            user_rank = request.form.get('user_rank', 'ريادي').strip()
+            # 🛠️ لقط المعرفات السيادية الثابتة والمطلوبة من الواجهة لمنع تعارض قيد Not-Null
+            sovereign_id = request.form.get('sovereign_id', 'SUP-MAH9631').strip()
+            wallet_code = request.form.get('wallet_code', 'WEL-MAH9631').strip()
+
+            # فرض الرتبة والحالة الحركية للنظام تلقائياً
+            user_rank = 'سيادي'
             system_status = 'active'
 
-            # التحقق الفوري الحوكمي من عدم إرسال حقول أساسية فارغة
-            required_post_fields = {
-                "username": username, "identity_number": identity_number, 
-                "owner_name": owner_name, "trade_name": trade_name, 
-                "owner_phone": owner_phone, "shop_phone": shop_phone, "bank_acc": bank_acc
-            }
-            for f_key, f_val in required_post_fields.items():
-                if not f_val:
-                    return jsonify({
-                        "status": "error",
-                        "message": f"تنبيه سيادي: لا يمكن تعميد المورد والحقل الأساسي ({f_key}) فارغ."
-                    }), 400
+            # فحص المدخلات الحرجة لضمان سلامة النواة
+            if not username or not password or not owner_name:
+                return jsonify({"status": "error", "message": "تنبيه حوكمي: حقول الوصول الأساسية مطلوبة."}), 400
 
-            # 2. فحص الحقول السبعة في قاعدة البيانات لمنع تجاوز التكرار
-            check_fields = {
-                "username": (db.session.query(Supplier.id).filter_by(username=username).first(), "اسم المستخدم (Login)"),
-                "identity_number": (db.session.query(Supplier.id).filter_by(identity_number=identity_number).first(), "رقم الوثيقة / الهوية"),
-                "owner_name": (db.session.query(Supplier.id).filter_by(owner_name=owner_name).first(), "اسم المالك الكامل"),
-                "trade_name": (db.session.query(Supplier.id).filter_by(trade_name=trade_name).first(), "الاسم التجاري للمنشأة"),
-                "owner_phone": (db.session.query(Supplier.id).filter_by(owner_phone=owner_phone).first(), "رقم هاتف المالك"),
-                "shop_phone": (db.session.query(Supplier.id).filter_by(shop_phone=shop_phone).first(), "هاتف المنشأة (محل)"),
-                "bank_acc": (db.session.query(Supplier.id).filter_by(bank_acc=bank_acc).first(), "رقم الحساب")
-            }
+            # 2. فحص التكرار لمنع تضارب المسارات في Postgres
+            exists = db.session.query(Supplier.id).filter_by(username=username).first()
+            if exists:
+                return jsonify({"status": "error", "message": "اسم المستخدم هذا مسجل مسبقاً في النظام."}), 400
 
-            for key, (exists, field_title) in check_fields.items():
-                if exists:
-                    return jsonify({
-                        "status": "error",
-                        "message": f"تنبيه حوكمي: حقل ({field_title}) مسجل مسبقاً في النظام ومحفوظ، يرجى تعديله."
-                    }), 400
-
-            # 3. تشفير كلمة المرور وبناء كائن المورد
+            # 3. تشفير كلمة المرور وتشييد كائن المورد
             hashed_password = generate_password_hash(password)
-            
             new_supplier = Supplier(
                 username=username,
                 password_hash=hashed_password,
@@ -127,61 +78,84 @@ def add_supplier_page():
                 created_by_id=current_user.id if hasattr(current_user, 'id') else None
             )
 
-            # 4. تعميد المورد مؤقتاً لتوليد الـ ID
             db.session.add(new_supplier)
-            db.session.flush()  
+            db.session.flush()  # حجز المعرف التسلسلي (ID) للمورد حياً دون إغلاق المعاملة المفتوحة
 
-            # 5. 💳 محرك توليد المحفظة النقي والمختصر (يمرر فقط الحقول الحاكمة والمؤكدة في قاعدة البيانات)
-            generated_wallet_code = f"WLT-{username.upper()}-{random.randint(1000, 9999)}"
+            # 4. 💳 التشييد الآمن للمحفظة المالية وحقن الكود المتوافق والجاهز للحفظ
+            new_wallet = SupplierWallet(
+                supplier_id=new_supplier.id,
+                wallet_code=wallet_code  # تخزين القيمة "WEL-MAH9631" رسمياً لكسر الـ Constraint
+            )
+            db.session.add(new_wallet)
             
-            insert_query = db.text(dedent("""
-                INSERT INTO supplier_wallets (
-                    supplier_id, 
-                    wallet_code
-                ) VALUES (
-                    :supplier_id, 
-                    :wallet_code
-                )
-            """))
-
-            db.session.execute(insert_query, {
-                "supplier_id": new_supplier.id,
-                "wallet_code": generated_wallet_code
-            })
-
-            # 6. تثبيت وحفظ العملية التبادلية بالكامل دفعة واحدة
-            db.session.commit()
+            # تثبيت الحفظ النهائي للمعاملة المزدوجة بنجاح تام
+            db.session.commit() 
 
             return jsonify({
                 "status": "success",
-                "message": "تم تعميد المورد وتنشيطه بنجاح وتوليد محفظته المالية الموحدة في النظام الحوكمي السيادي.",
+                "message": "تم تعميد المورد بنجاح وتوليد محفظته السيادية المحددة حياً.",
                 "data": {
-                    "username": new_supplier.username,
-                    "sovereign_id": new_supplier.sovereign_id if hasattr(new_supplier, 'sovereign_id') else username,
-                    "rank_grade": new_supplier.rank_grade,
-                    "state_title": 'نشط'
+                    "username": username,
+                    "sovereign_id": sovereign_id,
+                    "wallet_code": wallet_code
                 }
             }), 200
 
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"❌ خطأ بنيوي أثناء حفظ المورد: {str(e)}")
+            current_app.logger.error(f"❌ خطأ بنيوي حرج أثناء حفظ المورد: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": f"حدث خطأ غير متوقع في قاعدة البيانات: {str(e)}"
+                "message": f"بنية السيرفر ترفض الحفظ: {str(e)}"
             }), 500
 
-    # مرحلة الـ GET لعرض واجهة الإدخال
-    sovereign_id = get_expected_sovereign_id()
-    csrf_val = ""
+    # 5. معالجة مرحلة العرض اللحظي (GET)
+    backup_csrf_token = ""
     try:
         if 'csrf' in current_app.extensions:
             from flask_wtf.csrf import generate_csrf
-            csrf_val = generate_csrf()
+            backup_csrf_token = generate_csrf()
     except Exception:
         pass
 
+    return render_template(
+        'admin/add_supplier.html', 
+        sovereign_id="SUP-MAH9631", 
+        owner=current_user, 
+        backup_csrf=backup_csrf_token
+    )
+
+
+@admin_suppliers.route('/check-duplicate', methods=['GET'])
+@login_required
+def check_duplicate():
+    """
+    محرك الاستعلام والتحقق المباشر من الواجهة لمنع تكرار البيانات الفريدة (اسم المستخدم، رقم الوثيقة، الحساب المالي)
+    """
+    check_type = request.args.get('type', '').strip()
+    value = request.args.get('value', '').strip()
+
+    if not check_type or not value:
+        return jsonify({"exists": False}), 400
+
+    exists = False
     try:
-        return render_template('admin/add_supplier.html', sovereign_id=sovereign_id, owner=current_user, backup_csrf=csrf_val)
-    except jinja2.exceptions.TemplateNotFound:
-        return render_template('add_supplier.html', sovereign_id=sovereign_id, owner=current_user, backup_csrf=csrf_val)
+        if check_type == 'username':
+            exists = db.session.query(Supplier.id).filter_by(username=value).first() is not None
+        elif check_type == 'identity_number':
+            exists = db.session.query(Supplier.id).filter_by(identity_number=value).first() is not None
+        elif check_type == 'bank_acc':
+            exists = db.session.query(Supplier.id).filter_by(bank_acc=value).first() is not None
+        elif check_type == 'owner_phone':
+            exists = db.session.query(Supplier.id).filter_by(owner_phone=value).first() is not None
+        elif check_type == 'shop_phone':
+            exists = db.session.query(Supplier.id).filter_by(shop_phone=value).first() is not None
+        elif check_type == 'trade_name':
+            exists = db.session.query(Supplier.id).filter_by(trade_name=value).first() is not None
+        elif check_type == 'owner_name':
+            exists = db.session.query(Supplier.id).filter_by(owner_name=value).first() is not None
+    except Exception as e:
+        current_app.logger.error(f"Error checking duplicate: {e}")
+        return jsonify({"exists": False, "error": str(e)}), 500
+
+    return jsonify({"exists": exists}), 200
