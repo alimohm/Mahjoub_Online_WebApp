@@ -17,25 +17,25 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
 
-    # 2. تسجيل البلوبرينتس (الترتيب هنا يمنع الانهيار)
+    # 2. تسجيل البلوبرينتس باستيراد آمن (Local Imports) لمنع الانهيار
     from apps.auth_portal import auth_blueprint
-    from apps.admin_dashboard.routes import admin_dashboard
-    from apps.add_supplier.routes import admin_suppliers_bp
-    from apps.wallet.routes import admin_wallet
-
-    # تسجيل المسارات مع تثبيت الاسم (name) لتطابق الـ url_for في القوالب
     app.register_blueprint(auth_blueprint, url_prefix='/auth', name='auth_portal')
+
+    from apps.admin_dashboard.routes import admin_dashboard
     app.register_blueprint(admin_dashboard, url_prefix='/admin', name='admin_dashboard')
+
+    from apps.add_supplier.routes import admin_suppliers_bp
     app.register_blueprint(admin_suppliers_bp, url_prefix='/admin', name='add_supplier')
+
+    # استيراد وتسجيل المحفظة بطريقة لا تسبب كسر الإقلاع
+    from apps.wallet.routes import admin_wallet
     app.register_blueprint(admin_wallet, url_prefix='/admin', name='admin_wallet')
 
-    # 3. سياق التطبيق لتهيئة النماذج (Models) وقاعدة البيانات
+    # 3. سياق التطبيق لتهيئة النماذج وقاعدة البيانات
     with app.app_context():
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import Wallet
-        
-        # إنشاء الجداول إذا لم تكن موجودة
         db.create_all()
 
     # 4. إعدادات تسجيل الدخول
