@@ -10,11 +10,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 template_path = os.path.join(current_dir, 'templates')
 
 # 2. إنشاء البلوبرينت المركزي للوحة التحكم
-# تم تثبيت الاسم والامتثال للمصنع المركزي في النواة لمنع التعارض الدائري
-admin_dashboard_blueprint = Blueprint(
+# تم توحيد الاسم ليصبح 'admin_dashboard' ليتطابق مع الـ url_for في القوالب ومع النواة
+admin_dashboard = Blueprint(
     'admin_dashboard', 
     __name__, 
-    template_folder=template_path
+    template_folder='templates'
 )
 
 # 3. استيراد المسارات (Routes) بشكل متأخر وآمن لحماية العزل التام
