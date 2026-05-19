@@ -61,6 +61,8 @@ def check_duplicate():
         exists = db.session.query(Supplier.query.filter_by(trade_name=value).exists()).scalar()
     elif check_type == 'owner_phone':
         exists = db.session.query(Supplier.query.filter_by(owner_phone=value).exists()).scalar()
+    elif check_type == 'shop_phone':  # 🛡️ الحماية الجديدة المضافة لمنع تكرار هاتف المنشأة
+        exists = db.session.query(Supplier.query.filter_by(shop_phone=value).exists()).scalar()
     elif check_type == 'bank_acc':
         exists = db.session.query(Supplier.query.filter_by(bank_acc=value).exists()).scalar()
 
@@ -113,10 +115,12 @@ def add_supplier_submit():
                 file.save(os.path.join(upload_folder, unique_filename))
                 identity_image_path = os.path.join(upload_folder, unique_filename)
 
-        # 4. الفحص الاحترازي
-        check_dup_username = Supplier.query.filter_by(username=username).first()
-        if check_dup_username:
+        # 4. الفحص الاحترازي السحابي لمنع التكرار قبل محاولة الحفظ وضمان سلامة المحرك
+        if Supplier.query.filter_by(username=username).first():
             return jsonify({'status': 'error', 'message': 'اسم المستخدم معتمد مسبقاً في النظام لحساب آخر.'}), 400
+            
+        if Supplier.query.filter_by(shop_phone=shop_phone).first():
+            return jsonify({'status': 'error', 'message': f'خطأ: رقم هاتف المنشأة ({shop_phone}) مسجل مسبقاً لمورد آخر.'}), 400
 
         # تشفير كلمة المرور لتطابق حقل password_hash
         hashed_pwd = generate_password_hash(password)
