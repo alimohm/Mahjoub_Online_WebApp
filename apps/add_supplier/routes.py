@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 # 🎯 التعديل الحاسم لكسر الـ Circular Import والتوافق مع بنية النواة الجديدة:
 from apps import db 
 from apps.models.supplier_db import Supplier
-from apps.models.wallet_db import SupplierWallet  # تم تعديل الاسم ليطابق اسم الموديل في قاعدة البيانات 'supplier_wallets'
+from apps.models.wallet_db import SupplierWallet  # مطابقة اسم الموديل الفعلي لجدول 'supplier_wallets'
 
 # تعميد البلوبرينت بالاسم المطابق تماماً لما تم استدعاؤه في الـ __init__.py
 admin_suppliers_bp = Blueprint('add_supplier', __name__, template_folder='templates')
@@ -24,15 +24,18 @@ def allowed_file(filename):
 def generate_next_sequence_codes():
     """
     دالة سيادية لحساب التسلسل القادم ديناميكياً بناءً على آخر مورد تم تعميده في النظام.
-    تنتج كود مخصص للمنصة مثل: SUP-MAH9631
+    تضمن قراءة السجلات السابقة وإكمال التسلسل الرقمي تصاعدياً دون تكرار.
     """
     try:
+        # جلب آخر مورد مسجل في قاعدة البيانات للاتكاء على تسلسله
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         if last_supplier and last_supplier.sovereign_id:
+            # استخراج الأرقام فقط من المعرف السيادي (مثال: SUP-MAH9631 يعيد 9631)
             match = re.search(r'\d+', last_supplier.sovereign_id)
             if match:
                 next_num = int(match.group()) + 1
                 return f"SUP-MAH{next_num}"
+        # في حال لم يتم العثور على سجلات (كحالة احتياطية صفرية)
         return "SUP-MAH9631"
     except Exception as e:
         current_app.logger.error(f"❌ خطأ أثناء توليد التسلسل السيادي: {str(e)}")
@@ -98,7 +101,7 @@ def add_supplier_submit():
         bank_acc = request.form.get('bank_acc', '').strip()
         activity_type = request.form.get('activity_type')
 
-        # 2. توليد المعرفات السيادية والمالية المغلقة لمنع تضارب الجلسات السحابية
+        # 2. توليد المعرفات السيادية والمالية المغلقة بناءً على السجل الأخير في قاعدة البيانات
         final_sovereign_id = generate_next_sequence_codes()
         final_wallet_code = final_sovereign_id.replace("SUP-", "WEL-", 1)
 
@@ -117,7 +120,7 @@ def add_supplier_submit():
                 file.save(os.path.join(upload_folder, unique_filename))
                 identity_image_path = os.path.join(upload_folder, unique_filename)
 
-        # 4. فحص احترازي نهائي على السيرفر قبل الضخ لضمان سلامة البيانات المعمدة
+        # 4. فحص احترازي نهائي على السيرفر قبل الضخ لضمان سلامة البيانات المعمدة وعدم التكرار
         check_dup_username = Supplier.query.filter_by(username=username).first()
         if check_dup_username:
             return jsonify({'status': 'error', 'message': 'اسم المستخدم معتمد مسبقاً في النظام لحساب آخر.'}), 400
@@ -146,11 +149,11 @@ def add_supplier_submit():
         )
         
         db.session.add(new_supplier)
-        db.session.flush()  # حجز الكيان لاستخراج المعرف الفريد وتأمين عملية الربط المالي
+        db.session.flush()  # حجز الكيان لاستخراج المعرف الفريد وتأمين عملية الربط المالي الفوري
 
-        # 6. تعميد وإنشاء المحفظة التابعة المرتبطة ماليًا بالمورد الجديد (SupplierWallet)
+        # 6. تعميد وإنشاء المحفظة التابعة المرتبطة ماليًا بالمورد الجديد عبر الـ sovereign_id
         new_wallet = SupplierWallet(
-            supplier_id=final_sovereign_id,  # تم الربط عبر الـ sovereign_id بناءً على تعديلات التوافق بالنواة
+            supplier_id=final_sovereign_id,  # الاعتماد المباشر على الربط النصي الحوكمي الجديد
             wallet_code=final_wallet_code,
             status='نشطة'
         )
@@ -159,7 +162,7 @@ def add_supplier_submit():
         # إنهاء المعاملة وحفظ البيانات بشكل قطعي وثابت سحابياً
         db.session.commit()
 
-        # 7. الاستجابة بالـ JSON المتوافق تماماً مع ميكانيكية المودال لإتمام النسخ بنجاح كما بالصورة
+        # 7. الاستجابة بالـ JSON المتوافق تماماً مع ميكانيكية المودال لإتمام النسخ بنجاح
         return jsonify({
             'status': 'success',
             'message': 'تم تعميد المورد بنجاح في قاعدة البيانات السيادية.',
