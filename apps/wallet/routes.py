@@ -13,6 +13,8 @@ try:
     import apps.models.wallet_db as w_model
     if hasattr(w_model, 'WalletTransaction'):
         WalletTransaction = getattr(w_model, 'WalletTransaction')
+    elif hasattr(w_model, 'WalletTransactions'):
+        WalletTransaction = getattr(w_model, 'WalletTransactions')
 except Exception:
     pass
 
@@ -25,7 +27,7 @@ def overview():
         flash('غير مسموح لك بامتلاك صلاحية دخول الفضاء المالي.', 'danger')
         return redirect(url_for('admin_dashboard.dashboard_home'))
 
-    # جلب جميع المحافظ
+    # جلب جميع المحافظ مع ربط المورد (استخدام Outerjoin لتفادي أي أخطاء إذا كانت المحفظة بدون مورد)
     wallets = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.sovereign_id).all()
     
     # حساب الإجماليات برمجياً بناءً على خصائص الـ Properties في الموديل
@@ -48,6 +50,7 @@ def search_api():
     results = []
 
     try:
+        # البحث باستخدام الربط على المعرف السيادي
         query = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.sovereign_id)
         if search_query:
             query = query.filter(
@@ -114,11 +117,11 @@ def adjust_balance():
                 transaction_type=action_type,
                 currency=currency,
                 amount=amount,
-                description=f"تعديل إداري سيادي: {action_type}"
+                description=f"تعديل إداري سيادي: {action_type} بمبلغ {amount} {currency}"
             ))
 
         db.session.commit()
-        flash(f'تم تنفيذ الفرمان المالي بنجاح.', 'success')
+        flash(f'تم تنفيذ الفرمان المالي بنجاح على محفظة {wallet.wallet_code}.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'عطل في التنفيذ: {e}', 'danger')
