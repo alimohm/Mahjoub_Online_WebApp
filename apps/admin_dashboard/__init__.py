@@ -1,25 +1,34 @@
 # coding: utf-8
-# 🛡️ وحدة تهيئة لوحة التحكم - محجوب أونلاين 2026
+from flask import Blueprint, render_template
+from flask_login import login_required, current_user
+from apps.models.supplier_db import Supplier
 
-from flask import Blueprint
-import os
-import logging
+# تعريف الـ Blueprint باسم 'admin_dashboard' ليتوافق مع الـ url_for في القوالب
+admin_dashboard = Blueprint('admin_dashboard', __name__, template_folder='templates')
 
-# 1. تحديد المسارات المطلقة لضمان الاستقرار في بيئة Linux (Railway)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-template_path = os.path.join(current_dir, 'templates')
+@admin_dashboard.route('/dashboard', methods=['GET'])
+@login_required
+def dashboard_home():
+    """
+    مركز القيادة السيادي
+    """
+    total_suppliers = Supplier.query.count()
+    stats = {
+        'total_suppliers': total_suppliers,
+        'active_orders': 0,
+        'system_health': '100% مستقر'
+    }
+    return render_template('admin/dashboard_content.html', 
+                           current_user=current_user, 
+                           stats=stats)
 
-# 2. إنشاء البلوبرينت المركزي للوحة التحكم
-# تم توحيد الاسم ليصبح 'admin_dashboard' ليتطابق مع الـ url_for في القوالب ومع النواة
-admin_dashboard = Blueprint(
-    'admin_dashboard', 
-    __name__, 
-    template_folder='templates'
-)
+@admin_dashboard.route('/settings', methods=['GET'])
+@login_required
+def system_settings():
+    return render_template('admin/settings.html', current_user=current_user)
 
-# 3. استيراد المسارات (Routes) بشكل متأخر وآمن لحماية العزل التام
-try:
-    from . import routes
-    logging.info("✅ تم ربط محرك لوحة التحكم بنجاح وعمّدت المسارات.")
-except ImportError as e:
-    logging.error(f"⚠️ خطأ حرج: تعذر تحميل مسارات لوحة التحكم داخلياً: {str(e)}")
+@admin_dashboard.route('/suppliers/list', methods=['GET'])
+@login_required
+def list_suppliers():
+    suppliers = Supplier.query.all()
+    return render_template('admin/suppliers.html', suppliers=suppliers)
