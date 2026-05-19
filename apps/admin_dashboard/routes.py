@@ -1,16 +1,15 @@
 # coding: utf-8
-from flask import Blueprint, render_template
+from flask import render_template, abort
 from flask_login import login_required, current_user
 from apps.models.supplier_db import Supplier
-
-# 🎯 تعريف الـ Blueprint بالاسم 'admin_dashboard' (هذا الاسم هو مفتاح الحل للـ BuildError)
-admin_dashboard = Blueprint('admin_dashboard', __name__, template_folder='templates')
+# نقوم باستيراد admin_dashboard من ملف __init__ الخاص بالمجلد نفسه
+from apps.admin_dashboard import admin_dashboard
 
 @admin_dashboard.route('/dashboard', methods=['GET'])
 @login_required
 def dashboard_home():
     """
-    مركز القيادة السيادي
+    مركز القيادة السيادي - المسار: /admin/dashboard
     """
     try:
         # جلب البيانات
@@ -22,20 +21,27 @@ def dashboard_home():
             'system_health': '100% مستقر'
         }
         
-        # التأكد من المسار الصحيح للملف في المجلد
         return render_template('admin/dashboard_content.html', 
                                current_user=current_user, 
                                stats=stats)
     except Exception as e:
-        return f"خطأ في تحميل لوحة التحكم: {str(e)}", 500
+        # طباعة الخطأ في السجلات للمساعدة في التشخيص
+        print(f"Error in dashboard_home: {e}")
+        return f"خطأ في تحميل مركز القيادة: {str(e)}", 500
 
 @admin_dashboard.route('/settings', methods=['GET'])
 @login_required
 def system_settings():
+    """
+    إعدادات السيادة
+    """
     return render_template('admin/settings.html', current_user=current_user)
 
 @admin_dashboard.route('/suppliers/list', methods=['GET'])
 @login_required
 def list_suppliers():
+    """
+    سجل الموردين
+    """
     suppliers = Supplier.query.all()
     return render_template('admin/suppliers.html', suppliers=suppliers)
