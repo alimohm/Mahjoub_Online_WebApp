@@ -3,23 +3,16 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import func
 from apps import db
 from apps.models.supplier_db import Supplier
+from apps.models.wallet_db import Wallet
 
-try:
-    from apps.models.wallet_db import Wallet
-except ImportError:
-    class Wallet(object):
-        query = None
-
+# 🛡️ استدعاء آمن للموديل
 WalletTransaction = None
 try:
     import apps.models.wallet_db as w_model
     if hasattr(w_model, 'WalletTransaction'):
         WalletTransaction = getattr(w_model, 'WalletTransaction')
-    elif hasattr(w_model, 'WalletTransactions'):
-        WalletTransaction = getattr(w_model, 'WalletTransactions')
 except Exception:
     pass
 
@@ -32,27 +25,15 @@ def overview():
         flash('غير مسموح لك بامتلاك صلاحية دخول الفضاء المالي.', 'danger')
         return redirect(url_for('admin_dashboard.dashboard_home'))
 
-    # 1. حساب الإجماليات بشكل منفصل لتجنب أي تعارض
-    totals = {'total_yer': 0, 'total_sar': 0, 'total_usd': 0}
-    try:
-        if Wallet.query is not None:
-            res = db.session.query(
-                func.sum(Wallet.yer_balance),
-                func.sum(Wallet.sar_balance),
-                func.sum(Wallet.usd_balance)
-            ).first()
-            if res:
-                totals = {'total_yer': res[0] or 0, 'total_sar': res[1] or 0, 'total_usd': res[2] or 0}
-    except Exception as e:
-        print(f"تنبيه: تعذر حساب الإجماليات - {e}")
-
-    # 2. جلب المحافظ بـ Outer Join لضمان عدم توقف النظام حتى لو بيانات المورد ناقصة
-    wallets = []
-    try:
-        if Wallet.query is not None:
-            wallets = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.id).all()
-    except Exception as e:
-        print(f"تنبيه: تعذر جلب المحافظ - {e}")
+    # جلب جميع المحافظ
+    wallets = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.sovereign_id).all()
+    
+    # حساب الإجماليات برمجياً بناءً على خصائص الـ Properties في الموديل
+    totals = {
+        'total_yer': sum(w.yer_available for w in wallets),
+        'total_sar': sum(w.sar_available for w in wallets),
+        'total_usd': sum(w.usd_available for w in wallets)
+    }
 
     return render_template('admin/overview.html', wallets=wallets, totals=totals)
 
@@ -66,11 +47,8 @@ def search_api():
     search_query = request.args.get('query', '').strip()
     results = []
 
-    if Wallet.query is None:
-        return jsonify({"status": "success", "wallets": []})
-
     try:
-        query = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.id)
+        query = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.sovereign_id)
         if search_query:
             query = query.filter(
                 (Supplier.trade_name.like(f'%{search_query}%')) |
@@ -83,10 +61,10 @@ def search_api():
                 "id": w.id,
                 "wallet_code": w.wallet_code,
                 "trade_name": w.supplier.trade_name if w.supplier else 'غير معرف',
-                "sovereign_id": w.supplier.sovereign_id if w.supplier else '-',
-                "yer_balance": float(getattr(w, 'yer_balance', 0.0)),
-                "sar_balance": float(getattr(w, 'sar_balance', 0.0)),
-                "usd_balance": float(getattr(w, 'usd_balance', 0.0))
+                "sovereign_id": w.supplier_id,
+                "yer_balance": float(w.yer_available),
+                "sar_balance": float(w.sar_available),
+                "usd_balance": float(w.usd_available)
             })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -98,7 +76,7 @@ def search_api():
 @login_required
 def adjust_balance():
     if current_user.role != 'Owner':
-        flash('هذا الإجراء يتطلب سلطة المالك.', 'danger')
+        flash('هذا الإجراء يتطلب سلطة المالك السيادية.', 'danger')
         return redirect(url_for('admin_wallet.overview'))
 
     wallet_id = request.form.get('wallet_id')
@@ -119,12 +97,16 @@ def adjust_balance():
             flash('المحفظة غير موجودة.', 'danger')
             return redirect(url_for('admin_wallet.overview'))
 
+        # التعديل بناءً على الأعمدة الفعلية (Total للزيادة، Withdrawn للخصم)
         if currency == 'YER':
-            wallet.yer_balance = (wallet.yer_balance + amount) if action_type == 'deposit' else (wallet.yer_balance - amount)
+            if action_type == 'deposit': wallet.yer_total += amount
+            else: wallet.yer_withdrawn += amount
         elif currency == 'SAR':
-            wallet.sar_balance = (wallet.sar_balance + amount) if action_type == 'deposit' else (wallet.sar_balance - amount)
+            if action_type == 'deposit': wallet.sar_total += amount
+            else: wallet.sar_withdrawn += amount
         elif currency == 'USD':
-            wallet.usd_balance = (wallet.usd_balance + amount) if action_type == 'deposit' else (wallet.usd_balance - amount)
+            if action_type == 'deposit': wallet.usd_total += amount
+            else: wallet.usd_withdrawn += amount
         
         if WalletTransaction:
             db.session.add(WalletTransaction(
@@ -136,7 +118,7 @@ def adjust_balance():
             ))
 
         db.session.commit()
-        flash(f'تم تنفيذ الفرمان المالي للمحفظة {wallet.wallet_code}.', 'success')
+        flash(f'تم تنفيذ الفرمان المالي بنجاح.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'عطل في التنفيذ: {e}', 'danger')
