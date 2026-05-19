@@ -6,6 +6,7 @@ import uuid
 import re
 from flask import Blueprint, request, jsonify, render_template, url_for, current_app
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash  # استيراد مكتبة التشفير الآمنة لحماية النظام
 
 # 🎯 التعديل الحاسم لكسر الـ Circular Import والتوافق التام مع بوابة النماذج الموحدة:
 from apps import db 
@@ -89,7 +90,9 @@ def add_supplier_submit():
         owner_name = request.form.get('owner_name', '').strip()
         trade_name = request.form.get('trade_name', '').strip()
         owner_phone = request.form.get('owner_phone', '').strip()
-        shop_phone = request.form.get('shop_phone', '').strip() or None
+        
+        # تصحيح حقل هاتف المحل ليتوافق مع شرط قاعدة البيانات (nullable=False) ولا يرسل القيمة None فارغة
+        shop_phone = request.form.get('shop_phone', '').strip() or owner_phone
         
         province = request.form.get('province')
         district = request.form.get('district')
@@ -124,12 +127,15 @@ def add_supplier_submit():
         if check_dup_username:
             return jsonify({'status': 'error', 'message': 'اسم المستخدم معتمد مسبقاً في النظام لحساب آخر.'}), 400
 
+        # التعديل الحاسم لتوليد الهاش المتوافق مع حقل password_hash
+        hashed_pwd = generate_password_hash(password)
+
         # 5. بناء السجل وضخه لقاعدة البيانات السيادية
         new_supplier = Supplier(
             sovereign_id=final_sovereign_id,
             wallet_code=final_wallet_code,
             username=username,
-            password=password,  
+            password_hash=hashed_pwd,  # تم التعديل إلى الاسم الدقيق المسجل في الـ Model مع التشفير الآمن
             identity_type=identity_type,
             identity_number=identity_number,
             identity_image=identity_image_path,
@@ -144,7 +150,7 @@ def add_supplier_submit():
             bank_name=bank_name,
             bank_acc=bank_acc,
             activity_type=activity_type,
-            is_active=True
+            status='active'  # تم تعديل الحالة لتبدأ نشطة مباشرة عند التعميد من لوحة التحكم الإدارية
         )
         
         db.session.add(new_supplier)
@@ -164,7 +170,7 @@ def add_supplier_submit():
         # 7. الاستجابة بالـ JSON المتوافق تماماً مع ميكانيكية المودال لإتمام النسخ بنجاح
         return jsonify({
             'status': 'success',
-            'message': 'تم تعميد المورد بنجاح في قاعدة البيانات السيادية وصناعة المحفظة الموحدة.',
+            'message': 'تم تعميد المورد بنجاح في قاعدة البيانات السيادية وصناعة المحفظة الموحدة بنجاح.',
             'data': {
                 'sovereign_id': final_sovereign_id,
                 'wallet_code': final_wallet_code
