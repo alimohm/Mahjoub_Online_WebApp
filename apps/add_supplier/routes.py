@@ -6,47 +6,39 @@ import uuid
 import re
 from flask import Blueprint, request, jsonify, render_template, url_for, current_app
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash  # 🔐 استيراد محرك التشفير السيادي لحماية النظام
+from werkzeug.security import generate_password_hash
 
-# 🎯 التعديل الحاسم لكسر الـ Circular Import والتوافق التام مع بوابة النماذج الموحدة:
+# استيراد كائن db فقط في الأعلى لمنع التعارض الدائري مع المحرك
 from apps import db 
-from apps.models import Supplier, Wallet  # الاستيراد المباشر والآمن بعد ضبط ملف الـ __init__.py المركزي
 
-# تعميد البلوبرينت بالاسم المطابق تماماً لما تم استدعاؤه في الـ __init__.py للتطبيق
 admin_suppliers_bp = Blueprint('add_supplier', __name__, template_folder='templates')
 
-# الامتدادات المسموح بها لصور الوثائق والتأمين الحوكمي
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def generate_next_sequence_codes():
-    """
-    دالة سيادية لحساب التسلسل القادم ديناميكياً بناءً على آخر مورد تم تعميده في النظام.
-    تضمن قراءة السجلات السابقة وإكمال التسلسل الرقمي تصاعدياً دون تكرار.
-    """
+    # استيراد محلي داخل الدالة لكسر الـ Circular Import تماماً
+    from apps.models.supplier_db import Supplier
     try:
-        # جلب آخر مورد مسجل في قاعدة البيانات للاتكاء على تسلسله
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         if last_supplier and last_supplier.sovereign_id:
-            # استخراج الأرقام فقط من المعرف السيادي (مثال: SUP-MAH9631 يعيد 9631)
             match = re.search(r'\d+', last_supplier.sovereign_id)
             if match:
                 next_num = int(match.group()) + 1
                 return f"SUP-MAH{next_num}"
-        # في حال لم يتم العثور على سجلات (كحالة احتياطية صفرية)
         return "SUP-MAH9631"
     except Exception as e:
-        current_app.logger.error(f"❌ خطأ أثناء توليد التسلسل السيادي: {str(e)}")
+        current_app.logger.error(f"❌ خطأ أثناء توليد التسلسل: {str(e)}")
         return "SUP-MAH9631"
 
 
 @admin_suppliers_bp.route('/admin/suppliers/check-duplicate', methods=['GET'])
 def check_duplicate():
-    """
-    نقطة الوصول اللحظية (Debounce Check) لمنع تكرار البيانات الحساسة وقراءة التسلسل التالي للواجهة.
-    """
+    # استيراد محلي آمن داخل المسار
+    from apps.models.supplier_db import Supplier
+    
     check_type = request.args.get('type')
     value = request.args.get('value', '').strip()
 
@@ -77,11 +69,12 @@ def check_duplicate():
 
 @admin_suppliers_bp.route('/admin/suppliers/add', methods=['POST'])
 def add_supplier_submit():
-    """
-    استقبال ومعالجة نموذج تعميد المورد وإصدار المحفظة وحفظ الوثائق سحابياً.
-    """
+    # استيراد محلي للموديلات هنا لحل مشكلة المحرك وفصل السيرفر بشكل قطعي
+    from apps.models.supplier_db import Supplier
+    from apps.models.wallet_db import Wallet
+
     try:
-        # 1. استخراج البيانات من الواجهة الـ HTML
+        # 1. استخراج البيانات
         username = request.form.get('username', '').strip()
         password = request.form.get('password')  
         identity_type = request.form.get('identity_type')
@@ -90,8 +83,6 @@ def add_supplier_submit():
         owner_name = request.form.get('owner_name', '').strip()
         trade_name = request.form.get('trade_name', '').strip()
         owner_phone = request.form.get('owner_phone', '').strip()
-        
-        # 🛡️ تأمين حقل هاتف المحل الإجباري (nullable=False) لكي لا يمرر بقيمة None تسبب خطأ قاعدة البيانات
         shop_phone = request.form.get('shop_phone', '').strip() or owner_phone
         
         province = request.form.get('province')
@@ -103,11 +94,11 @@ def add_supplier_submit():
         bank_acc = request.form.get('bank_acc', '').strip()
         activity_type = request.form.get('activity_type')
 
-        # 2. توليد المعرفات السيادية والمالية المغلقة بناءً على السجل الأخير في قاعدة البيانات
+        # 2. توليد المعرفات
         final_sovereign_id = generate_next_sequence_codes()
         final_wallet_code = final_sovereign_id.replace("SUP-", "WEL-", 1)
 
-        # 3. معالجة وحفظ صورة وثيقة الهوية الرقمية
+        # 3. معالجة الصورة
         identity_image_path = None
         if 'identity_image' in request.files:
             file = request.files['identity_image']
@@ -122,20 +113,20 @@ def add_supplier_submit():
                 file.save(os.path.join(upload_folder, unique_filename))
                 identity_image_path = os.path.join(upload_folder, unique_filename)
 
-        # 4. فحص احترازي نهائي على السيرفر قبل الضخ لضمان سلامة البيانات المعمدة وعدم التكرار
+        # 4. الفحص الاحترازي
         check_dup_username = Supplier.query.filter_by(username=username).first()
         if check_dup_username:
             return jsonify({'status': 'error', 'message': 'اسم المستخدم معتمد مسبقاً في النظام لحساب آخر.'}), 400
 
-        # 🔐 توليد الهاش الآمن المعتمد للتوافق مع حقل password_hash في الـ Model
+        # تشفير كلمة المرور لتطابق حقل password_hash
         hashed_pwd = generate_password_hash(password)
 
-        # 5. بناء السجل وضخه لقاعدة البيانات السيادية
+        # 5. بناء كائن المورد متوافقاً مع حقول الموديل الفعلي وبدون الحقل الخاطئ password
         new_supplier = Supplier(
             sovereign_id=final_sovereign_id,
             wallet_code=final_wallet_code,
             username=username,
-            password_hash=hashed_pwd,  # ✅ تصحيح اسم العمود إلى password_hash وإدخال القيمة المشفرة
+            password_hash=hashed_pwd, 
             identity_type=identity_type,
             identity_number=identity_number,
             identity_image=identity_image_path,
@@ -150,27 +141,25 @@ def add_supplier_submit():
             bank_name=bank_name,
             bank_acc=bank_acc,
             activity_type=activity_type,
-            status='active'  # جعل المورد نشطاً مباشرة للتمكين من النظام دون احتجاز 'pending'
+            status='active' 
         )
         
         db.session.add(new_supplier)
-        db.session.flush()  # حجز الكيان لاستخراج المعرف الفريد وتأمين عملية الربط المالي الفوري
+        db.session.flush()
 
-        # 6. تعميد وإنشاء المحفظة الموحدة التابعة المرتبطة ماليًا بالمورد الجديد عبر الـ sovereign_id
+        # 6. إنشاء المحفظة الموحدة
         new_wallet = Wallet(
-            supplier_id=final_sovereign_id,  # الاعتماد المباشر على كلاس Wallet الموحد والربط الحوكمي المستقر
+            supplier_id=final_sovereign_id,
             wallet_code=final_wallet_code,
             status='نشطة'
         )
         db.session.add(new_wallet)
         
-        # إنهاء المعاملة وحفظ البيانات بشكل قطعي وثابت سحابياً
         db.session.commit()
 
-        # 7. الاستجابة بالـ JSON المتوافق تماماً مع ميكانيكية المودال لإتمام النسخ بنجاح
         return jsonify({
             'status': 'success',
-            'message': 'تم تعميد المورد بنجاح في قاعدة البيانات السيادية وصناعة المحفظة الموحدة بنجاح.',
+            'message': 'تم تعميد المورد وصناعة المحفظة الموحدة بنجاح.',
             'data': {
                 'sovereign_id': final_sovereign_id,
                 'wallet_code': final_wallet_code
@@ -180,7 +169,7 @@ def add_supplier_submit():
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"❌ Sovereign Archive Error: {str(e)}")
+        current_app.logger.error(f"❌ خطأ في حفظ البيانات السحابية: {str(e)}")
         return jsonify({
             'status': 'error', 
             'message': f'فشل في حفظ البيانات السحابية: {str(e)}'
@@ -189,7 +178,4 @@ def add_supplier_submit():
 
 @admin_suppliers_bp.route('/admin/suppliers/list')
 def admin_suppliers_list():
-    """
-    عرض وأرشفة الموردين المعتمدين في النظام - المسار المتوافق مع المتصفح لحل الـ 404 والـ 500.
-    """
     return render_template('admin_suppliers_list.html')
