@@ -27,8 +27,8 @@ def overview():
         flash('غير مسموح لك بامتلاك صلاحية دخول الفضاء المالي.', 'danger')
         return redirect(url_for('admin_dashboard.dashboard_home'))
 
-    # جلب جميع المحافظ مع ربط المورد (استخدام Outerjoin لتفادي أي أخطاء إذا كانت المحفظة بدون مورد)
-    wallets = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.sovereign_id).all()
+    # جلب جميع المحافظ (بما أننا عرفنا relationship في الموديل، الربط سيكون سلساً)
+    wallets = Wallet.query.all()
     
     # حساب الإجماليات برمجياً بناءً على خصائص الـ Properties في الموديل
     totals = {
@@ -50,8 +50,9 @@ def search_api():
     results = []
 
     try:
-        # البحث باستخدام الربط على المعرف السيادي
+        # البحث باستخدام الربط على المعرف السيادي عبر relationship
         query = Wallet.query.outerjoin(Supplier, Wallet.supplier_id == Supplier.sovereign_id)
+        
         if search_query:
             query = query.filter(
                 (Supplier.trade_name.like(f'%{search_query}%')) |
@@ -100,7 +101,7 @@ def adjust_balance():
             flash('المحفظة غير موجودة.', 'danger')
             return redirect(url_for('admin_wallet.overview'))
 
-        # التعديل بناءً على الأعمدة الفعلية (Total للزيادة، Withdrawn للخصم)
+        # التعديل بناءً على الأعمدة الفعلية
         if currency == 'YER':
             if action_type == 'deposit': wallet.yer_total += amount
             else: wallet.yer_withdrawn += amount
@@ -121,7 +122,7 @@ def adjust_balance():
             ))
 
         db.session.commit()
-        flash(f'تم تنفيذ الفرمان المالي بنجاح على محفظة {wallet.wallet_code}.', 'success')
+        flash(f'تم تنفيذ الفرمان المالي بنجاح.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'عطل في التنفيذ: {e}', 'danger')
