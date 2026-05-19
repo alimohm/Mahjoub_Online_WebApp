@@ -26,11 +26,11 @@
         </div>
     </div>
 
-    <form id="addSupplierForm" method="POST" enctype="multipart/form-data" action="{{ endpoints.get('add_supplier', '/admin/suppliers/add') if endpoints else '/admin/suppliers/add' }}">
+    <form id="addSupplierForm" method="POST" enctype="multipart/form-data" action="{{ url_for('add_supplier.add_supplier_submit') }}">
         
         {% if csrf_token is defined %}
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        {% else %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if callable(csrf_token) else csrf_token }}">
+        {% elif backup_csrf is defined %}
             <input type="hidden" name="backup_csrf" value="{{ backup_csrf }}">
         {% endif %}
         
@@ -258,7 +258,7 @@ document.querySelectorAll('.validation-field').forEach(input => {
             switch(type) {
                 case 'name': 
                     isFormatValid = value.split(/\s+/).filter(word => word.length > 0).length >= 3; 
-                    break; // ✅ تم إصلاح الثغرة وحذف سطر الـ CSS الخاطئ هنا
+                    break;
                 case 'min3': 
                     isFormatValid = value.length >= 3; 
                     break;
@@ -312,11 +312,9 @@ function updateSubmitButtonState() {
     const submitBtn = document.getElementById('submitBtn');
     const hasErrors = document.querySelectorAll('.is-invalid').length > 0;
     
-    // حساب الحقول التي تحتوي على كلاس التحقق النشط والناجح
     const currentValidFields = document.querySelectorAll('.validation-field.is-valid').length;
     const requiredFieldsCount = 5; 
 
-    // التأكد من استيفاء جميع الحقول الأساسية وتكامل النموذج ميكانيكياً
     if (currentValidFields >= requiredFieldsCount && !hasErrors) {
         submitBtn.disabled = false;
     } else {
