@@ -1,4 +1,5 @@
 # coding: utf-8
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -15,36 +16,51 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
 
+    # 1. سياق النماذج والتطهير السيادي لقاعدة البيانات
     with app.app_context():
-        # استيراد النماذج (تم تصحيح الاستيراد لمنع الدائري)
-        from apps.models.admin_db import AdminUser
-        from apps.models.supplier_db import Supplier
-        from apps.models.wallet_db import Wallet
-        db.create_all()
+        import apps.models.admin_db
+        import apps.models.supplier_db
+        import apps.models.wallet_db
+        
+        try:
+            db.create_all()
+            # أوامر الـ SQL الخاصة بك كما هي تماماً
+            db.session.execute(db.text("ALTER TABLE supplier_wallets DROP CONSTRAINT IF EXISTS supplier_wallets_supplier_id_fkey;"))
+            db.session.execute(db.text("ALTER TABLE supplier_wallets ALTER COLUMN supplier_id TYPE VARCHAR(50);"))
+            db.session.execute(db.text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS wallet_code VARCHAR(50) UNIQUE;"))
+            db.session.execute(db.text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'نشطة';"))
+            db.session.execute(db.text("ALTER TABLE supplier_wallets DROP COLUMN IF EXISTS yer_available;"))
+            db.session.execute(db.text("ALTER TABLE supplier_wallets DROP COLUMN IF EXISTS sar_available;"))
+            db.session.execute(db.text("ALTER TABLE supplier_wallets DROP COLUMN IF EXISTS usd_available;"))
+            db.session.execute(db.text("""
+                ALTER TABLE supplier_wallets 
+                ADD CONSTRAINT supplier_wallets_supplier_id_fkey 
+                FOREIGN KEY (supplier_id) REFERENCES suppliers(sovereign_id);
+            """))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ تحذير في بناء الهيكل: {e}")
+        finally:
+            db.session.close()
 
+    # 2. الحماية
     login_manager.login_view = 'auth_portal.login'
-    
     @login_manager.user_loader
     def load_user(user_id):
         from apps.models.admin_db import AdminUser
         return AdminUser.query.get(int(user_id))
 
-    # استيراد البلوبرينتس
+    # 3. الاستيراد الآمن للمحركات (السر هنا)
     from apps.auth_portal import auth_blueprint
-    from apps.admin_dashboard.routes import admin_dashboard
+    from apps.admin_dashboard import admin_dashboard_blueprint
     from apps.add_supplier.routes import admin_suppliers_bp
     from apps.wallet.routes import admin_wallet
 
-    # تسجيل البلوبرينتس مع تحديد الأسماء (Names) لتطابق ما في الـ HTML والـ Routes
+    # 4. التسجيل المنظم (بدون تداخل)
     app.register_blueprint(auth_blueprint, url_prefix='/auth', name='auth_portal')
-    app.register_blueprint(admin_dashboard, url_prefix='/admin', name='admin_dashboard')
-    
-    # هنا تم ربط البلوبرينت بالاسم 'add_supplier' كما هو معرف في routes.py
+    app.register_blueprint(admin_dashboard_blueprint, url_prefix='/admin', name='admin_dashboard')
     app.register_blueprint(admin_suppliers_bp, url_prefix='/admin', name='add_supplier')
-    
     app.register_blueprint(admin_wallet, url_prefix='/admin', name='admin_wallet')
-
-    # طباعة تأكيدية في السجلات (اختياري للـ Debugging)
-    print("✅ تم ربط محرك الموردين بالاسم: add_supplier")
 
     return app
