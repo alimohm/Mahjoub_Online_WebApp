@@ -1,61 +1,39 @@
-# coding: utf-8
-# ⚙️ محرك لوحة التحكم السيادية - منصة محجوب أونلاين 2026
+{% extends "admin/admin_base.html" %}
 
-from flask import render_template
-from flask_login import login_required, current_user
-from . import admin_dashboard
-from apps.models.supplier_db import Supplier
-# استيراد نموذج المحفظة إذا كنت تحتاج لحساب الإجماليات من هناك
-from apps.models.wallet_db import SupplierWallet
-from sqlalchemy import func
-from apps import db
+{% block title %}حوكمة وفحص المحافظ | محجوب أونلاين{% endblock %}
 
-@admin_dashboard.route('/dashboard', methods=['GET'])
-@login_required
-def dashboard_home():
-    """
-    عرض لوحة القيادة (Dashboard) الرئيسية مع حساب إجماليات الخزائن.
-    """
-    try:
-        # حساب إحصائية شركاء النجاح
-        total_suppliers = Supplier.query.count()
+{% block header_title %}الفضاء المالي وحوكمة الخزائن{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="fas fa-info-circle me-2"></i> {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="row g-3 mb-4">
+        {% set cards = [
+            {'title': 'إجمالي الخزينة (YER)', 'val': totals.total_yer, 'bg': 'linear-gradient(135deg, #2e7d32, #1b5e20)', 'unit': '﷼'},
+            {'title': 'إجمالي الخزينة (SAR)', 'val': totals.total_sar, 'bg': 'linear-gradient(135deg, #e65100, #bf360c)', 'unit': 'ر.س'},
+            {'title': 'إجمالي الخزينة (USD)', 'val': totals.total_usd, 'bg': 'linear-gradient(135deg, #1565c0, #0d47a1)', 'unit': '$'}
+        ] %}
         
-        # حساب إجماليات المحافظ (افتراض أسماء أعمدة مشابهة لما في موديل المحفظة لديك)
-        # إذا كانت الأسماء تختلف، يرجى تعديلها لتطابق الموديل
-        totals = db.session.query(
-            func.sum(SupplierWallet.balance_yer).label('total_yer'),
-            func.sum(SupplierWallet.balance_sar).label('total_sar'),
-            func.sum(SupplierWallet.balance_usd).label('total_usd')
-        ).first()
-
-        # تجهيز البيانات للقالب
-        stats_data = {
-            'total_yer': totals.total_yer or 0,
-            'total_sar': totals.total_sar or 0,
-            'total_usd': totals.total_usd or 0
-        }
-        
-        return render_template('admin/dashboard_content.html', 
-                               current_user=current_user, 
-                               totals=stats_data,
-                               total_suppliers=total_suppliers)
-                               
-    except Exception as e:
-        return f"خطأ في تحميل مركز القيادة: {str(e)}", 500
-
-@admin_dashboard.route('/settings', methods=['GET'])
-@login_required
-def system_settings():
-    """
-    إعدادات النظام السيادية
-    """
-    return render_template('admin/settings.html', current_user=current_user)
-
-@admin_dashboard.route('/suppliers', methods=['GET'])
-@login_required
-def list_suppliers():
-    """
-    قائمة الموردين المعتمدين
-    """
-    suppliers = Supplier.query.all()
-    return render_template('admin/suppliers.html', suppliers=suppliers)
+        {% for card in cards %}
+        <div class="col-md-4">
+            <div class="card text-white shadow-sm" style="background: {{ card.bg }}; border-radius: 15px;">
+                <div class="card-body">
+                    <h6 class="text-white-50">{{ card.title }}</h6>
+                    <h3 class="fw-bold">{{ card.val }} <small class="fs-6">{{ card.unit }}</small></h3>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
