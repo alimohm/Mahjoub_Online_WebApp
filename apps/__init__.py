@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
 
+# تهيئة الإضافات الأساسية
 db = SQLAlchemy()
 login_manager = LoginManager()
 
@@ -19,16 +20,17 @@ def create_app():
     if not app.config.get('UPLOAD_FOLDER'):
         app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads', 'identities')
 
+    # تهيئة الإضافات داخل المصنع
     db.init_app(app)
     login_manager.init_app(app)
 
     with app.app_context():
-        # --- استدعاء الموديلات لضمان تسجيل الجداول ---
+        # --- استيراد الموديلات (يجب أن يتم هنا لضمان معرفة db بها) ---
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
-        # تم تعديل سطر الاستيراد هنا ليتطابق مع اسم الكلاس الجديد في wallet_db.py
         from apps.models.wallet_db import SupplierWallet
         
+        # إنشاء الجداول وتطبيق التعديلات البرمجية
         try:
             db.create_all()
             
@@ -47,7 +49,7 @@ def create_app():
                 try:
                     db.session.execute(db.text(cmd))
                 except Exception:
-                    pass 
+                    continue 
             
             db.session.commit()
             print("🚀 سيادة وحوكمة: تم إقرار البنية الرقمية للمحافظ بنجاح.")
@@ -55,6 +57,7 @@ def create_app():
             db.session.rollback()
             app.logger.error(f"❌ تعذر تحديث الجداول برمجياً: {str(e)}")
 
+    # إعدادات تسجيل الدخول
     login_manager.login_view = 'auth_portal.login'
     login_manager.login_message = 'يرجى إثبات الهوية الرقمية للوصول إلى المنطقة السيادية.'
     login_manager.login_message_category = 'warning'
@@ -73,8 +76,9 @@ def create_app():
     app.register_blueprint(auth_blueprint, url_prefix='/auth', name='auth_portal')
     app.register_blueprint(admin_dashboard, url_prefix='/admin', name='admin_dashboard')
     app.register_blueprint(admin_suppliers_bp, url_prefix='/', name='add_supplier')
-    app.register_blueprint(admin_wallet, url_prefix='/wallet', name='admin_wallet')
+    app.register_blueprint(admin_wallet, url_prefix='/admin/wallet', name='admin_wallet')
     
+    # معالجة الأخطاء السيادية
     @app.errorhandler(500)
     def internal_error(e):
         return f"حدث خطأ سيادي (500): {str(e)}", 500
