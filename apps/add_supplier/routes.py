@@ -34,7 +34,8 @@ def generate_next_sequence_codes():
         current_app.logger.error(f"❌ خطأ أثناء توليد التسلسل: {str(e)}")
         return "SUP-MAH9631"
 
-@admin_suppliers_bp.route('/admin/suppliers/check-duplicate', methods=['GET'])
+# تم تعديل المسارات لتكون نسبية (تم حذف /admin/suppliers ليتوافق مع الـ url_prefix في __init__.py)
+@admin_suppliers_bp.route('/check-duplicate', methods=['GET'])
 def check_duplicate():
     from apps.models.supplier_db import Supplier
     
@@ -55,13 +56,12 @@ def check_duplicate():
             exists = db.session.query(Supplier.query.filter_by(username=value).exists()).scalar()
         elif check_type == 'identity_number':
             exists = db.session.query(Supplier.query.filter_by(identity_number=value).exists()).scalar()
-        # إضافة باقي الفحوصات...
     except Exception:
         exists = False
         
     return jsonify({'exists': exists})
 
-@admin_suppliers_bp.route('/admin/suppliers/add', methods=['GET', 'POST'])
+@admin_suppliers_bp.route('/add', methods=['GET', 'POST'])
 def add_supplier_submit():
     if request.method == 'GET':
         return render_template('admin/add_supplier.html')
@@ -131,6 +131,6 @@ def add_supplier_submit():
         current_app.logger.error(f"❌ خطأ الحفظ: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@admin_suppliers_bp.route('/admin/suppliers/list')
+@admin_suppliers_bp.route('/list')
 def admin_suppliers_list():
     return render_template('admin_suppliers_list.html')
