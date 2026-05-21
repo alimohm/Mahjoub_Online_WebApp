@@ -17,14 +17,12 @@
 
         body { font-family: 'Cairo', sans-serif; background: #f0f2f5; margin: 0; display: flex; min-height: 100vh; }
 
-        /* الشريط الجانبي */
         .sidebar {
             width: var(--sidebar-width); background: linear-gradient(180deg, var(--royal-purple) 0%, var(--deep-black) 100%);
             height: 100vh; position: fixed; right: 0; top: 0; z-index: 1100; transition: var(--transition);
             display: flex; flex-direction: column; box-shadow: -5px 0 25px rgba(0,0,0,0.3);
         }
 
-        /* وضع الأيقونات للشاشات الصغيرة */
         @media (max-width: 992px) {
             .sidebar { width: var(--sidebar-mini); align-items: center; }
             .sidebar .nav-link span, .sidebar .sidebar-header h2, .sidebar .fa-chevron-left { display: none !important; }
@@ -60,8 +58,8 @@
                 <i class="fas fa-handshake ms-3"></i> <span>شركاء النجاح</span> <i class="fas fa-chevron-left ms-auto" id="supArr"></i>
             </button>
             <div class="dropdown-container" id="supDrp">
-                <a href="{{ url_for('add_supplier.add_supplier_submit') }}" class="nav-link small"><i class="fas fa-user-plus ms-2"></i> تعميد جديد</a>
-                <a href="{{ url_for('add_supplier.admin_suppliers_list') }}" class="nav-link small"><i class="fas fa-database ms-2"></i> سجل الموردين</a>
+                <a href="{{ url_for('add_supplier.add_supplier_route') }}" class="nav-link small"><i class="fas fa-user-plus ms-2"></i> تعميد جديد</a>
+                <a href="{{ url_for('admin_dashboard.list_suppliers') }}" class="nav-link small"><i class="fas fa-database ms-2"></i> سجل الموردين</a>
             </div>
 
             <a href="{{ url_for('admin_wallet.wallet_page') }}" class="nav-link"><i class="fas fa-wallet ms-3"></i> <span>الفضاء المالي</span></a>
