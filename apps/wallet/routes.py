@@ -1,17 +1,22 @@
 # coding: utf-8
+# 🏦 محرك الفضاء المالي والسيادة الرقمية - منصة محجوب أونلاين 2026
+
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required
-from apps import db # استيراد الـ db من المصنع المركزي
+from apps import db 
 from apps.models.wallet_db import SupplierWallet
 from apps.models.supplier_db import Supplier
 from sqlalchemy import func
 
-# تعريف الـ Blueprint (لا تقم بتحديد url_prefix هنا، اتركه للمصنع المركزي apps/__init__.py)
+# تعريف الـ Blueprint
 admin_wallet = Blueprint('admin_wallet', __name__, template_folder='templates')
 
-@admin_wallet.route('/overview')
+@admin_wallet.route('/wallet_page')
 @login_required
-def overview():
+def wallet_page():
+    """
+    الصفحة الرئيسية للفضاء المالي - تم تعديل الاسم ليتوافق مع الـ url_for في القائمة الجانبية
+    """
     # حساب الإجماليات لكل العملات
     totals = db.session.query(
         func.sum(SupplierWallet.yer_total).label('total_yer'),
@@ -19,7 +24,7 @@ def overview():
         func.sum(SupplierWallet.usd_total).label('total_usd')
     ).first()
     
-    return render_template('admin/overview.html', totals=totals)
+    return render_template('admin/wallet_dashboard.html', totals=totals)
 
 @admin_wallet.route('/search_api')
 @login_required
@@ -27,7 +32,7 @@ def search_api():
     query = request.args.get('query', '')
     filter_type = request.args.get('filter', 'all')
     
-    # بناء استعلام يجمع بين المحفظة والمورد
+    # استعلام يربط المحفظة ببيانات المورد
     wallets_query = db.session.query(SupplierWallet, Supplier).join(
         Supplier, SupplierWallet.supplier_id == Supplier.sovereign_id
     )
@@ -69,7 +74,7 @@ def adjust_balance():
     
     wallet = SupplierWallet.query.get_or_404(wallet_id)
     
-    # منطق التعديل المالي
+    # خريطة الحقول في قاعدة البيانات
     field_map = {
         'YER': 'yer_total',
         'SAR': 'sar_total',
@@ -87,4 +92,5 @@ def adjust_balance():
         db.session.commit()
         flash(f"تم تنفيذ العملية بنجاح على محفظة {wallet.wallet_code}", "success")
         
-    return redirect(url_for('admin_wallet.overview'))
+    # إعادة التوجيه إلى صفحة الفضاء المالي المحدثة
+    return redirect(url_for('admin_wallet.wallet_page'))
