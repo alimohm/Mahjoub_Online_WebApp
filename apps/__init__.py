@@ -12,7 +12,8 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__, template_folder='templates')
+    # التعديل الجوهري: ضبط template_folder ليشمل كامل المجلد الرئيسي
+    app = Flask(__name__, template_folder='.')
     app.config.from_object(Config)
     app.json.ensure_ascii = False
 
@@ -70,14 +71,12 @@ def create_app():
     # --- استيراد وتسجيل المسارات (Blueprints) ---
     from apps.auth_portal import auth_blueprint
     from apps.admin_dashboard import admin_dashboard
-    # التعديل الصحيح للاستيراد:
     from apps.add_supplier import admin_suppliers_bp 
     from apps.wallet.routes import admin_wallet
 
     # تسجيل المسارات
     app.register_blueprint(auth_blueprint, url_prefix='/auth', name='auth_portal')
     app.register_blueprint(admin_dashboard, url_prefix='/admin', name='admin_dashboard')
-    # يجب أن يكون الـ name هنا 'add_supplier' ليتطابق مع url_for('add_supplier.xxx')
     app.register_blueprint(admin_suppliers_bp, url_prefix='/suppliers', name='add_supplier')
     app.register_blueprint(admin_wallet, url_prefix='/admin/wallet', name='admin_wallet')
     
