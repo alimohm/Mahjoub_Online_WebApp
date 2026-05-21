@@ -15,13 +15,18 @@ def create_app():
     app.config.from_object(Config)
     app.json.ensure_ascii = False
 
+    # ضمان إعداد مسار الرفع إذا لم يكن موجوداً في الـ Config
+    if not app.config.get('UPLOAD_FOLDER'):
+        app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads', 'identities')
+
     db.init_app(app)
     login_manager.init_app(app)
 
     with app.app_context():
-        import apps.models.admin_db
-        import apps.models.supplier_db
-        import apps.models.wallet_db
+        # --- استدعاء الموديلات لضمان تسجيل الجداول ---
+        from apps.models.admin_db import AdminUser
+        from apps.models.supplier_db import Supplier
+        from apps.models.wallet_db import Wallet
         
         try:
             db.create_all()
@@ -64,9 +69,14 @@ def create_app():
     # --- تسجيل الـ Blueprints ---
     app.register_blueprint(auth_blueprint, url_prefix='/auth', name='auth_portal')
     app.register_blueprint(admin_dashboard, url_prefix='/admin', name='admin_dashboard')
-    app.register_blueprint(admin_suppliers_bp, url_prefix='/suppliers', name='add_supplier')
+    app.register_blueprint(admin_suppliers_bp, url_prefix='/admin/suppliers', name='add_supplier')
     app.register_blueprint(admin_wallet, url_prefix='/wallet', name='admin_wallet')
     
+    # معالج أخطاء عام لرؤية الأخطاء (500) بوضوح في المتصفح أثناء التطوير
+    @app.errorhandler(500)
+    def internal_error(e):
+        return f"حدث خطأ سيادي (500): {str(e)}", 500
+
     print("✅ تم تعميد كافة المسارات السيادية (Blueprints) بنجاح في المصنع المركزي.")
 
     return app
