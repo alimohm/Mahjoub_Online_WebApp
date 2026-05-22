@@ -1,6 +1,19 @@
 <style>
-    /* انقل الـ CSS الخاص بالبطاقات هنا إذا لم يكن في ملف CSS خارجي */
-    /* التدرجات اللونية، التنسيقات، والأنيميشن تظل هنا لتعمل فور الحقن */
+    :root {
+        --royal-purple: #632C8F;
+        --royal-gold: #D4AF37;
+        --deep-space: #1a0b2e;
+        --vibrant-green: #2ecc71;
+    }
+    .stat-card { border-radius: 20px; padding: 25px; color: white; transition: 0.4s; border: none; position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); height: 100%; }
+    .stat-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(99, 44, 143, 0.3); }
+    .card-purple { background: linear-gradient(135deg, #632C8F, #8b44cc); }
+    .card-gold { background: linear-gradient(135deg, #D4AF37, #f1c40f); }
+    .card-dark { background: linear-gradient(135deg, #1a0b2e, #3a1a5e); }
+    .card-suppliers { background: linear-gradient(135deg, #2c3e50, #4b236d); }
+    .status-indicator { height: 12px; width: 12px; background-color: var(--vibrant-green); border-radius: 50%; display: inline-block; margin-left: 8px; box-shadow: 0 0 10px var(--vibrant-green); animation: blink 2s infinite; }
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 15px; border-right: 5px solid var(--royal-purple) !important; }
 </style>
 
 <div class="container-fluid py-4" dir="rtl">
@@ -17,6 +30,9 @@
     </div>
 
     <div class="row g-4">
-        </div>
-
+        <div class="col-md-3"><div class="stat-card card-purple"><h6>إجمالي المستخدمين</h6><h2 class="display-5 fw-bold">{{ users_count|default(1) }}</h2><p class="small"><i class="fas fa-user-check"></i> سجلات القاعدة نشطة</p></div></div>
+        <div class="col-md-3"><div class="stat-card card-suppliers"><h6>الموردون المعتمدون</h6><h2 class="display-5 fw-bold">{{ suppliers_count|default(0) }}</h2><p class="small"><i class="fas fa-id-badge"></i> كيانات تحت الحوكمة</p></div></div>
+        <div class="col-md-3"><div class="stat-card card-gold"><h6>سجل العمليات</h6><h2 class="display-5 fw-bold">{{ orders_count|default(0) }}</h2><p class="small"><i class="fas fa-exchange-alt"></i> حركة تجارية سيادية</p></div></div>
+        <div class="col-md-3"><div class="stat-card card-dark"><h6>السيولة النقدية</h6><div class="small"><div>YER: {{ total_yer|default('0.0') }}</div><div>SAR: {{ total_sar|default('0.0') }}</div><div>USD: {{ total_usd|default('0.0') }}</div></div></div></div>
+    </div>
     </div>
