@@ -17,26 +17,21 @@
             --sidebar-width: 280px; 
             --transition: all 0.3s ease;
         }
-
         body { font-family: 'Cairo', sans-serif; background: #f0f2f5; margin: 0; display: flex; min-height: 100vh; }
-
         .sidebar {
             width: var(--sidebar-width); 
             background: linear-gradient(180deg, var(--royal-purple) 0%, var(--deep-black) 100%);
             height: 100vh; position: fixed; right: 0; top: 0; z-index: 1100; 
             transition: var(--transition); display: flex; flex-direction: column; box-shadow: -5px 0 25px rgba(0,0,0,0.3);
         }
-
         .sidebar-header { padding: 1.5rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); text-align: center; }
         .logo-img { width: 60px; height: auto; filter: brightness(0) invert(1); }
         .nav-menu { padding: 1rem; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        
         .nav-link { 
             display: flex; align-items: center; padding: 12px 15px; color: rgba(255,255,255,0.8); 
             text-decoration: none; border-radius: 12px; margin-bottom: 5px; transition: var(--transition); cursor: pointer;
         }
         .nav-link:hover { background: rgba(212, 175, 55, 0.2); color: var(--mahjoub-gold); }
-        
         .main-wrapper { margin-right: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); transition: var(--transition); }
         .top-bar { background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(0,0,0,0.05); }
         .dropdown-container { display: none; background: rgba(0, 0, 0, 0.15); border-radius: 12px; margin-bottom: 10px; padding: 5px; }
@@ -61,7 +56,7 @@
                 <i class="fas fa-chevron-left ms-auto" id="supArr"></i>
             </button>
             <div class="dropdown-container" id="supDrp">
-                <a href="javascript:void(0);" onclick="loadContent('{{ url_for('admin_suppliers.add_supplier_page') }}', 'تعميد مورد جديد')" class="nav-link small py-2">
+                <a href="javascript:void(0);" onclick="loadContent('{{ url_for('add_supplier.add_supplier_page') }}', 'تعميد مورد جديد')" class="nav-link small py-2">
                     <i class="fas fa-user-plus ms-2"></i> تعميد جديد
                 </a>
             </div>
