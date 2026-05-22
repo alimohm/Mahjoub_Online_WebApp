@@ -1,38 +1,126 @@
-<style>
-    :root {
-        --royal-purple: #632C8F;
-        --royal-gold: #D4AF37;
-        --deep-space: #1a0b2e;
-        --vibrant-green: #2ecc71;
-    }
-    .stat-card { border-radius: 20px; padding: 25px; color: white; transition: 0.4s; border: none; position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); height: 100%; }
-    .stat-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(99, 44, 143, 0.3); }
-    .card-purple { background: linear-gradient(135deg, #632C8F, #8b44cc); }
-    .card-gold { background: linear-gradient(135deg, #D4AF37, #f1c40f); }
-    .card-dark { background: linear-gradient(135deg, #1a0b2e, #3a1a5e); }
-    .card-suppliers { background: linear-gradient(135deg, #2c3e50, #4b236d); }
-    .status-indicator { height: 12px; width: 12px; background-color: var(--vibrant-green); border-radius: 50%; display: inline-block; margin-left: 8px; box-shadow: 0 0 10px var(--vibrant-green); animation: blink 2s infinite; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-    .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 15px; border-right: 5px solid var(--royal-purple) !important; }
-</style>
+{% extends "admin/admin_base.html" %}
 
-<div class="container-fluid py-4" dir="rtl">
-    <div class="row mb-5 align-items-center">
-        <div class="col-md-12 text-end">
-            <h1 style="font-weight: 900; color: var(--deep-space); font-size: 2.5rem; margin-bottom: 0.5rem;">نظام الرقابة العليا</h1>
-            <div class="p-3 glass-nav shadow-sm">
-                <p class="mb-0">
-                    <span class="status-indicator"></span>
-                    مرحباً بك يا <strong>علي محجوب</strong> | الترسانة الرقمية تعمل بأقصى تردد
-                </p>
+{% block title %}لوحة التحكم المركزية | محجوب أونلاين{% endblock %}
+
+{% block header_title %}مركز العمليات والرقابة الفورية{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: white; border-right: 5px solid var(--royal-purple) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(99, 44, 143, 0.1); color: var(--royal-purple);">
+                            <i class="fas fa-handshake fs-3"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1" style="font-size: 0.8rem;">نشط</span>
+                    </div>
+                    <h6 class="text-muted fw-bold mb-1" style="font-size: 0.9rem;">شركاء النجاح (الموردين)</h6>
+                    <h2 class="fw-black mb-0 text-dark" style="font-family: 'Cairo', sans-serif;">{{ suppliers_count if suppliers_count else '0' }} <span style="font-size: 1rem; font-weight: normal;" class="text-muted">مورد معتمد</span></h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: white; border-right: 5px solid var(--mahjoub-gold) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(212, 175, 55, 0.1); color: var(--mahjoub-gold);">
+                            <i class="fas fa-server fs-3"></i>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1" style="font-size: 0.8rem;">مستقر</span>
+                    </div>
+                    <h6 class="text-muted fw-bold mb-1" style="font-size: 0.9rem;">حالة الاتصال بالخادم</h6>
+                    <h2 class="fw-black mb-0 text-dark" style="font-size: 1.6rem;">متصل بنجاح</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: white; border-right: 5px solid #198754 !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(25, 135, 84, 0.1); color: #198754;">
+                            <i class="fas fa-user-shield fs-3"></i>
+                        </div>
+                        <span class="badge bg-success rounded-pill px-2.5 py-1" style="font-size: 0.75rem; color: white !important;">مؤمن</span>
+                    </div>
+                    <h6 class="text-muted fw-bold mb-1" style="font-size: 0.9rem;">الهوية والمؤسس</h6>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-size: 1.4rem;">علي محجوب</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: white; border-right: 5px solid #dc3545 !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="p-3 rounded-3" style="background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                            <i class="fas fa-bolt fs-3"></i>
+                        </div>
+                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-1" style="font-size: 0.8rem;">فوري</span>
+                    </div>
+                    <h6 class="text-muted fw-bold mb-1" style="font-size: 0.9rem;">بنية حوكمة التجارة</h6>
+                    <h2 class="fw-black mb-0 text-dark" style="font-size: 1.3rem;">لامركزية مطلقة</h2>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-md-3"><div class="stat-card card-purple"><h6>إجمالي المستخدمين</h6><h2 class="display-5 fw-bold">{{ users_count|default(1) }}</h2><p class="small"><i class="fas fa-user-check"></i> سجلات القاعدة نشطة</p></div></div>
-        <div class="col-md-3"><div class="stat-card card-suppliers"><h6>الموردون المعتمدون</h6><h2 class="display-5 fw-bold">{{ suppliers_count|default(0) }}</h2><p class="small"><i class="fas fa-id-badge"></i> كيانات تحت الحوكمة</p></div></div>
-        <div class="col-md-3"><div class="stat-card card-gold"><h6>سجل العمليات</h6><h2 class="display-5 fw-bold">{{ orders_count|default(0) }}</h2><p class="small"><i class="fas fa-exchange-alt"></i> حركة تجارية سيادية</p></div></div>
-        <div class="col-md-3"><div class="stat-card card-dark"><h6>السيولة النقدية</h6><div class="small"><div>YER: {{ total_yer|default('0.0') }}</div><div>SAR: {{ total_sar|default('0.0') }}</div><div>USD: {{ total_usd|default('0.0') }}</div></div></div></div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 text-right" style="background: white;">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1"><i class="fas fa-list-check me-2 text-primary" style="color: var(--royal-purple) !important;"></i> أحدث الموردين المضافين للنظام</h5>
+                        <p class="text-muted mb-0" style="font-size: 0.85rem;">مراقبة حية وجدول البيانات المزامنة من قاعدة بيانات Postgres</p>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="py-3">معرف المورد</th>
+                                    <th scope="col" class="py-3">اسم شريك النجاح</th>
+                                    <th scope="col" class="py-3">رقم الهاتف / الاتصال</th>
+                                    <th scope="col" class="py-3">المنطقة والاتصال</th>
+                                    <th scope="col" class="py-3">حالة الحساب عبر النظام</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if suppliers %}
+                                    {% for supplier in suppliers %}
+                                    <tr>
+                                        <td class="fw-bold text-secondary">#{{ supplier.id }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm rounded-circle p-2 bg-light text-center me-2" style="width: 35px; height: 35px; line-height: 20px;">
+                                                    <i class="fas fa-building text-muted"></i>
+                                                </div>
+                                                <span class="fw-bold text-dark">{{ supplier.name }}</span>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge bg-light text-dark px-3 py-2 border"><i class="fas fa-phone me-1 text-muted"></i> {{ supplier.phone }}</span></td>
+                                        <td>{{ supplier.location if supplier.location else 'اليمن' }}</td>
+                                        <td><span class="badge bg-success-subtle text-success rounded-3 px-3 py-2"><i class="fas fa-circle fs-6 me-1" style="font-size: 0.5rem !important;"></i> معتمد</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            <i class="fas fa-folder-open fs-2 mb-3 d-block"></i>
+                                            سجل الموردين فارغ حالياً، قم بتعميد أول مورد من القائمة الجانبية.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    </div>
+</div>
+{% endblock %}
