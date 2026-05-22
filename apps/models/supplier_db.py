@@ -22,6 +22,7 @@ class Supplier(db.Model):
     owner_name = db.Column(db.String(150), unique=True, nullable=False)
     owner_phone = db.Column(db.String(20), unique=True, nullable=False)       
     trade_name = db.Column(db.String(150), unique=True, nullable=False)
+    shop_number = db.Column(db.String(50), nullable=True)  # 🏬 الحقل الجديد المستقر لاستقبال وأرشفة رقم المحل من الواجهة
     shop_phone = db.Column(db.String(20), unique=True, nullable=False)
     activity_type = db.Column(db.String(50))     
     
@@ -63,7 +64,7 @@ class Supplier(db.Model):
     # 👑 المحرك الداخلي السلس للتوليد الفوري والمحمي
     @staticmethod
     def generate_next_sovereign_id():
-        """ استعلام مباشر وسريع لجلب المعرف التالي """
+        """ استعلام مباشر وسريع لجلب المعرف التالي متناسقاً تصاعدياً مع قاعدة البيانات الحية """
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         if last_supplier and last_supplier.sovereign_id:
             try:
@@ -82,6 +83,7 @@ class Supplier(db.Model):
             "username": self.username,
             "owner_name": self.owner_name,
             "trade_name": self.trade_name,
+            "shop_number": self.shop_number,
             "shop_phone": self.shop_phone,
             "rank_grade": self.rank_grade,
             "status": self.status,
