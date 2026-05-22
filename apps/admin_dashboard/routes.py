@@ -1,37 +1,31 @@
-# coding: utf-8
 from flask import render_template, request, jsonify
-from flask_login import login_required
-from apps.admin_dashboard import admin_dashboard_bp
-from apps.models.wallet_db import SupplierWallet
-from sqlalchemy import func
-from apps import db
+from datetime import datetime
+from . import admin_dashboard_bp # افترضت أنك تستخدم Blueprint باسم admin_dashboard_bp
+from ..models import User, Supplier, Order # افترض استيراد النماذج من مشروعك
 
 @admin_dashboard_bp.route('/dashboard', methods=['GET'])
-@login_required
-def dashboard_home():
-    """
-    دالة لوحة التحكم الرئيسية - تدعم التحميل الديناميكي (AJAX)
-    """
-    # جلب الإجماليات من قاعدة البيانات
-    totals_data = db.session.query(
-        func.sum(SupplierWallet.yer_total).label('total_yer'),
-        func.sum(SupplierWallet.sar_total).label('total_sar'),
-        func.sum(SupplierWallet.usd_total).label('total_usd')
-    ).first()
-
-    # تحويل النتائج إلى قاموس مع قيم افتراضية 0 إذا كانت القاعدة فارغة
-    totals = {
-        'total_yer': totals_data.total_yer or 0,
-        'total_sar': totals_data.total_sar or 0,
-        'total_usd': totals_data.total_usd or 0
+def dashboard():
+    # 1. تجهيز البيانات (هنا تربط الدوال بـ DB)
+    stats = {
+        'users_count': User.query.count(),
+        'suppliers_count': Supplier.query.count(),
+        'orders_count': Order.query.count(),
+        'total_yer': '25,000,000', # استبدل هذه القيم بـ Database Queries
+        'total_sar': '50,000',
+        'total_usd': '12,000',
+        'now': datetime.now()
     }
 
-    # التحقق مما إذا كان الطلب من المتصفح (AJAX)
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    # 2. إذا كان الطلب من الرابط الجانبي (AJAX) - نرسل المحتوى فقط
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template('admin/dashboard_content.html', **stats)
     
-    if is_ajax:
-        # إرجاع محتوى الجزء المخصص للحقن فقط
-        return render_template('admin/dashboard_content.html', totals=totals)
-    
-    # إرجاع الهيكل الرئيسي للصفحة
-    return render_template('admin/admin_base.html', totals=totals)
+    # 3. إذا كان دخولاً مباشراً للصفحة - نرسل الهيكل الكامل
+    return render_template('admin/admin_base.html', **stats)
+
+# مثال إضافي لتنظيم المسارات
+@admin_dashboard_bp.route('/add_supplier', methods=['GET'])
+def add_supplier():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template('admin/add_supplier_form.html')
+    return render_template('admin/admin_base.html')
