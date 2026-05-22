@@ -1,4 +1,4 @@
-{% extends "apps/admin_dashboard/templates/admin/admin_base.html" %}
+{% extends "admin/admin_base.html" %}
 
 {% block title %}تعميد مورد | محجوب أونلاين{% endblock %}
 
@@ -201,28 +201,24 @@
         }
     }
 
-    // جلب التسلسل المتوقع والربط المالي فور تحميل الصفحة (يدعم قاعدة البيانات السابقة والجديدة)
+    // جلب التسلسل المتوقع والربط المالي فور تحميل الصفحة
     function fetchNextExpectedSequence() {
         fetch("{{ url_for('add_supplier.check_duplicate', type='get_next_sequence') }}")
         .then(response => response.json())
         .then(data => {
-            // سحب البيانات المتوقعة، أو إسناد قيم ابتدائية ذكية إذا كانت قاعدة البيانات فارغة تماماً
             const finalSupplierId = data.next_sequence || "SUP-1001";
             const finalWalletId = data.next_wallet || "WLT-1001";
 
             document.getElementById('display-supplier-id').textContent = finalSupplierId;
             document.getElementById('display-wallet-id').textContent = finalWalletId;
             
-            // تعبئة الحقول المخفية لضمان تطابق البيانات عند الرفع وقراءتها في الـ Backend
             document.getElementById('hidden-sovereign-id').value = finalSupplierId;
             document.getElementById('hidden-wallet-code').value = finalWalletId;
             
-            // تفعيل الزر المركزي للإرسال بعد المزامنة التامة بنجاح
             document.getElementById('submitBtn').removeAttribute('disabled');
         })
         .catch(err => {
             console.error("تعذر جلب تسلسلات التوقع من المحرك المركزي:", err);
-            // حماية سيادية: فرض قيم تسلسل افتراضية في حال وجود مشاكل شبكة مؤقتة لتلافي تجميد اللوحة
             document.getElementById('display-supplier-id').textContent = "SUP-1001";
             document.getElementById('display-wallet-id').textContent = "WLT-1001";
             document.getElementById('hidden-sovereign-id').value = "SUP-1001";
