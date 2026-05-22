@@ -1,11 +1,4 @@
-{% extends "admin/admin_base.html" %}
-
-{% block title %}مركز القيادة والسيطرة | محجوب أونلاين{% endblock %}
-
-{% block header_title %}مركز القيادة والسيطرة{% endblock %}
-
-{% block content %}
-<div id="dashboard-main-view">
+<div id="dashboard-main-view" class="container-fluid py-2">
     <div class="row g-4 mb-4">
         {% set cards = [
             {'title': 'إجمالي الخزينة (YER)', 'val': totals.total_yer if totals else 0.0, 'bg': 'linear-gradient(135deg, #1b5e20, #2e7d32)', 'unit': '﷼'},
@@ -21,7 +14,7 @@
                         <h6 class="text-white-50 mb-0 fw-bold small">{{ card.title }}</h6>
                         <i class="fas fa-vault opacity-50 fs-5"></i>
                     </div>
-                    <h2 class="fw-bold mb-0" style="font-family: 'Cairo', sans-serif;">
+                    <h2 class="fw-bold mb-0">
                         {{ "{:,.2f}".format(card.val) }} 
                         <small class="fs-6 fw-normal text-white-50">{{ card.unit }}</small>
                     </h2>
@@ -32,72 +25,10 @@
     </div>
 
     <div class="card border-0 shadow-sm p-4 text-center mt-4" style="border-radius: 16px; background: #ffffff;">
-        <i class="fas fa-shield-halved text-muted mb-3" style="font-size: 3rem; color: #632C8F !important;"></i>
+        <i class="fas fa-shield-halved mb-3" style="font-size: 3rem; color: #632C8F;"></i>
         <h5 class="fw-bold text-dark">نظام حوكمة المحافظ الموحد</h5>
-        <p class="text-muted small mb-0">يمكنك التحكم وإدارة وتعميد كافة النوافذ التشغيلية المباشرة عبر محرك الحقن الموحد دون إعادة تحميل القوالب.</p>
+        <p class="text-muted small mb-0">
+            تم استدعاء حزمة النافذة برمجياً بنجاح. النظام يعمل الآن وفق معمارية "الهيكل والمحتوى" (App Shell).
+        </p>
     </div>
 </div>
-
-<script>
-function loadMicroAppInline(endpointUrl, pageTitle) {
-    const contentArea = document.getElementById('dynamic-content-area');
-    const topTitle = document.getElementById('page-main-title');
-    
-    if (!contentArea) return;
-
-    // تشغيل مؤشر الانتظار البصري الصافي أثناء استدعاء السيرفر
-    contentArea.innerHTML = `
-        <div class="text-center py-5 my-5">
-            <div class="spinner-border" role="status" style="width: 3rem; height: 3rem; color: #632C8F !important;"></div>
-            <h5 class="mt-3 text-muted fw-bold">جاري استدعاء حزمة النافذة برمجياً...</h5>
-            <p class="text-muted small">تأمين الاتصال الحالي | محجوب أونلاين</p>
-        </div>
-    `;
-
-    if (topTitle && pageTitle) {
-        topTitle.innerText = pageTitle;
-    }
-
-    // إرسال طلب صامت للسيرفر لجلب الـ HTML الصافي للمستند المطلوب
-    fetch(endpointUrl, {
-        method: 'GET',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(response => {
-        if (!response.ok) throw new Error("تعذر جلب محتوى النافذة أو أن المسار غير متاح حالياً.");
-        return response.text();
-    })
-    .then(cleanHtml => {
-        contentArea.innerHTML = cleanHtml;
-    })
-    .catch(error => {
-        contentArea.innerHTML = `
-            <div class="alert alert-danger shadow-sm border-0 p-4" role="alert" style="border-radius: 14px;">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-triangle-exclamation fs-3 me-3"></i>
-                    <div>
-                        <h6 class="fw-bold mb-1">خطأ في جلب البيانات الفورية</h6>
-                        <p class="mb-0 small">${error.message}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-}
-
-// تعديل سلوك أزرار التنقل في القائمة الجانبية تلقائياً لتمر عبر المحرك الفوري
-document.addEventListener("DOMContentLoaded", () => {
-    const addSupplierBtn = document.querySelector('a[href*="/add_supplier"]');
-    if (addSupplierBtn) {
-        addSupplierBtn.setAttribute('href', 'javascript:void(0);');
-        addSupplierBtn.setAttribute('onclick', "loadMicroAppInline('/suppliers/add_supplier', 'تعميد مورد جديد ومحفظة سيادية')");
-    }
-
-    const listSuppliersBtn = document.querySelector('a[href*="/list"]');
-    if (listSuppliersBtn) {
-        listSuppliersBtn.setAttribute('href', 'javascript:void(0);');
-        listSuppliersBtn.setAttribute('onclick', "loadMicroAppInline('/suppliers/list', 'سجل شركاء النجاح والموردين المعتمدين')");
-    }
-});
-</script>
-{% endblock %}
