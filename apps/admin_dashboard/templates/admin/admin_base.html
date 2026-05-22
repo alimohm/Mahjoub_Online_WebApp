@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}القيادة المركزية | محجوب أونلاين{% endblock %}</title>
+    <title>القيادة المركزية | محجوب أونلاين</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -91,19 +91,27 @@
     </main>
 
     <script>
-        // محرك تحميل المحتوى ديناميكياً
+        // محرك تحميل المحتوى (App Shell Engine)
         function loadContent(url, title) {
-            document.getElementById('page-main-title').innerText = title;
+            const contentArea = document.getElementById('dynamic-content-area');
+            const titleElement = document.getElementById('page-main-title');
+            
+            // إظهار مؤشر تحميل بسيط
+            contentArea.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">جاري المعالجة...</p></div>';
+            titleElement.innerText = title;
+
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.text())
             .then(html => {
-                document.getElementById('dynamic-content-area').innerHTML = html;
+                contentArea.innerHTML = html;
                 history.pushState({}, title, url);
             })
-            .catch(err => console.error('خطأ في الاتصال:', err));
+            .catch(err => {
+                contentArea.innerHTML = '<div class="alert alert-danger">حدث خطأ أثناء تحميل البيانات.</div>';
+                console.error(err);
+            });
         }
 
-        // تحكم القوائم
         function toggleDropdown(id, arrowId) {
             const el = document.getElementById(id);
             const arrow = document.getElementById(arrowId);
