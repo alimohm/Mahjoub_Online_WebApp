@@ -3,11 +3,38 @@
 
 from flask import request, jsonify, render_template, url_for, redirect
 from werkzeug.security import generate_password_hash
+from flask_login import login_required, current_user
 
 # 🛡️ استدعاء الـ Blueprint الجاهز المعرف في ملف __init__.py
 from . import admin_suppliers_bp
 
-# دالة توليد الأرقام المتسلسلة التلقائية لـ (المورد والمحفظة) عبر الـ API
+# ========================================================
+# 🏬 1. دالة فتح وعرض واجهة "تسجيل المورد الجديد" (الفورم)
+# ========================================================
+@admin_suppliers_bp.route('/add_supplier', methods=['GET'])
+@login_required
+def add_supplier_page():
+    try:
+        from apps.models.supplier_db import Supplier
+        from apps.models.wallet_db import SupplierWallet
+        
+        # توليد السيريال والرموز التتابعية الحية عند الإقلاع الفوري للواجهة
+        next_supplier_id = Supplier.generate_next_sovereign_id()
+        next_wallet_id = SupplierWallet.generate_next_wallet_code()
+        
+        # فتح واستعراض القالب المرن لتعميد الموردين
+        return render_template('admin/add_supplier.html', 
+                               current_user=current_user,
+                               next_sequence=next_supplier_id,
+                               next_wallet=next_wallet_id)
+    except Exception as e:
+        # صمام أمان لضمان عدم توقف المتصفح وتوجيهه بشكل آمن
+        return f"خطأ في استدعاء واجهة تسجيل الموردين: {str(e)}", 500
+
+
+# ========================================================
+# 🧠 2. دالة توليد وفحص الأرقام المتسلسلة التلقائية لـ (المورد والمحفظة) عبر الـ API
+# ========================================================
 @admin_suppliers_bp.route('/check_duplicate', methods=['GET'])
 def check_duplicate():
     check_type = request.args.get('type')
@@ -16,7 +43,7 @@ def check_duplicate():
     from apps.models.supplier_db import Supplier 
     from apps.models.wallet_db import SupplierWallet
     
-    # 1. جلب التسلسل التلقائي الذكي المعتمد لمنصة محجوب أونلاين
+    # جلب التسلسل التلقائي الذكي المعتمد لمنصة محجوب أونلاين
     if check_type == 'get_next_sequence':
         try:
             next_supplier_id = Supplier.generate_next_sovereign_id()
@@ -26,17 +53,16 @@ def check_duplicate():
                 "next_sequence": next_supplier_id,
                 "next_wallet": next_wallet_id
             })
-            
         except Exception as e:
             return jsonify({"next_sequence": "SUP-MAH9631", "next_wallet": "WEL-MAH9631"})
             
-    # 2. التحقق من عدم تكرار اسم المستخدم في قاعدة البيانات
+    # التحقق من عدم تكرار اسم المستخدم في قاعدة البيانات
     if check_type == 'username':
         val = request.args.get('value', '').strip()
         exists = Supplier.query.filter_by(username=val).first() is not None
         return jsonify({"exists": exists})
         
-    # 3. التحقق من عدم تكرار رقم الوثيقة الشخصية
+    # التحقق من عدم تكرار رقم الوثيقة الشخصية
     if check_type == 'identity_number':
         val = request.args.get('value', '').strip()
         exists = Supplier.query.filter_by(identity_number=val).first() is not None
@@ -45,7 +71,9 @@ def check_duplicate():
     return jsonify({"error": "نوع التحقق غير معروف"}), 400
 
 
-# دالة استقبال الفورم وحفظ المورد والمحفظة بالتزامن المالي الكامل (معدلة لاستقبال GET و POST مرناً)
+# ========================================================
+# 💳 3. دالة استقبال الفورم وحفظ المورد والمحفظة بالتزامن المالي الكامل
+# ========================================================
 @admin_suppliers_bp.route('/add_supplier_submit', methods=['GET', 'POST'])
 def add_supplier_submit():
     # صمام أمان: إذا حاول المستخدم دخول الرابط بطلب GET مباشر، يتم توجيهه تلقائياً إلى لوحة التحكم الرئيسية
@@ -88,7 +116,7 @@ def add_supplier_submit():
         bank_name = request.form.get('bank_name')
         bank_acc = request.form.get('bank_acc')
 
-        # 👑 الخطوة الأولى: إنشاء كائن المورد الجديد
+        # الخطوة الأولى: إنشاء كائن المورد الجديد
         new_supplier = Supplier(
             sovereign_id=sovereign_id,
             wallet_code=wallet_code,
@@ -111,7 +139,7 @@ def add_supplier_submit():
         )
         db.session.add(new_supplier)
 
-        # 💳 الخطوة الثانية: تهيئة وإنشاء المحفظة السيادية المرتبطة به تلقائياً
+        # الخطوة الثانية: تهيئة وإنشاء المحفظة السيادية المرتبطة به تلقائياً
         new_wallet = SupplierWallet(
             supplier_id=sovereign_id,  
             wallet_code=wallet_code,
