@@ -3,22 +3,24 @@
 
 from flask import Blueprint, request, jsonify, render_template, url_for
 from werkzeug.security import generate_password_hash
+import random
+
+# استيراد الامتدادات وقاعدة البيانات بشكل آمن لمنع الـ Circular Import
 from apps.extensions import db 
 from apps.models.supplier_db import Supplier 
 from apps.models.wallet_db import SupplierWallet
 
-# تعريف الـ Blueprint للمسارات
-add_supplier = Blueprint('add_supplier', __name__, url_prefix='/add_supplier')
+# 🛡️ تعريف الـ Blueprint بالمسمى الدقيق المتوافق مع المصنع المركزي لـ Flask
+admin_suppliers_bp = Blueprint('add_supplier', __name__, url_prefix='/add_supplier')
 
 # دالة توليد الأرقام المتسلسلة التلقائية لـ (المورد والمحفظة) عبر الـ API
-@add_supplier.route('/check_duplicate', methods=['GET'])
+@admin_suppliers_bp.route('/check_duplicate', methods=['GET'])
 def check_duplicate():
     check_type = request.args.get('type')
     
     # 1. جلب التسلسل التلقائي الذكي المعتمد لمنصة محجوب أونلاين
     if check_type == 'get_next_sequence':
         try:
-            # استدعاء محركات التوليد الاستاتيكية المباشرة والمحمية من الموديلات
             next_supplier_id = Supplier.generate_next_sovereign_id()
             next_wallet_id = SupplierWallet.generate_next_wallet_code()
             
@@ -28,7 +30,6 @@ def check_duplicate():
             })
             
         except Exception as e:
-            # صمام أمان سيادي لضمان عدم توقف العمل عند حدوث أي خطأ طارئ
             return jsonify({"next_sequence": "SUP-MAH9631", "next_wallet": "WEL-MAH9631"})
             
     # 2. التحقق من عدم تكرار اسم المستخدم في قاعدة البيانات
@@ -47,14 +48,14 @@ def check_duplicate():
 
 
 # دالة استقبال الفورم وحفظ المورد والمحفظة بالتزامن المالي الكامل
-@add_supplier.route('/add_supplier_submit', methods=['POST'])
+@admin_suppliers_bp.route('/add_supplier_submit', methods=['POST'])
 def add_supplier_submit():
     try:
-        # استقبال المعرفات الجوهرية (التالية المؤكدة) من حقول الواجهة المخفية
+        # استقبال المعرفات الجوهرية من حقول الواجهة المخفية
         sovereign_id = request.form.get('sovereign_id')
         wallet_code = request.form.get('wallet_code')
         
-        # حماية إضافية: إذا لم ترسل الواجهة القيم، نقوم بتوليدها فوراً هنا
+        # حماية إضافية في حال عدم وصول القيم من الواجهة
         if not sovereign_id or not wallet_code:
             sovereign_id = Supplier.generate_next_sovereign_id()
             wallet_code = SupplierWallet.generate_next_wallet_code()
@@ -62,7 +63,7 @@ def add_supplier_submit():
         username = request.form.get('username')
         raw_password = request.form.get('password')
         
-        # تشفير كلمة المرور بنظام الهاش الآمن المعتمد
+        # تشفير كلمة المرور بنظام الهاش الآمن
         password_hash = generate_password_hash(raw_password) if raw_password else "default_hash"
         
         identity_type = request.form.get('identity_type')
@@ -70,7 +71,7 @@ def add_supplier_submit():
         
         owner_name = request.form.get('owner_name')
         trade_name = request.form.get('trade_name')
-        shop_number = request.form.get('shop_number')  # 🏬 استقبال رقم المحل من الفورم المحدث
+        shop_number = request.form.get('shop_number')  
         owner_phone = request.form.get('owner_phone')
         
         province = request.form.get('province')
@@ -81,7 +82,7 @@ def add_supplier_submit():
         bank_name = request.form.get('bank_name')
         bank_acc = request.form.get('bank_acc')
 
-        # 👑 الخطوة الأولى: إنشاء كائن المورد الجديد وإدراجه في الجلسة
+        # 👑 الخطوة الأولى: إنشاء كائن المورد الجديد
         new_supplier = Supplier(
             sovereign_id=sovereign_id,
             wallet_code=wallet_code,
@@ -93,20 +94,20 @@ def add_supplier_submit():
             owner_phone=owner_phone,
             trade_name=trade_name,
             shop_number=shop_number,
-            shop_phone=owner_phone,  # مساواة هاتف المحل بهاتف المالك لملء الحقل الإلزامي بالداتابيز
+            shop_phone=owner_phone,  
             province=province,
             district=district,
             address_detail=address_detail,
             fin_type=fin_type,
             bank_name=bank_name,
             bank_acc=bank_acc,
-            status='active'  # تفعيل مباشر لشريك النجاح أو تركه pending حسب رغبتك
+            status='active'  
         )
         db.session.add(new_supplier)
 
-        # 💳 الخطوة الثانية: تهيئة وإنشاء المحفظة السيادية الموحدة التابعة للمورد تلقائياً
+        # 💳 الخطوة الثانية: تهيئة وإنشاء المحفظة السيادية المرتبطة به تلقائياً
         new_wallet = SupplierWallet(
-            supplier_id=sovereign_id,  # الربط المحكم عبر المفتاح الأجنبي
+            supplier_id=sovereign_id,  
             wallet_code=wallet_code,
             yer_total=0.00, yer_withdrawn=0.00, yer_pending=0.00,
             sar_total=0.00, sar_withdrawn=0.00, sar_pending=0.00,
@@ -115,7 +116,7 @@ def add_supplier_submit():
         )
         db.session.add(new_wallet)
         
-        # 🔒 إتمام عملية الحفظ المزدوجة في قاعدة البيانات (All or Nothing)
+        # إتمام عملية الحفظ المزدوجة الآمنة
         db.session.commit()
         
         return jsonify({
@@ -124,6 +125,5 @@ def add_supplier_submit():
         })
 
     except Exception as e:
-        # التراجع التام عن أي تعديل في حال حدوث خطأ لحماية سلامة البيانات
         db.session.rollback()
         return jsonify({"status": "error", "message": f"خطأ سيادي أثناء الحفظ المالي: {str(e)}"})
