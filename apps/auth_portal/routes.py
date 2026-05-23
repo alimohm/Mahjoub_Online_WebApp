@@ -11,13 +11,13 @@ from . import auth_blueprint
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
-    # 🚨 استدعاء محلي متأخر للموديل وقاعدة البيانات لحل أزمة الاستيراد الدائري نهائياً
-    from apps import db 
+    # 🚨 استدعاء محلي متأخر للموديل وقاعدة البيانات الموحدة لحل أزمة الاستيراد الدائري نهائياً
+    from apps.extensions import db # التصحيح هنا لضمان استقرار جلسات الكوميت 
     from apps.models.admin_db import AdminUser 
 
-    # منع الدخول المتكرر إذا كان المالك مسجلاً بالفعل
+    # منع الدخول المتكرر إذا كان المالك مسجلاً بالفعل وتحويله للمسار المعتمد الحقيقي 🚀 ✅
     if current_user.is_authenticated:
-        return redirect(url_for('admin_dashboard.dashboard_home'))
+        return redirect(url_for('admin_dashboard.dashboard'))
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -36,8 +36,8 @@ def login():
                 
                 flash(f'مرحباً بك في سوقك الذكي.', 'success')
                 
-                # التوجيه إلى لوحة التحكم الرئيسية المحدثة
-                return redirect(url_for('admin_dashboard.dashboard_home'))
+                # تم التعديل هنا ليوجه فوراً إلى لوحة التحكم الرئيسية المحدثة والمستقرة 🚀 ✅
+                return redirect(url_for('admin_dashboard.dashboard'))
             else:
                 flash('ليس لديك صلاحيات الوصول لهذه المنطقة السيادية.', 'warning')
         else:
