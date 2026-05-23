@@ -12,8 +12,8 @@
     
     <style>
         :root {
-            --royal-purple: #632C8F; /* اللون البنفسجي الملكي */
-            --royal-purple-dark: #4A1E6D; /* درجة أغمق للظلال والتفاعلات */
+            --royal-purple: #632C8F; /* اللون البنفسجي الملكي المعتمد للبراند */
+            --royal-purple-dark: #4A1E6D; /* درجة أغمق للتفاعلات العميقة */
             --deep-black: #08020d;
             --mahjoub-gold: #D4AF37;
             --glass-bg: rgba(255, 255, 255, 0.9);
@@ -30,7 +30,7 @@
             direction: rtl;
         }
 
-        /* تعديل شريط السايد بار ليصبح بنفسجياً ملكياً كاملاً ومثبتاً */
+        /* شريط السايد بار بالبنفسجي الملكي الكامل المستقر */
         .sidebar {
             width: var(--sidebar-width);
             background: linear-gradient(180deg, var(--royal-purple) 0%, var(--royal-purple-dark) 100%);
@@ -52,13 +52,16 @@
         }
 
         .logo-img { 
-            width: 80px; 
+            width: 85px; 
             height: auto; 
-            filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+            filter: brightness(0) invert(1) drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
             margin-bottom: 15px;
         }
 
-        .nav-menu { padding: 1.5rem 1rem; flex-grow: 1; }
+        .nav-menu { padding: 1.5rem 1rem; flex-grow: 1; overflow-y: auto; }
+        /* تحسين السكرول بار داخل القائمة الجانبية إذا زادت العناصر */
+        .nav-menu::-webkit-scrollbar { width: 4px; }
+        .nav-menu::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
 
         .nav-link, .dropdown-btn {
             display: flex; align-items: center; padding: 14px 18px;
@@ -66,10 +69,11 @@
             border-radius: 15px; margin-bottom: 8px; transition: var(--transition);
             cursor: pointer; border: none; background: transparent; width: 100%;
             font-weight: 600;
+            text-align: right;
         }
 
-        /* تأثير المرور النشط مع التناسق البنفسجي والذهبي */
-        .nav-link:hover, .dropdown-btn:hover, .nav-link.active { 
+        /* تأثير المرور النشط المتناسق مع الهوية الملكية */
+        .nav-link:hover, .dropdown-btn:hover, .nav-link.active, .dropdown-btn.active { 
             background: rgba(255, 255, 255, 0.15); 
             color: var(--mahjoub-gold);
             transform: translateX(-5px);
@@ -118,7 +122,7 @@
         .fa-chevron-left { transition: 0.3s; margin-right: auto; }
         .rotate { transform: rotate(-90deg); }
 
-        /* التحكم بالظهور الكامل وسلوك الشاشات الصغيرة */
+        /* دعم كامل للتجاوب على الهواتف والشاشات الصغيرة */
         @media (max-width: 991px) {
             .sidebar { right: -280px; }
             .sidebar.active { right: 0; }
@@ -129,26 +133,26 @@
 <body>
 
     <div id="loader" class="d-none">
-        <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem; color: var(--royal-purple) !important;"></div>
+        <div class="spinner-grow" style="width: 3rem; height: 3rem; color: var(--royal-purple) !important;"></div>
     </div>
 
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <img src="https://cdn.qumra.cloud/media/67f7f6d5f0b82f44a47bf845/1770229315912-117966978.webp" class="logo-img" alt="Logo">
+            <img src="https://cdn.qumra.cloud/media/67f7f6d5f0b82f44a47bf845/1770229315912-117966978.webp" class="logo-img" alt="سوقك الذكي">
             <h2 class="text-white h5 fw-bold mb-1">محجوب أونلاين</h2>
-            <div class="badge bg-warning text-dark px-3 py-2" style="font-size: 0.7rem; letter-spacing: 1px;">السيادة المطلقة</div>
+            <div class="badge bg-warning text-dark px-3 py-2" style="font-size: 0.7rem; letter-spacing: 1px;">سوقك الذكي</div>
         </div>
 
         <nav class="nav-menu">
-            <a href="{{ url_for('admin_dashboard.dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard.dashboard' %}active{% endif %}">
+            <a href="{{ url_for('admin_dashboard.dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard.dashboard' and not request.args.get('view') %}active{% endif %}">
                 <i class="fas fa-chart-line me-3"></i> <span>مركز القيادة</span>
             </a>
 
             <div class="dropdown-section">
-                <button class="dropdown-btn" onclick="toggleDropdown()">
+                <button class="dropdown-btn" onclick="toggleDropdown('supplierDropdown', 'supplierArrow')">
                     <i class="fas fa-handshake me-3"></i> 
                     <span>شركاء النجاح</span>
-                    <i class="fas fa-chevron-left" id="arrow"></i>
+                    <i class="fas fa-chevron-left" id="supplierArrow"></i>
                 </button>
                 <div class="dropdown-container" id="supplierDropdown">
                     <a href="{{ url_for('add_supplier.add_supplier_route') if 'add_supplier' in codes else '#' }}">
@@ -160,11 +164,30 @@
                 </div>
             </div>
 
+            <div class="dropdown-section">
+                <button class="dropdown-btn" onclick="toggleDropdown('walletDropdown', 'walletArrow')">
+                    <i class="fas fa-wallet me-3"></i> 
+                    <span>إدارة المحافظ</span>
+                    <i class="fas fa-chevron-left" id="walletArrow"></i>
+                </button>
+                <div class="dropdown-container" id="walletDropdown">
+                    <a href="{{ url_for('wallet.index') if 'wallet' in codes else '#' }}">
+                        <i class="fas fa-scale-balanced me-2"></i> الأرصدة والتسويات
+                    </a>
+                    <a href="#">
+                        <i class="fas fa-money-bill-transfer me-2"></i> عمليات الشحن والسحب
+                    </a>
+                    <a href="#">
+                        <i class="fas fa-file-invoice-dollar me-2"></i> كشوفات الحسابات
+                    </a>
+                </div>
+            </div>
+
             <a href="#" class="nav-link">
                 <i class="fas fa-shield-halved me-3"></i> <span>إعدادات السيادة</span>
             </a>
 
-            <hr style="border-color: rgba(255, 255, 255, 0.15); margin: 2rem 0;">
+            <hr style="border-color: rgba(255, 255, 255, 0.15); margin: 1.5rem 0;">
 
             <a href="{{ url_for('auth_portal.logout') }}" class="nav-link text-danger mt-auto">
                 <i class="fas fa-power-off me-3"></i> <span>تسجيل خروج آمن</span>
@@ -172,7 +195,7 @@
         </nav>
     </aside>
 
-    <main class="main-wrapper">
+    <div class="main-wrapper">
         <header class="top-bar">
             <div class="d-flex align-items-center">
                 <button class="btn d-lg-none me-3" onclick="toggleSidebar()"><i class="fas fa-bars fs-4"></i></button>
@@ -187,15 +210,27 @@
         <div class="p-4 content-area">
             {% block content %}{% endblock %}
         </div>
-    </main>
+    </div>
 
     <script>
-        function toggleDropdown() {
-            const dropdown = document.getElementById("supplierDropdown");
-            const arrow = document.getElementById("arrow");
+        // دالة موحدة ومتطورة للتحكم في فتح وإغلاق أي قائمة منسدلة بشكل منفصل
+        function toggleDropdown(dropdownId, arrowId) {
+            const dropdown = document.getElementById(dropdownId);
+            const arrow = document.getElementById(arrowId);
             const isVisible = dropdown.style.display === "block";
+            
+            // إغلاق القوائم الأخرى لضمان تنظيم الواجهة (اختياري)
+            if (!isVisible) {
+                document.querySelectorAll('.dropdown-container').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.fa-chevron-left').forEach(el => el.classList.remove('rotate'));
+            }
+
             dropdown.style.display = isVisible ? "none" : "block";
-            arrow.classList.toggle("rotate");
+            if (!isVisible) {
+                arrow.classList.add("rotate");
+            } else {
+                arrow.classList.remove("rotate");
+            }
         }
 
         function toggleSidebar() {
