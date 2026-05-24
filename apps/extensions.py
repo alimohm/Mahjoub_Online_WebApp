@@ -1,6 +1,5 @@
-# apps/extensions.py
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from apps import create_app
+app = create_app()
 
-db = SQLAlchemy()
-login_manager = LoginManager()
+if __name__ == "__main__":
+    app.run()
