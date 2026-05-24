@@ -34,14 +34,21 @@
                         <div class="p-2 rounded-3" style="background: rgba(99, 44, 143, 0.1);"><i class="fas fa-shield-alt" style="color: var(--royal-purple);"></i></div>
                         <h5 class="fw-bold mb-0 ms-3">بيانات الوصول والوثائق</h5>
                     </div>
-                    <div class="mb-3">
+                    
+                    <div class="mb-3 position-relative">
                         <label class="form-label text-muted small">اسم المستخدم (Login)</label>
-                        <input type="text" name="username" id="input-username" class="form-control" required>
+                        <div class="input-group">
+                            <input type="text" name="username" id="input-username" class="form-control" required>
+                            <span class="input-group-text bg-white" id="status-username"><i class="fas fa-minus text-muted"></i></span>
+                        </div>
+                        <div class="feedback-msg small mt-1" id="msg-username"></div>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label text-muted small">كلمة مرور النظام</label>
                         <input type="password" name="password" id="input-password" class="form-control" required>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label text-muted small">نوع الوثيقة</label>
                         <select name="identity_type" class="form-select" required>
@@ -49,9 +56,20 @@
                             <option value="سجل تجاري">سجل تجاري</option>
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label text-muted small">رقم الوثيقة</label>
-                        <input type="text" name="identity_number" class="form-control" required>
+                        <div class="input-group">
+                            <input type="text" name="identity_number" id="input-identity-number" class="form-control" required>
+                            <span class="input-group-text bg-white" id="status-identity-number"><i class="fas fa-minus text-muted"></i></span>
+                        </div>
+                        <div class="feedback-msg small mt-1" id="msg-identity-number"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">صور الوثيقة الثبوتية (الهوية / السجل)</label>
+                        <input type="file" name="identity_images" id="input-identity-images" class="form-control" accept="image/*" multiple required>
+                        <div class="form-text text-muted extra-small">يمكنك اختيار أكثر من صورة (الوجه والظهر).</div>
                     </div>
                 </div>
             </div>
@@ -62,23 +80,34 @@
                         <div class="p-2 rounded-3" style="background: rgba(99, 44, 143, 0.1);"><i class="fas fa-user" style="color: var(--royal-purple);"></i></div>
                         <h5 class="fw-bold mb-0 ms-3">الهوية والتوزيع الجغرافي</h5>
                     </div>
+                    
                     <div class="mb-3">
                         <label class="form-label text-muted small">الاسم الكامل للمالك</label>
                         <input type="text" name="owner_name" class="form-control" required>
                     </div>
+
                     <div class="row g-2 mb-3">
                         <div class="col-8">
-                            <label class="form-label text-muted small">الاسم التجاري</label>
-                            <input type="text" name="trade_name" id="input-tradename" class="form-control" required>
+                            <label class="form-label text-muted small">الاسم التجاري (الكيان)</label>
+                            <div class="input-group">
+                                <input type="text" name="trade_name" id="input-tradename" class="form-control" required>
+                                <span class="input-group-text bg-white" id="status-tradename"><i class="fas fa-minus text-muted"></i></span>
+                            </div>
+                            <div class="feedback-msg small mt-1" id="msg-tradename"></div>
                         </div>
                         <div class="col-4">
                             <label class="form-label text-muted small">رقم المحل</label>
                             <input type="text" name="shop_number" class="form-control" required>
                         </div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label text-muted small">هاتف المالك</label>
-                        <input type="tel" name="owner_phone" class="form-control" placeholder="7XXXXXXXX" required>
+                        <label class="form-label text-muted small">هاتف المالك (رقم الهاتف)</label>
+                        <div class="input-group">
+                            <input type="tel" name="owner_phone" id="input-owner-phone" class="form-control" placeholder="7XXXXXXXX" required>
+                            <span class="input-group-text bg-white" id="status-owner-phone"><i class="fas fa-minus text-muted"></i></span>
+                        </div>
+                        <div class="feedback-msg small mt-1" id="msg-owner-phone"></div>
                     </div>
                     
                     <div class="row g-2 mb-3">
@@ -100,6 +129,11 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">العنوان التفصيلي (الشارع / الحي / القرية)</label>
+                        <input type="text" name="detailed_address" id="input-address" class="form-control" placeholder="مثال: الخوخة - جوار محطة الوفاء" required>
+                    </div>
                 </div>
             </div>
 
@@ -119,16 +153,29 @@
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">الجهة المالية المعتمدة</label>
-                        <select name="bank_name" id="bankNameSelect" class="form-select" required disabled>
-                            <option value="" selected disabled>اختر الجهة المالية أولاً...</option>
-                        </select>
+                    <div id="financialCardContainer" class="mb-3 d-none">
+                        <div id="bankSubCard" class="p-3 rounded-3 mb-2 border border-primary d-none" style="background: rgba(0, 123, 255, 0.03);">
+                            <span class="badge bg-primary mb-2"><i class="fas fa-university"></i> القطاع المصرفي المعتمد</span>
+                            <label class="form-label text-muted small d-block">اختر البنك</label>
+                            <select id="bankSelectField" class="form-select layout-financial-field"></select>
+                        </div>
+
+                        <div id="companySubCard" class="p-3 rounded-3 mb-2 border border-warning d-none" style="background: rgba(255, 193, 7, 0.03);">
+                            <span class="badge bg-warning text-dark mb-2"><i class="fas fa-network-wired"></i> شبكات الصرافة السيادية</span>
+                            <label class="form-label text-muted small d-block">اختر شركة الصرافة</label>
+                            <select id="companySelectField" class="form-select layout-financial-field"></select>
+                        </div>
+                        
+                        <input type="hidden" name="bank_name" id="hiddenBankName">
                     </div>
                     
                     <div class="mb-4">
-                        <label class="form-label text-muted small">رقم الحساب / الآيبان (IBAN)</label>
-                        <input type="text" name="bank_acc" class="form-control" required>
+                        <label class="form-label text-muted small">رقم الحساب / الرقم البنكي (IBAN)</label>
+                        <div class="input-group">
+                            <input type="text" name="bank_acc" id="input-bank-acc" class="form-control" required>
+                            <span class="input-group-text bg-white" id="status-bank-acc"><i class="fas fa-minus text-muted"></i></span>
+                        </div>
+                        <div class="feedback-msg small mt-1" id="msg-bank-acc"></div>
                     </div>
                     
                     <button type="submit" id="submitBtn" class="btn btn-lg w-100 text-white mt-auto" style="background: var(--royal-purple); border-radius: 12px;">
@@ -147,9 +194,12 @@
     .form-control:focus { background: #fff !important; border-color: var(--royal-purple) !important; box-shadow: 0 0 0 0.2rem rgba(99, 44, 143, 0.1); }
     .copy-btn { border-radius: 8px; padding: 4px 10px; font-size: 12px; transition: all 0.2s; }
     .copy-btn:hover { background: var(--royal-purple) !important; color: white !important; }
+    .extra-small { font-size: 11px; }
+    .feedback-msg { font-weight: bold; display: block; }
 </style>
 
 <script>
+    // البيانات الجغرافية اليمنية المعتمدة بالمنصة
     const geographicData = {
         "الحديدة": ["الخوخة", "حيس", "الحوك", "الميناء", "الحالي", "بيت الفقيه", "باجل", "الزهرة"],
         "عدن": ["المنصورة", "الشيخ عثمان", "كريتر", "المعلا", "التواهي", "خور مكسر", "البريقة", "دار سعد"],
@@ -158,6 +208,7 @@
         "حضرموت": ["المكلا", "سيئون", "الشحر", "تريم", "القطن", "شبام"]
     };
 
+    // القوائم المالية
     const financialData = {
         "بنوك": [
             "بنك القطيبي الإسلامي", 
@@ -177,6 +228,7 @@
         ]
     };
 
+    // معالجة تغيير المحافظة والمديرية
     const provinceSelect = document.getElementById('provinceSelect');
     const districtSelect = document.getElementById('districtSelect');
 
@@ -197,27 +249,115 @@
         }
     });
 
+    // معالجة بطاقات الربط المالي وعرضها التفاعلي بطريقتين منفصلتين
     const finTypeSelect = document.getElementById('finTypeSelect');
-    const bankNameSelect = document.getElementById('bankNameSelect');
+    const financialCardContainer = document.getElementById('financialCardContainer');
+    const bankSubCard = document.getElementById('bankSubCard');
+    const companySubCard = document.getElementById('companySubCard');
+    const bankSelectField = document.getElementById('bankSelectField');
+    const companySelectField = document.getElementById('companySelectField');
+    const hiddenBankName = document.getElementById('hiddenBankName');
 
     finTypeSelect.addEventListener('change', function() {
-        const selectedType = this.value;
-        bankNameSelect.innerHTML = `<option value="" selected disabled>اختر ${selectedType}...</option>`;
+        const value = this.value;
+        financialCardContainer.classList.remove('d-none');
         
-        if (financialData[selectedType]) {
-            financialData[selectedType].forEach(entity => {
-                const option = document.createElement('option');
-                option.value = entity;
-                option.textContent = entity;
-                bankNameSelect.appendChild(option);
-            });
-            bankNameSelect.disabled = false;
+        if (value === 'بنوك') {
+            bankSubCard.classList.remove('d-none');
+            companySubCard.classList.add('d-none');
+            buildFinancialOptions(bankSelectField, financialData['بنوك'], 'البنك');
+            updateHiddenFinancialValue(bankSelectField.value);
+        } else if (value === 'شركات صرافة') {
+            companySubCard.classList.remove('d-none');
+            bankSubCard.classList.add('d-none');
+            buildFinancialOptions(companySelectField, financialData['شركات صرافة'], 'الشركة');
+            updateHiddenFinancialValue(companySelectField.value);
         } else {
-            bankNameSelect.disabled = true;
+            financialCardContainer.classList.add('d-none');
+            hiddenBankName.value = "";
         }
     });
 
-    // دالة النسخ إلى الحافظة
+    function buildFinancialOptions(selectElement, items, typeLabel) {
+        selectElement.innerHTML = `<option value="" selected disabled>اختر ${typeLabel}...</option>`;
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            selectElement.appendChild(option);
+        });
+    }
+
+    // مزامنة واجهات الاختيار للبطاقات المالية مع الحقل الخفي الموجه للباك إند
+    bankSelectField.addEventListener('change', function() { updateHiddenFinancialValue(this.value); });
+    companySelectField.addEventListener('change', function() { updateHiddenFinancialValue(this.value); });
+    
+    function updateHiddenFinancialValue(val) {
+        hiddenBankName.value = val || "";
+    }
+
+    // ⚡ محرك الاستعلام الفوري والتحقق اللحظي عبر الـ AJAX التفاعلي
+    const validationTargets = [
+        { id: 'input-username', type: 'username', statusId: 'status-username', msgId: 'msg-username' },
+        { id: 'input-owner-phone', type: 'owner_phone', statusId: 'status-owner-phone', msgId: 'msg-owner-phone' },
+        { id: 'input-tradename', type: 'trade_name', statusId: 'status-tradename', msgId: 'msg-tradename' },
+        { id: 'input-identity-number', type: 'identity_number', statusId: 'status-identity-number', msgId: 'msg-identity-number' },
+        { id: 'input-bank-acc', type: 'bank_acc', statusId: 'status-bank-acc', msgId: 'msg-bank-acc' }
+    ];
+
+    let typingTimer;
+    const doneTypingInterval = 500; // الانتظار لنصف ثانية بعد توقف المستخدم عن الكتابة
+
+    validationTargets.forEach(target => {
+        const inputElement = document.getElementById(target.id);
+        if(inputElement) {
+            inputElement.addEventListener('input', function() {
+                clearTimeout(typingTimer);
+                resetStatusIndicator(target);
+                if (this.value.trim() !== '') {
+                    typingTimer = setTimeout(() => { performCheck(this.value.trim(), target); }, doneTypingInterval);
+                }
+            });
+        }
+    });
+
+    function resetStatusIndicator(target) {
+        const statusIcon = document.getElementById(target.statusId);
+        const msgDiv = document.getElementById(target.msgId);
+        statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
+        statusIcon.className = "input-group-text bg-white";
+        msgDiv.textContent = "";
+    }
+
+    function performCheck(value, target) {
+        const url = `{{ url_for('add_supplier.check_duplicate') }}?type=${target.type}&value=${encodeURIComponent(value)}`;
+        
+        fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const statusIcon = document.getElementById(target.statusId);
+            const msgDiv = document.getElementById(target.msgId);
+            
+            if (data.available === true) {
+                // متاح وعلامة الصح الخضراء
+                statusIcon.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+                statusIcon.classList.add('bg-success-light');
+                msgDiv.textContent = "✓ متاح للاستخدام";
+                msgDiv.className = "feedback-msg small mt-1 text-success";
+            } else {
+                // مكرر وعلامة الـ X الحمراء
+                statusIcon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
+                statusIcon.classList.add('bg-danger-light');
+                msgDiv.textContent = "✗ مكرر ومسجل مسبقاً بالنظام!";
+                msgDiv.className = "feedback-msg small mt-1 text-danger";
+            }
+        })
+        .catch(err => {
+            console.error("خطأ أثناء الفحص اللحظي للتوفر:", err);
+        });
+    }
+
+    // دالة النسخ إلى الحافظة للإشعارات التفاعلية للنجاح
     function copyToClipboard(text, btnElement) {
         navigator.clipboard.writeText(text).then(() => {
             const originalHTML = btnElement.innerHTML;
@@ -227,9 +367,10 @@
                 btnElement.innerHTML = originalHTML;
                 btnElement.classList.replace('btn-success', 'btn-outline-secondary');
             }, 1500);
-        }).catch(err => console.error("فشل النسخ:", err));
+        }).catch(err => console.error("فشل النسخ البنيوي للحافظة:", err));
     }
 
+    // جلب التسلسل التلقائي عند التحميل الأولي للمستند
     fetch("{{ url_for('add_supplier.check_duplicate', type='get_next_sequence') }}")
     .then(res => res.json())
     .then(data => {
@@ -240,6 +381,7 @@
     })
     .catch(err => console.error("Error fetching sequence:", err));
 
+    // معالجة إرسال الفورم المحدث مع دعم رفع المرفقات والملفات عبر FormData
     document.getElementById('addSupplierForm').onsubmit = function(e) {
         e.preventDefault();
         
@@ -249,7 +391,6 @@
         const btnSpinner = document.getElementById('btnSpinner');
         const alertContainer = document.getElementById('alert-container');
 
-        // 🧠 استعلام لحظي: الاحتفاظ بالبيانات المدخلة قبل الـ Reset
         const cachedUsername = document.getElementById('input-username').value;
         const cachedPassword = document.getElementById('input-password').value;
         const cachedTradeName = document.getElementById('input-tradename').value;
@@ -272,7 +413,6 @@
             btnSpinner.classList.add('d-none');
 
             if (data.status === 'success') {
-                // بناء إشعار النجاح التفاعلي المتقدم مع أزرار النسخ والتنبيه والشكر المخصص
                 alertContainer.innerHTML = `
                     <div class="alert alert-success alert-dismissible fade show rounded-4 p-4 mb-4 border-0 shadow-sm position-relative" role="alert" style="background-color: #f4fbf7; border-right: 5px solid #28a745 !important;">
                         <div class="d-flex align-items-center mb-3">
@@ -310,7 +450,12 @@
                 
                 form.reset();
                 districtSelect.disabled = true;
-                bankNameSelect.disabled = true;
+                financialCardContainer.classList.add('d-none');
+                validationTargets.forEach(target => {
+                    document.getElementById(target.statusId).innerHTML = '<i class="fas fa-minus text-muted"></i>';
+                    document.getElementById(target.statusId).className = "input-group-text bg-white";
+                    document.getElementById(target.msgId).textContent = "";
+                });
                 
                 if (data.next_sequence && data.next_wallet) {
                     document.getElementById('display-supplier-id').textContent = data.next_sequence;
