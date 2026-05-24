@@ -1,16 +1,22 @@
 # coding: utf-8
 # 🏦 بلوبرينت المحفظة المالية - منصة محجوب أونلاين 2026
 
+import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from apps.extensions import db
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
 from datetime import datetime
-import os
 
-# تعريف البلوبرينت
-# تأكد في __init__.py الخاص بـ wallet أنك قمت بتمرير template_folder='templates'
-wallet_blueprint = Blueprint('wallet', __name__)
+# تعريف المسار المطلق لمجلد القوالب لضمان الاستقلالية (Isolation)
+template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+
+# تعريف البلوبرينت مع ربطه بمجلد القوالب الخاص به
+wallet_blueprint = Blueprint(
+    'wallet', 
+    __name__, 
+    template_folder=template_dir
+)
 
 @wallet_blueprint.route('/management', methods=['GET'])
 @login_required
@@ -37,7 +43,7 @@ def display_management_table():
                 .order_by(WalletTransaction.created_at.desc()).all()
             pending_withdrawals = WalletTransaction.query.filter_by(wallet_id=wallet.id, status='معلقة').all()
 
-    # محاولة عرض القالب مع معالجة الأخطاء للتشخيص
+    # محاولة عرض القالب
     try:
         return render_template('admin/settlement_and_withdrawal.html',
                                total_wallets_count=total_wallets_count,
@@ -49,10 +55,9 @@ def display_management_table():
                                pending_withdrawals=pending_withdrawals,
                                current_search=search_query)
     except Exception as e:
-        # ستظهر هذه الرسالة في الـ Logs الخاص بـ Railway لتحديد مسار الخطأ بالضبط
-        error_msg = f"Template Load Error: {str(e)}"
-        print(error_msg)
-        return error_msg, 500
+        # في حال حدوث خطأ، ستحصل على رسالة واضحة في الـ Logs
+        print(f"DEBUG: Template Loading Error: {str(e)}")
+        return f"خطأ في تحميل القالب: {str(e)}", 500
 
 @wallet_blueprint.route('/execute-settlement/<wallet_code>', methods=['POST'])
 @login_required
@@ -83,7 +88,7 @@ def execute_admin_settlement(wallet_code):
         amount=amount,
         financial_entity=request.form.get('financial_entity', 'الإدارة المركزية'),
         reference_number=request.form.get('reference_number', 'N/A'),
-        notes=request.form.get('notes', ''),
+        reason_notes=request.form.get('notes', ''), # تأكد من تطابق اسم الحقل في الـ Model
         status='ناجحة',
         created_at=datetime.utcnow()
     )
