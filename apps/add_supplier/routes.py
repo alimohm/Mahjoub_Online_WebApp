@@ -28,19 +28,24 @@ def check_duplicate():
             'next_wallet': f"WLT-MAH{1000 + next_id}"
         })
 
-    # التحقق الحوكمة الصارم من وجود البيانات مسبقاً لمنع التكرار (الـ 5 حقول المعتمدة)
+    # التحقق الحوكمة الصارم من وجود البيانات مسبقاً لمنع التكرار (الـ 7 حقول المعتمدة)
     exists = False
-    if value:
+    if value and value.strip() != '':
+        value_striped = value.strip()
         if check_type == 'username':
-            exists = Supplier.query.filter_by(username=value).first() is not None
-        elif check_type == 'identity_number':
-            exists = Supplier.query.filter_by(identity_number=value).first() is not None
+            exists = Supplier.query.filter_by(username=value_striped).first() is not None
+        elif check_type == 'owner_name':
+            exists = Supplier.query.filter_by(owner_name=value_striped).first() is not None
         elif check_type == 'owner_phone':
-            exists = Supplier.query.filter_by(owner_phone=value).first() is not None
+            exists = Supplier.query.filter_by(owner_phone=value_striped).first() is not None
         elif check_type == 'trade_name':
-            exists = Supplier.query.filter_by(trade_name=value).first() is not None
+            exists = Supplier.query.filter_by(trade_name=value_striped).first() is not None
+        elif check_type == 'shop_number':
+            exists = Supplier.query.filter_by(shop_number=value_striped).first() is not None
+        elif check_type == 'identity_number':
+            exists = Supplier.query.filter_by(identity_number=value_striped).first() is not None
         elif check_type == 'bank_acc':
-            exists = Supplier.query.filter_by(bank_acc=value).first() is not None
+            exists = Supplier.query.filter_by(bank_acc=value_striped).first() is not None
         
     # الباك إند يرد بـ available متوافقاً مع جافاسكريبت الواجهة الأمامية
     return jsonify({'available': not bool(exists)})
@@ -87,6 +92,7 @@ def add_supplier_submit():
             owner_name=request.form.get('owner_name'),
             owner_phone=request.form.get('owner_phone'),
             trade_name=request.form.get('trade_name'),
+            shop_number=request.form.get('shop_number'),  # ربط مباشر مع رقم المحل المفحوص والجديد
             shop_phone=request.form.get('owner_phone'),  # الاعتماد المباشر لهاتف المالك كحقل إلزامي
             province=request.form.get('province'),
             district=request.form.get('district'),
@@ -95,11 +101,6 @@ def add_supplier_submit():
             bank_acc=request.form.get('bank_acc'),
             wallet_code=wallet_code
         )
-        
-        # دمج رقم المحل إن وجد
-        shop_num = request.form.get('shop_number')
-        if shop_num:
-            new_supplier.shop_number = shop_num
 
         db.session.add(new_supplier)
         
