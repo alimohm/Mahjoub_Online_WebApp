@@ -13,7 +13,8 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
-    # ربط بوابة الدخول (تأكد أن الاسم هو ما تم تعريفه في الـ Blueprint)
+    
+    # ربط بوابة الدخول باسم البلوبرينت الصحيح 'auth_portal'
     login_manager.login_view = 'auth_portal.login' 
 
     @login_manager.user_loader
@@ -22,21 +23,21 @@ def create_app():
         return AdminUser.query.get(int(user_id))
 
     with app.app_context():
-        # 1. بوابة المحافظ
-        from apps.wallet import wallet_blueprint
+        # 1. تسجيل بلوبرينت المحافظ
+        from apps.wallet.routes import wallet_blueprint
         app.register_blueprint(wallet_blueprint, url_prefix='/wallet')
 
-        # 2. بوابة المصادقة (Auth)
+        # 2. تسجيل بلوبرينت المصادقة (بوابة الدخول)
         from apps.auth_portal.routes import auth_blueprint
         app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
-        # 3. لوحة التحكم
-        from apps.admin_dashboard.routes import admin_dashboard_blueprint
-        app.register_blueprint(admin_dashboard_blueprint)
+        # 3. تسجيل بلوبرينت لوحة التحكم
+        from apps.admin_dashboard.routes import admin_dashboard
+        app.register_blueprint(admin_dashboard)
 
         db.create_all()
 
     return app
 
-# تشغيل المصنع
+# الإبقاء على كائن الدخول السيادي مستقراً في الخادم
 app = create_app()
