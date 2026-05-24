@@ -26,16 +26,17 @@ def create_app():
 
     # 📥 استدعاء الموديلات وتجهيزها داخل سياق التطبيق فوراً عند الإقلاع
     with app.app_context():
-        # استدعاء الموديلات لتسجيل الجداول في قاعدة البيانات
-        from apps.models import admin_db
-        from apps.wallet import models
-        
-        # إنشاء الجداول تلقائياً إذا لم تكن موجودة
-        db.create_all()
+        try:
+            # تسجيل الـ Blueprint الخاص بالمحافظ والتسويات المطور
+            from apps.wallet import wallet_blueprint
+            app.register_blueprint(wallet_blueprint, url_prefix='/wallet')
+            
+            # إنشاء الجداول تلقائياً في قاعدة البيانات إذا لم تكن موجودة
+            db.create_all()
+        except Exception as e:
+            print(f"⚠️ App Context Entry Warning: {e}")
 
-        # تسجيل الـ Blueprint الخاص بالمحافظ والتسويات المطور
-        from apps.wallet import wallet_blueprint
-        app.register_blueprint(wallet_blueprint, url_prefix='/wallet')
-
-    # إرجاع كائن التطبيق (هذا السطر حاسم ومحاذاته يجب أن تكون تابعة للدالة create_app ليعمل المصنع)
     return app
+
+# 🔑 بوابـة الدخـول المباشرة لـ Gunicorn لمنع الـ Crash
+app = create_app()
