@@ -9,6 +9,7 @@ from datetime import datetime
 import os
 
 # تعريف البلوبرينت
+# تأكد في __init__.py الخاص بـ wallet أنك قمت بتمرير template_folder='templates'
 wallet_blueprint = Blueprint('wallet', __name__)
 
 @wallet_blueprint.route('/management', methods=['GET'])
@@ -36,7 +37,7 @@ def display_management_table():
                 .order_by(WalletTransaction.created_at.desc()).all()
             pending_withdrawals = WalletTransaction.query.filter_by(wallet_id=wallet.id, status='معلقة').all()
 
-    # محاولة عرض القالب
+    # محاولة عرض القالب مع معالجة الأخطاء للتشخيص
     try:
         return render_template('admin/settlement_and_withdrawal.html',
                                total_wallets_count=total_wallets_count,
@@ -48,9 +49,10 @@ def display_management_table():
                                pending_withdrawals=pending_withdrawals,
                                current_search=search_query)
     except Exception as e:
-        # هذه الرسالة ستظهر في سجلات الـ Logs إذا فشل العثور على الملف
-        print(f"Template Error: {e}")
-        return f"Error loading template: {str(e)}", 500
+        # ستظهر هذه الرسالة في الـ Logs الخاص بـ Railway لتحديد مسار الخطأ بالضبط
+        error_msg = f"Template Load Error: {str(e)}"
+        print(error_msg)
+        return error_msg, 500
 
 @wallet_blueprint.route('/execute-settlement/<wallet_code>', methods=['POST'])
 @login_required
