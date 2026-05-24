@@ -162,19 +162,19 @@
             </div>
 
             <div class="dropdown-section">
-                <button class="dropdown-btn {% if request.endpoint == 'wallet.overview' %}active{% endif %}" onclick="toggleDropdown('walletDropdown', 'walletArrow')">
+                <button class="dropdown-btn {% if request.endpoint == 'wallet.display_management_table' %}active{% endif %}" onclick="toggleDropdown('walletDropdown', 'walletArrow')">
                     <i class="fas fa-wallet me-3"></i> 
                     <span>إدارة المحافظ</span>
-                    <i class="fas fa-chevron-left {% if request.endpoint == 'wallet.overview' %}rotate{% endif %}" id="walletArrow"></i>
+                    <i class="fas fa-chevron-left {% if request.endpoint == 'wallet.display_management_table' %}rotate{% endif %}" id="walletArrow"></i>
                 </button>
-                <div class="dropdown-container" id="walletDropdown" style="{% if request.endpoint == 'wallet.overview' %}display: block;{% endif %}">
-                    <a href="{{ url_for('wallet.overview') }}" class="{% if request.endpoint == 'wallet.overview' %}text-warning{% endif %}">
+                <div class="dropdown-container" id="walletDropdown" style="{% if request.endpoint == 'wallet.display_management_table' %}display: block;{% endif %}">
+                    <a href="{{ url_for('wallet.display_management_table') }}" class="{% if request.endpoint == 'wallet.display_management_table' %}text-warning{% endif %}">
                         <i class="fas fa-scale-balanced me-2"></i> الأرصدة والتسويات الإجمالية
                     </a>
-                    <a href="#">
+                    <a href="{{ url_for('wallet.display_management_table') }}">
                         <i class="fas fa-money-bill-transfer me-2"></i> عمليات الشحن والسحب
                     </a>
-                    <a href="#">
+                    <a href="{{ url_for('wallet.display_management_table') }}">
                         <i class="fas fa-file-invoice-dollar me-2"></i> كشوفات الحسابات
                     </a>
                 </div>
