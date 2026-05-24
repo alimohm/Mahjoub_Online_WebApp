@@ -49,7 +49,6 @@ def check_duplicate():
         if supplier_digits:
             clean_num = supplier_digits[0]
         else:
-            # احتياطي في حال فشل الاستخراج
             clean_num = "9635"
             
         return jsonify({
@@ -76,7 +75,6 @@ def check_duplicate():
         elif check_type == 'bank_acc':
             exists = Supplier.query.filter_by(bank_acc=value_striped).first() is not None
         
-    # الباك إند يرد بـ available متوافقاً مع جافاسكريبت الواجهة الأمامية
     return jsonify({'available': not bool(exists)})
 
 
@@ -91,7 +89,7 @@ def add_supplier_submit():
         sovereign_id = request.form.get('sovereign_id')
         wallet_code = request.form.get('wallet_code')
         
-        # معالجة وحفظ وثائق الهوية المرفوعة (دعم الملفات المتعددة الأوجه والظهر)
+        # معالجة وحفظ وثائق الهوية المرفوعة
         uploaded_files = request.files.getlist('identity_images')
         saved_filenames = []
         
@@ -105,29 +103,28 @@ def add_supplier_submit():
                 file.save(os.path.join(upload_path, filename))
                 saved_filenames.append(filename)
         
-        # دمج أسماء الملفات بفاصلة لتخزينها في حقل نصي واحد بقاعدة البيانات
         identity_image_str = ",".join(saved_filenames) if saved_filenames else None
 
-        # تشفير كلمة المرور بشكل آمن تماماً قبل كتابتها في داتابيز السيستم
+        # تشفير كلمة المرور بشكل آمن تماماً
         raw_password = request.form.get('password')
         hashed_password = generate_password_hash(raw_password) if raw_password else ""
 
-        # إنشاء كائن المورد بالمسميات الحقيقية للموديل المستقر ✅
+        # إنشاء كائن المورد
         new_supplier = Supplier(
             sovereign_id=sovereign_id,
             username=request.form.get('username'),
-            password_hash=hashed_password,  # الحقل الآمن المعتمد
+            password_hash=hashed_password,
             identity_type=request.form.get('identity_type'),
             identity_number=request.form.get('identity_number'),
-            identity_image=identity_image_str,  # تخزين روابط الصور المرفوعة
+            identity_image=identity_image_str,
             owner_name=request.form.get('owner_name'),
             owner_phone=request.form.get('owner_phone'),
             trade_name=request.form.get('trade_name'),
-            shop_number=request.form.get('shop_number'),  # ربط مباشر مع رقم المحل المفحوص والجديد
-            shop_phone=request.form.get('owner_phone'),  # الاعتماد المباشر لهاتف المالك كحقل إلزامي
+            shop_number=request.form.get('shop_number'),
+            shop_phone=request.form.get('owner_phone'),
             province=request.form.get('province'),
             district=request.form.get('district'),
-            address_detail=request.form.get('detailed_address'),  # متوافق مع الحقل الجديد بالواجهة
+            address_detail=request.form.get('detailed_address'),
             bank_name=request.form.get('bank_name'),
             bank_acc=request.form.get('bank_acc'),
             wallet_code=wallet_code
@@ -136,18 +133,18 @@ def add_supplier_submit():
         db.session.add(new_supplier)
         
         # إنشاء المحفظة المالية المرتبطة لشركاء النجاح
+        # تم إزالة معامل balance لإنهاء الخطأ المتسبب في الانهيار 🛠️
         new_wallet = SupplierWallet(
             supplier_id=sovereign_id,
             wallet_code=wallet_code,
-            status='نشطة',
-            balance=0.0
+            status='نشطة'
         )
         db.session.add(new_wallet)
         
-        # التزام وحفظ الذرة المترابطة في قاعدة البيانات (Atomic Commit)
+        # التزام وحفظ في قاعدة البيانات
         db.session.commit()
         
-        # جلب التسلسلات القادمة تلقائياً لإرسالها للواجهة لتحديث العدادات الفورية بعد نجاح الحفظ
+        # جلب التسلسلات القادمة تلقائياً لإرسالها للواجهة لتحديث العدادات الفورية
         next_sovereign = Supplier.generate_next_sovereign_id()
         supplier_digits = re.findall(r'\d+', str(next_sovereign))
         clean_num = supplier_digits[0] if supplier_digits else "9636"
