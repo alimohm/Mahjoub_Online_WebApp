@@ -1,14 +1,12 @@
 # coding: utf-8
 from flask import Blueprint
 
-# 🛡️ تعريف الـ Blueprint الخاص بـ "تعميد الموردين"
-# هذا يجعل كل المسارات المعرفة في routes.py تابعة لهذه الحزمة
+# تعريف الـ Blueprint بالاسم المعتمد في الـ url_for لمنع تكرار أخطاء البناء
 admin_suppliers_bp = Blueprint(
     'add_supplier', 
     __name__, 
-    template_folder='templates',
-    static_folder='static'
+    template_folder='templates'
 )
 
-# استيراد الـ routes لربطها بالـ blueprint
+# استدعاء المسارات (Routes) لربطها بالـ Blueprint بعد تعريفه لتجنب الـ Circular Import
 from . import routes
