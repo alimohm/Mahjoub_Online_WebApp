@@ -1,6 +1,6 @@
 # coding: utf-8
 from flask import render_template, request, jsonify, current_app, url_for, redirect
-from flask_login import login_required
+from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash  # قفل أمني لتشفير كلمات المرور 🔒
 import os
@@ -10,7 +10,28 @@ from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet
 from . import admin_suppliers_bp # نقوم باستيراده ولكن سنعتمد الاسم البرمجي المسجل بالسيستم لتفادي خطأ الـ Build
 
-# 1. دالة التحقق من التكرار والـ Sequences (تتوافق مع الفحص اللحظي الفوري)
+# =======================================================
+# 1. دالة العرض المصلحة (تأمين ظهور واستقرار القالب)
+# =======================================================
+@admin_suppliers_bp.route('/add_supplier_page', methods=['GET'])
+@login_required
+def add_supplier_page():
+    """
+    مِحرّك جلب وعرض قالب تعميد الموردين.
+    تمت إضافة سياق المالك والتأمين الكامل لمنع انهيار Jinja2 عند الوراثة.
+    """
+    # تأمين سياق المالك (المؤسس علي) المتوقع في قالب admin_base.html الأساسي
+    owner_context = {
+        "full_name": getattr(current_user, 'full_name', 'المؤسس علي محجوب')
+    }
+    
+    # استدعاء القالب مع تمرير السياق الحاكم
+    return render_template('admin/add_supplier.html', owner=owner_context)
+
+
+# =======================================================
+# 2. دالة التحقق من التكرار والـ Sequences (تتوافق مع الفحص اللحظي الفوري)
+# =======================================================
 @admin_suppliers_bp.route('/check_duplicate', methods=['GET'])
 @login_required
 def check_duplicate():
@@ -51,7 +72,9 @@ def check_duplicate():
     return jsonify({'available': not bool(exists)})
 
 
-# 2. دالة التنفيذ (التعميد المزدوج للمورد ومحفظته الإستراتيجية)
+# =======================================================
+# 3. دالة التنفيذ (التعميد المزدوج للمورد ومحفظته الإستراتيجية)
+# =======================================================
 @admin_suppliers_bp.route('/add_supplier_submit', methods=['POST'])
 @login_required
 def add_supplier_submit():
@@ -60,7 +83,7 @@ def add_supplier_submit():
         sovereign_id = request.form.get('sovereign_id')
         wallet_code = request.form.get('wallet_code')
         
-        # 1. معالجة وحفظ وثائق الهوية المرفوعة (دعم الملفات المتعددة الأوجه والظهر)
+        # معالجة وحفظ وثائق الهوية المرفوعة (دعم الملفات المتعددة الأوجه والظهر)
         uploaded_files = request.files.getlist('identity_images')
         saved_filenames = []
         
@@ -81,7 +104,7 @@ def add_supplier_submit():
         raw_password = request.form.get('password')
         hashed_password = generate_password_hash(raw_password) if raw_password else ""
 
-        # 2. إنشاء كائن المورد بالمسميات الحقيقية للموديل المستقر ✅
+        # إنشاء كائن المورد بالمسميات الحقيقية للموديل المستقر ✅
         new_supplier = Supplier(
             sovereign_id=sovereign_id,
             username=request.form.get('username'),
@@ -104,7 +127,7 @@ def add_supplier_submit():
 
         db.session.add(new_supplier)
         
-        # 3. إنشاء المحفظة المالية المرتبطة لشركاء النجاح
+        # إنشاء المحفظة المالية المرتبطة لشركاء النجاح
         new_wallet = SupplierWallet(
             supplier_id=sovereign_id,
             wallet_code=wallet_code,
@@ -116,7 +139,7 @@ def add_supplier_submit():
         # التزام وحفظ الذرة المترابطة في قاعدة البيانات (Atomic Commit)
         db.session.commit()
         
-        # 🔥 جلب التسلسلات القادمة تلقائياً لإرسالها للواجهة الأمامية لتحديث العدادات بدون إنعاش الصفحة
+        # جلب التسلسلات القادمة تلقائياً لإرسالها للواجهة الأمامية لتحديث العدادات بدون إنعاش الصفحة
         next_sovereign = Supplier.generate_next_sovereign_id()
         last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
         next_id = (last_supplier.id + 1) if last_supplier else 1
@@ -133,10 +156,3 @@ def add_supplier_submit():
         db.session.rollback()
         current_app.logger.error(f"خطأ في تعميد المورد: {str(e)}")
         return jsonify({'status': 'error', 'message': f'حدث خطأ تقني أثناء معالجة الطلب: {str(e)}'})
-
-
-# 3. عرض صفحة إضافة الموردين
-@admin_suppliers_bp.route('/add_supplier', methods=['GET'])
-@login_required
-def add_supplier_page():
-    return render_template('admin/add_supplier.html')
