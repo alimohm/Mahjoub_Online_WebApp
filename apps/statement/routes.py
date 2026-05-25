@@ -1,13 +1,12 @@
 # coding: utf-8
 from flask import render_template, request, jsonify
 from flask_login import login_required
-from apps.extensions import db  # تم التأكد من استيراد db هنا
+from apps.extensions import db
 from apps.statement import statement_blueprint
 from apps.models.supplier_db import Supplier
 from apps.models.statement_db import SupplierStatement
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
 from sqlalchemy import or_, func
-from datetime import datetime
 
 @statement_blueprint.route('/view', methods=['GET'])
 @login_required
@@ -16,19 +15,26 @@ def view_statement():
     currencies = ['USD', 'YER', 'SAR'] 
     return render_template('admin/statement.html', currencies=currencies)
 
-# 1. محرك البحث الذكي (Live Search) - مُنسق لـ Select2
+# 1. محرك البحث الذكي (Live Search) - مُنسق ليعمل مباشرة داخل Select2
 @statement_blueprint.route('/api/suppliers/search', methods=['GET'])
 @login_required
 def api_search_suppliers():
     term = request.args.get('q', '')
+    # البحث الشامل في كافة الحقول المطلوبة
     suppliers = Supplier.query.filter(or_(
         Supplier.trade_name.ilike(f'%{term}%'),
         Supplier.sovereign_id.ilike(f'%{term}%'),
-        Supplier.wallet_code.ilike(f'%{term}%')
+        Supplier.store_name.ilike(f'%{term}%'),
+        Supplier.owner_name.ilike(f'%{term}%')
     )).limit(15).all()
     
-    # تنسيق الـ JSON المطلوب لمكتبة Select2
-    results = [{'id': s.id, 'text': f"{s.trade_name} | {s.sovereign_id} | {s.wallet_code}"} for s in suppliers]
+    # تنسيق النتيجة ليفهمها Select2 مباشرة
+    results = [
+        {
+            'id': s.id, 
+            'text': f"{s.trade_name} | متجر: {s.store_name} | المالك: {s.owner_name} | رقم: {s.sovereign_id}"
+        } for s in suppliers
+    ]
     return jsonify({"results": results})
 
 # 2. محرك جلب البيانات (التفصيلي والإجمالي) - بنظام AJAX
@@ -58,13 +64,13 @@ def api_get_report():
     total_profit = 0
     
     if wallet:
-        # بناء استعلام الأرباح مع مراعاة الفلاتر
         profit_query = WalletTransaction.query.filter_by(wallet_id=wallet.id)
         if currency != 'ALL': 
             profit_query = profit_query.filter_by(currency=currency)
         if start_date and end_date: 
             profit_query = profit_query.filter(WalletTransaction.created_at.between(start_date, end_date))
         
+        # استخدام func.sum للقيام بعملية الجمع داخل قاعدة البيانات مباشرة للأداء الأفضل
         total_profit = profit_query.with_entities(func.sum(WalletTransaction.profit_margin)).scalar() or 0
 
     return jsonify({
