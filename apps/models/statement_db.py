@@ -1,65 +1,16 @@
 # coding: utf-8
-# 📂 apps/statement/routes.py
-# ⚙️ محرك كشوفات الموردين المركزية - نظام محجوب أونلاين 2026
+# 📂 apps/models/statement_db.py
+from apps.extensions import db
+from datetime import datetime
 
-from flask import render_template, request, flash
-from flask_login import login_required
-from apps.statement import statement_blueprint
-from apps.models.supplier_db import Supplier
-from apps.models.statement_db import SupplierStatement
-from sqlalchemy import or_
-
-@statement_blueprint.route('/view', methods=['GET'])
-@login_required
-def view_statement():
-    """
-    عرض كشف حساب الموردين مع دعم الفلترة حسب العملة والتاريخ.
-    """
-    q = request.args.get('q', '')
-    currency = request.args.get('currency', 'ALL')
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
+class SupplierStatement(db.Model):
+    __tablename__ = 'supplier_statements'
     
-    selected_supplier = None
-    statements = []
-
-    # البحث عن المورد وتجهيز كشف الحساب
-    if q:
-        try:
-            # البحث عن المورد (الاسم أو ID)
-            selected_supplier = Supplier.query.filter(or_(
-                Supplier.trade_name.ilike(f'%{q}%'),
-                Supplier.owner_name.ilike(f'%{q}%'),
-                Supplier.sovereign_id == q
-            )).first()
-            
-            if selected_supplier:
-                # إنشاء استعلام الكشف
-                query = SupplierStatement.query.filter_by(supplier_id=selected_supplier.id)
-                
-                # تطبيق الفلاتر الإضافية
-                if currency != 'ALL':
-                    query = query.filter_by(currency=currency)
-                if start_date:
-                    query = query.filter(SupplierStatement.created_at >= start_date)
-                if end_date:
-                    query = query.filter(SupplierStatement.created_at <= end_date)
-                
-                # جلب البيانات مرتبة زمنياً
-                statements = query.order_by(SupplierStatement.created_at.desc()).all()
-            else:
-                flash("لم يتم العثور على مورد بهذه البيانات.", "warning")
-        
-        except Exception as e:
-            print(f"Error in view_statement: {e}")
-            flash("حدث خطأ تقني أثناء تحميل الكشف.", "danger")
-            statements = []
-
-    return render_template(
-        'admin/statement.html',
-        selected_supplier=selected_supplier,
-        statements=statements,
-        currency_filter=currency,
-        start_date=start_date,
-        end_date=end_date
-    )
+    id = db.Column(db.Integer, primary_key=True)
+    # الربط يتم برمجياً بدون استيراد كلاس المورد
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
+    
+    amount = db.Column(db.Float, nullable=False)
+    running_balance = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(10), default='USD')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
