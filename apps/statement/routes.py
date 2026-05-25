@@ -12,9 +12,9 @@ from sqlalchemy import or_
 def view_statement():
     """
     عرض كشف حساب الموردين مع دعم الفلترة حسب العملة والتاريخ.
-    تم نقل الاستيرادات إلى هنا لكسر حلقة الاستيراد الدائرية.
+    تم نقل الاستيرادات إلى داخل الدالة لكسر حلقة الاستيراد الدائرية.
     """
-    # الاستيراد داخل الدالة فقط - الحل السحري لإنهاء انهيار السيرفر
+    # الاستيراد يتم هنا فقط، مما يمنع حدوث Circular Import
     from apps.models.supplier_db import Supplier
     from apps.models.statement_db import SupplierStatement
 
@@ -29,7 +29,7 @@ def view_statement():
     # البحث عن المورد وتجهيز كشف الحساب
     if q:
         try:
-            # البحث عن المورد
+            # البحث عن المورد (الاسم أو ID)
             selected_supplier = Supplier.query.filter(or_(
                 Supplier.trade_name.ilike(f'%{q}%'),
                 Supplier.owner_name.ilike(f'%{q}%'),
