@@ -5,13 +5,18 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
 <style>
-    .mahjoub-toolbar { background: #fff; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
-    .stat-card { border-radius: 15px; border: none; transition: 0.3s; color: white; }
-    .bg-profit { background: linear-gradient(45deg, #632C8F, #8E44AD); }
-    .bg-debit { background: linear-gradient(45deg, #d32f2f, #ef5350); }
-    .bg-credit { background: linear-gradient(45deg, #2e7d32, #66bb6a); }
-    .bg-balance { background: linear-gradient(45deg, #1565c0, #42a5f5); }
-    .quick-btn { border-radius: 10px; font-weight: bold; font-size: 13px; }
+    :root { --mahjoub-purple: #632C8F; }
+    .mahjoub-toolbar { background: #fff; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-right: 5px solid var(--mahjoub-purple); }
+    .stat-card { border-radius: 15px; border: none; color: white; padding: 20px; }
+    .bg-profit { background: var(--mahjoub-purple); }
+    .bg-debit { background: #d32f2f; }
+    .bg-credit { background: #2e7d32; }
+    .bg-balance { background: #1565c0; }
+    /* تنسيق Select2 للهوية */
+    .select2-container--default .select2-selection--single { height: 45px !important; padding: 8px !important; border: 1px solid #ced4da; }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--mahjoub-purple) !important; }
+    .btn-mahjoub { background-color: var(--mahjoub-purple); color: white; border-radius: 10px; }
+    .btn-mahjoub:hover { background-color: #4a216b; color: white; }
 </style>
 
 <div class="container-fluid py-4">
@@ -19,7 +24,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="small fw-bold text-muted mb-2">البحث الذكي عن المورد</label>
-                <select id="supplierSearch" class="form-control select2-mahjoub"></select>
+                <select id="supplierSearch" class="form-control"></select>
             </div>
             <div class="col-md-2">
                 <label class="small fw-bold text-muted mb-2">العملة</label>
@@ -30,61 +35,38 @@
             </div>
             <div class="col-md-4">
                 <label class="small fw-bold text-muted mb-2">تحديد الفترة الزمنية</label>
-                <div id="reportrange" class="form-control d-flex justify-content-between align-items-center" style="cursor: pointer;">
-                    <i class="fa fa-calendar"></i>&nbsp;<span></span> <i class="fa fa-caret-down"></i>
+                <div id="reportrange" class="form-control" style="cursor: pointer; height: 45px; display: flex; align-items: center;">
+                    <i class="fa fa-calendar me-2"></i> <span></span>
                 </div>
             </div>
             <div class="col-md-2">
-                <button class="btn btn-dark w-100 py-2 rounded-3" onclick="loadFinancialData()"><i class="fas fa-sync"></i> تحديث</button>
+                <button class="btn btn-mahjoub w-100 py-2" onclick="loadFinancialData()"><i class="fas fa-sync"></i> تحديث النتائج</button>
             </div>
         </div>
     </div>
 
     <div id="summaryCards" class="row mb-4" style="display: none;">
-        <div class="col-md-3">
-            <div class="card stat-card bg-profit p-3 shadow-sm">
-                <span class="small">إجمالي الأرباح</span>
-                <h2 id="totalProfit" class="mb-0 fw-bold">0.00</h2>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card bg-debit p-3 shadow-sm">
-                <span class="small">إجمالي المدين (عليه)</span>
-                <h2 id="totalDebit" class="mb-0 fw-bold">0.00</h2>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card bg-credit p-3 shadow-sm">
-                <span class="small">إجمالي الدائن (له)</span>
-                <h2 id="totalCredit" class="mb-0 fw-bold">0.00</h2>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card bg-balance p-3 shadow-sm">
-                <span class="small">صافي الرصيد الحالي</span>
-                <h2 id="netBalance" class="mb-0 fw-bold">0.00</h2>
-            </div>
-        </div>
+        <div class="col-md-3"><div class="card stat-card bg-profit"><h6>إجمالي الأرباح</h6><h2 id="totalProfit">0.00</h2></div></div>
+        <div class="col-md-3"><div class="card stat-card bg-debit"><h6>إجمالي المدين (عليه)</h6><h2 id="totalDebit">0.00</h2></div></div>
+        <div class="col-md-3"><div class="card stat-card bg-credit"><h6>إجمالي الدائن (له)</h6><h2 id="totalCredit">0.00</h2></div></div>
+        <div class="col-md-3"><div class="card stat-card bg-balance"><h6>صافي الرصيد الحالي</h6><h2 id="netBalance">0.00</h2></div></div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="card-header bg-white py-3 border-0">
-            <h6 class="mb-0 fw-bold"><i class="fas fa-list-ul text-primary"></i> الحركة التفصيلية للعمليات المالية</h6>
+            <h6 class="mb-0 fw-bold text-purple"><i class="fas fa-list-ul me-2"></i> سجل العمليات المالي</h6>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="statementTable">
+            <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="px-4">التاريخ والوقت</th>
-                        <th>البيان</th>
-                        <th class="text-center">المرجع/السند</th>
-                        <th class="text-center">مدين</th>
-                        <th class="text-center">دائن</th>
+                        <th>التاريخ</th><th>البيان</th><th>المرجع/السند</th>
+                        <th class="text-center">مدين</th><th class="text-center">دائن</th>
                         <th class="text-center">الرصيد التراكمي</th>
                     </tr>
                 </thead>
                 <tbody id="statementBody">
-                    <tr><td colspan="6" class="text-center py-5 text-muted">بانتظار اختيار المورد...</td></tr>
+                    <tr><td colspan="6" class="text-center py-5 text-muted">يرجى اختيار المورد وتحديد الفترة لعرض البيانات</td></tr>
                 </tbody>
             </table>
         </div>
@@ -97,39 +79,34 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
 <script>
-    var start = moment().subtract(29, 'days');
-    var end = moment();
+    var pickerStart = moment().subtract(29, 'days');
+    var pickerEnd = moment();
 
     $(function() {
-        // تهيئة البحث الذكي
         $('#supplierSearch').select2({
-            placeholder: "ابحث بالاسم، الرقم الموحد، أو كود المحفظة...",
+            placeholder: "ابحث بالاسم أو الرقم الموحد...",
             ajax: { url: '/api/suppliers/search', dataType: 'json' }
         });
 
-        // تهيئة التقويم (يوم، أسبوع، شهر، سنة)
-        function cb(start, end) {
-            $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-        }
         $('#reportrange').daterangepicker({
-            startDate: start,
-            endDate: end,
+            startDate: pickerStart, endDate: pickerEnd,
             ranges: {
                'اليوم': [moment(), moment()],
-               'الأمس': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                'آخر 7 أيام': [moment().subtract(6, 'days'), moment()],
-               'هذا الشهر': [moment().startOf('month'), moment().endOf('month')],
-               'الشهر الماضي': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+               'هذا الشهر': [moment().startOf('month'), moment().endOf('month')]
             }
-        }, cb);
-        cb(start, end);
+        }, function(start, end) {
+            pickerStart = start; pickerEnd = end;
+            $('#reportrange span').html(start.format('YYYY/MM/DD') + ' - ' + end.format('YYYY/MM/DD'));
+        });
+        $('#reportrange span').html(pickerStart.format('YYYY/MM/DD') + ' - ' + pickerEnd.format('YYYY/MM/DD'));
     });
 
     function loadFinancialData() {
         let supplierId = $('#supplierSearch').val();
-        if(!supplierId) return alert('يرجى اختيار مورد أولاً');
+        if(!supplierId) return alert('يرجى اختيار المورد أولاً');
 
-        let url = `/api/statement/report?id=${supplierId}&currency=${$('#currencyFilter').val()}&start=${start.format('YYYY-MM-DD')}&end=${end.format('YYYY-MM-DD')}`;
+        let url = `/api/statement/report?id=${supplierId}&currency=${$('#currencyFilter').val()}&start=${pickerStart.format('YYYY-MM-DD')}&end=${pickerEnd.format('YYYY-MM-DD')}`;
 
         fetch(url).then(res => res.json()).then(data => {
             $('#summaryCards').fadeIn();
@@ -141,15 +118,15 @@
             let html = '';
             data.details.forEach(s => {
                 html += `<tr>
-                    <td class="px-4 text-muted small">${s.date}</td>
+                    <td class="small">${s.date}</td>
                     <td class="fw-bold">${s.desc}</td>
-                    <td class="text-center"><span class="badge bg-light text-dark">${s.ref}</span></td>
-                    <td class="text-center text-danger fw-bold">${s.debit || '-'}</td>
-                    <td class="text-center text-success fw-bold">${s.credit || '-'}</td>
-                    <td class="text-center fw-bold bg-light">${s.balance}</td>
+                    <td><span class="badge bg-secondary">${s.ref}</span></td>
+                    <td class="text-center text-danger">${s.debit || '-'}</td>
+                    <td class="text-center text-success">${s.credit || '-'}</td>
+                    <td class="text-center fw-bold">${s.balance}</td>
                 </tr>`;
             });
-            $('#statementBody').html(html || '<tr><td colspan="6" class="text-center">لا توجد عمليات لهذه الفترة</td></tr>');
+            $('#statementBody').html(html);
         });
     }
 </script>
