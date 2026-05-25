@@ -1,5 +1,6 @@
 # coding: utf-8
 # 📂 apps/statement/routes.py
+# ⚙️ محرك كشوفات الموردين المركزية - نظام محجوب أونلاين 2026
 
 from flask import render_template, request, flash
 from flask_login import login_required
@@ -11,6 +12,14 @@ from sqlalchemy import or_
 @statement_blueprint.route('/view', methods=['GET'])
 @login_required
 def view_statement():
+    """
+    محرك عرض كشف حساب الموردين:
+    - التقاط الفلاتر (العملة، التواريخ، البحث).
+    - الربط مع Supplier و ReportGenerator.
+    - معالجة الأخطاء لمنع انهيار النظام.
+    """
+    
+    # 1. التقاط مدخلات البحث والفلترة من الرابط
     q = request.args.get('q', '')
     currency = request.args.get('currency', 'ALL')
     report_type = request.args.get('report_type', 'detailed')
@@ -20,29 +29,34 @@ def view_statement():
     selected_supplier = None
     statements = []
 
+    # 2. منطق البحث الذكي
     if q:
         try:
+            # البحث عن المورد عبر الاسم التجاري، اسم المالك، أو الرقم السيادي
             selected_supplier = Supplier.query.filter(or_(
                 Supplier.trade_name.ilike(f'%{q}%'),
                 Supplier.owner_name.ilike(f'%{q}%'),
                 Supplier.sovereign_id == q
             )).first()
             
+            # 3. استخدام محرك التقارير لجلب الحركات المالية
             if selected_supplier:
                 statements = ReportGenerator.get_detailed_transactions(
                     supplier_id=selected_supplier.id,
                     currency=currency,
                     start_date=start_date,
                     end_date=end_date
-                ) or []
+                ) or [] # التأكد من عدم رجوع None لتجنب أخطاء HTML
             else:
                 flash("لم يتم العثور على مورد بهذه البيانات.", "warning")
         
         except Exception as e:
-            print(f"Error generating statement: {e}")
-            flash("حدث خطأ أثناء تحميل الكشف.", "danger")
+            # معالجة أخطاء قاعدة البيانات لمنع ظهور صفحة 500 للمستخدم
+            print(f"Error in view_statement: {e}")
+            flash("حدث خطأ تقني أثناء تحميل الكشف، يرجى المحاولة لاحقاً.", "danger")
             statements = []
 
+    # 4. إرجاع النتائج للقالب
     return render_template(
         'admin/statement.html',
         selected_supplier=selected_supplier,
