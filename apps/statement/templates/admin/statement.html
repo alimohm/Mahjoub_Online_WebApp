@@ -4,9 +4,9 @@
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ url_for('statement_blueprint.view_statement') }}" class="row g-3 align-items-end">
+            <form method="GET" action="{{ url_for('statement.view_statement') }}" class="row g-3 align-items-end">
                 <div class="col-md-8">
-                    <label class="form-label fw-bold">اختر المورد لعرض كشف الحساب:</label>
+                    <label class="form-label fw-bold">اختر المورد:</label>
                     <select name="supplier_id" class="form-select" onchange="this.form.submit()">
                         <option value="">-- اختر مورد --</option>
                         {% for s in all_suppliers %}
@@ -18,7 +18,7 @@
                 </div>
                 <div class="col-md-4">
                     <button type="button" onclick="window.print()" class="btn btn-dark w-100">
-                        <i class="fas fa-print"></i> طباعة الكشف
+                        <i class="fas fa-print"></i> طباعة
                     </button>
                 </div>
             </form>
@@ -27,42 +27,18 @@
 
     {% if selected_supplier %}
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-success text-white shadow-sm border-0 p-3">
-                <h6>رصيد الريال السعودي (SAR)</h6>
-                <h3 class="mb-0">{{ "{:,.2f}".format(balances['SAR']) }}</h3>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-info text-white shadow-sm border-0 p-3">
-                <h6>رصيد الريال اليمني (YER)</h6>
-                <h3 class="mb-0">{{ "{:,.0f}".format(balances['YER']) }}</h3>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-warning text-dark shadow-sm border-0 p-3">
-                <h6>رصيد الدولار (USD)</h6>
-                <h3 class="mb-0">{{ "{:,.2f}".format(balances['USD']) }}</h3>
-            </div>
-        </div>
+        <div class="col-md-4"><div class="card bg-success text-white p-3"><h6>رصيد SAR</h6><h3>{{ "{:,.2f}".format(balances['SAR']) }}</h3></div></div>
+        <div class="col-md-4"><div class="card bg-info text-white p-3"><h6>رصيد YER</h6><h3>{{ "{:,.0f}".format(balances['YER']) }}</h3></div></div>
+        <div class="col-md-4"><div class="card bg-warning text-dark p-3"><h6>رصيد USD</h6><h3>{{ "{:,.2f}".format(balances['USD']) }}</h3></div></div>
     </div>
-    {% endif %}
 
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold">
-                {% if selected_supplier %} كشف حساب: {{ selected_supplier.trade_name }} {% else %} الرجاء اختيار مورد {% endif %}
-            </h5>
-        </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>التاريخ</th>
-                        <th>العملية</th>
-                        <th>العملة</th>
-                        <th class="text-danger">مدين (سحب)</th>
-                        <th class="text-success">دائن (إيداع)</th>
+                        <th>التاريخ</th><th>العملية</th><th>العملة</th>
+                        <th class="text-danger">مدين</th><th class="text-success">دائن</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -74,14 +50,11 @@
                         <td class="text-danger">{{ "{:,.2f}".format(stmt.debit) }}</td>
                         <td class="text-success">{{ "{:,.2f}".format(stmt.credit) }}</td>
                     </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center py-4 text-muted">لا توجد حركات مالية مسجلة.</td>
-                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
