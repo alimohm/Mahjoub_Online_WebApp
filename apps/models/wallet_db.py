@@ -1,7 +1,5 @@
 # coding: utf-8
 # 💳 مستند النموذج الحوكمي المطوّر للمحافظ الموحدة وسجلات التسوية - منصة محجوب أونلاين 2026
-# تم تعديل الاستيراد من apps.extensions لكسر حلقة Circular Import
-
 import random
 from datetime import datetime
 from apps.extensions import db
@@ -29,17 +27,14 @@ class SupplierWallet(db.Model):
     usd_withdrawn = db.Column(db.Numeric(15, 2), default=0.00, nullable=False)
     usd_pending = db.Column(db.Numeric(15, 2), default=0.00, nullable=False)
 
-    status = db.Column(db.String(20), default='نشطة', nullable=False) # نشطة / موقوفة مؤقتاً
+    status = db.Column(db.String(20), default='نشطة', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    # العلاقة البرمجية مع جدول الحركات المالية
     transactions = db.relationship('WalletTransaction', backref='wallet', lazy=True, cascade="all, delete-orphan")
 
-    # 📊 محرك التوليد التلقائي لرموز المحافظ متناسق هندسياً مع الموردين
     @staticmethod
     def generate_next_wallet_code():
-        """ استعلام مباشر لجلب معرف المحفظة التالي متناسقاً مع الجدول الحي """
         last_wallet = SupplierWallet.query.order_by(SupplierWallet.id.desc()).first()
         if last_wallet and last_wallet.wallet_code:
             try:
@@ -50,7 +45,6 @@ class SupplierWallet(db.Model):
                 return f"WEL-MAH963{random.randint(100, 999)}"
         return "WEL-MAH9631"
 
-    # 🧮 دوال ذكية لحساب الرصيد الصافي المتاح للاستخدام والطلب فوراً
     @property
     def yer_available(self):
         return max(0.00, float(self.yer_total - self.yer_withdrawn - self.yer_pending))
@@ -68,30 +62,36 @@ class SupplierWallet(db.Model):
 
 
 class WalletTransaction(db.Model):
-    """ نظام الأرشفة والسجلات التاريخية لجميع العمليات المالية والتسويات المنفذة """
+    """ نظام الأرشفة والسجلات التاريخية لجميع العمليات المالية مع دعم أرباح التجزئة """
     __tablename__ = 'wallet_transactions'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     wallet_id = db.Column(db.Integer, db.ForeignKey('supplier_wallets.id'), nullable=False)
     
-    # تفاصيل الحركة الحسابية
-    tx_code = db.Column(db.String(60), unique=True, nullable=False) # رمز توثيقي فريد للحركة
-    tx_type = db.Column(db.String(30), nullable=False) # إيداع (أرباح مبيعات) / سحب / تسوية رصيد معلق
-    currency = db.Column(db.String(10), nullable=False) # YER / SAR / USD
-    amount = db.Column(db.Numeric(15, 2), nullable=False)
+    tx_code = db.Column(db.String(60), unique=True, nullable=False)
+    tx_type = db.Column(db.String(30), nullable=False) 
+    currency = db.Column(db.String(10), nullable=False)
     
-    # توثيق الحوكمة والربط الخارجي الصادر
-    financial_entity = db.Column(db.String(100), nullable=True) # اسم البنك أو شركة الصرافة المستلمة
-    reference_number = db.Column(db.String(100), nullable=True) # رقم السند البنكي أو رقم الحوالة الصادرة
+    # 📉 البيانات المالية للعملية
+    amount = db.Column(db.Numeric(15, 2), nullable=False) # المبلغ الصافي للحركة
+    cost_price = db.Column(db.Numeric(15, 2), default=0.00, nullable=False)    # سعر التكلفة (جملة)
+    retail_price = db.Column(db.Numeric(15, 2), default=0.00, nullable=False)  # سعر البيع (تجزئة)
+    profit_margin = db.Column(db.Numeric(15, 2), default=0.00, nullable=False) # هامش الربح (تلقائي)
     
-    notes = db.Column(db.Text, nullable=True) # ملاحظات الأرشفة والتدقيق
-    status = db.Column(db.String(20), default='ناجحة', nullable=False) # ناجحة / معلقة / مرفوضة
+    financial_entity = db.Column(db.String(100), nullable=True)
+    reference_number = db.Column(db.String(100), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='ناجحة', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def __init__(self, **kwargs):
+        super(WalletTransaction, self).__init__(**kwargs)
+        # حساب الربح تلقائياً عند إنشاء أي عملية
+        self.profit_margin = float(self.retail_price) - float(self.cost_price)
 
     @staticmethod
     def generate_tx_code():
-        """ توليد رمز مرجعي مشفر وفريد لكل حركة مالية """
         return f"TXM-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
 
     def __repr__(self):
-        return f"<WalletTransaction {self.tx_code} | Type {self.tx_type} | {self.amount} {self.currency}>"
+        return f"<WalletTransaction {self.tx_code} | Profit {self.profit_margin} {self.currency}>"
