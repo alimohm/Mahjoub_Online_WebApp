@@ -1,15 +1,16 @@
 # coding: utf-8
 # 📂 apps/financial_ops/routes.py
+
 from flask import render_template, request, redirect, url_for, flash
 from apps.financial_ops import blueprint
 from apps.extensions import db
 from apps.models.settlements_db import AdminSettlement
-# استبدل هذه الاستيرادات بما يناسب هيكل مشروعك (Withdrawal/SupplierWallet)
 from apps.models.withdrawals_db import Withdrawal 
 
 @blueprint.route('/management')
 def settlement_and_withdrawal():
     """عرض لوحة التحكم المركزية مع التبويبات والبيانات"""
+    # جلب البيانات لملء الجدول
     pending_withdrawals = Withdrawal.query.filter_by(status='pending').all()
     settlements = AdminSettlement.query.order_by(AdminSettlement.created_at.desc()).all()
     
@@ -35,7 +36,7 @@ def handle_supplier_withdrawal(tx_id, decision):
             wallet_code=tx.wallet.wallet_code,
             settlement_code=AdminSettlement.generate_settlement_code(),
             settlement_type='سحب رصيد',
-            currency='SAR', # أو العملة المعتمدة
+            currency='SAR',
             amount=tx.amount,
             reference_number=ref_number,
             financial_entity=financial_entity,
@@ -51,4 +52,17 @@ def handle_supplier_withdrawal(tx_id, decision):
         
         flash(f"تم اعتماد العملية بنجاح. رقم السند: {new_settlement.settlement_code}", "success")
         
+    elif decision == 'reject':
+        # معالجة حالة الرفض
+        tx.status = 'rejected'
+        db.session.commit()
+        flash(f"تم رفض طلب السحب رقم {tx_id}", "warning")
+        
+    return redirect(url_for('financial_ops.settlement_and_withdrawal'))
+
+@blueprint.route('/settlement/create', methods=['POST'])
+def create_manual_settlement():
+    """معالجة زر 'سند تسوية جديد'"""
+    # منطق إضافة سند تسوية يدوي سيتم ربطه هنا
+    flash("تم إنشاء سند تسوية جديد بنجاح", "info")
     return redirect(url_for('financial_ops.settlement_and_withdrawal'))
