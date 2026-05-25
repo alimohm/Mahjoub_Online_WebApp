@@ -6,8 +6,6 @@ from apps.extensions import db
 from datetime import datetime
 from sqlalchemy.orm import validates
 
-# حذفنا سطر الاستيراد المباشر لـ SupplierStatement لتجنب Circular Import
-
 class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
@@ -15,10 +13,9 @@ class Supplier(db.Model):
     sovereign_id = db.Column(db.String(50), unique=True, nullable=False, index=True) 
     wallet_code = db.Column(db.String(50), unique=True, nullable=False)
     
-    # ربط العلاقة مع كشوفات الحسابات باستخدام اسم الموديل كسلسلة نصية
+    # ربط العلاقة مع كشوفات الحسابات باستخدام اسم الموديل كسلسلة نصية لتجنب الاستيراد الدائري
     statements = db.relationship('SupplierStatement', backref='supplier', lazy='dynamic')
 
-    # ... (بقية الحقول كما هي دون تغيير)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     identity_type = db.Column(db.String(50), nullable=False)   
@@ -43,12 +40,73 @@ class Supplier(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) 
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow) 
 
-    # 📊 خاصية الرصيد
     @property
     def balance(self):
-        # استيراد الموديل هنا فقط عند الحاجة لكسر الدائرة
+        # استيراد محلي داخل الدالة لكسر دائرة الاعتماد
         from apps.models.statement_db import SupplierStatement
         last_stmt = self.statements.order_by(SupplierStatement.created_at.desc()).first()
         return last_stmt.running_balance if last_stmt else 0.0
 
-    # ... (بقية الدوال كما هي)
+    @property
+    def shop_number(self):
+        if self.address_detail and "|| Shop:" in self.address_detail:
+            try:
+                return self.address_detail.split("|| Shop:")[-1].strip()
+            except:
+                return ""
+        return ""
+
+    @shop_number.setter
+    def shop_number(self, value):
+        clean_val = str(value).strip() if value else ""
+        if clean_val:
+            base_address = self.address_detail.split("|| Shop:")[0].strip() if self.address_detail else ""
+            if base_address:
+                self.address_detail = f"{base_address} || Shop: {clean_val}".strip()
+            else:
+                self.address_detail = f"|| Shop: {clean_val}".strip()
+
+    @property
+    def state_title(self):
+        sovereign_matrix = {
+            'ريادي': {'active': 'مُطلق', 'pending': 'مراجعة', 'suspended': 'محتجز'},
+            'سيادي': {'active': 'نافذ / مُهيمِن', 'pending': 'مراجعة الصلاحية', 'suspended': 'مُقيد / مجمد السيادة'},
+            'ملكي': {'active': 'حَصين', 'pending': 'مستقر / صيانة خاصة', 'suspended': 'معلق الحصانة'}
+        }
+        current_rank_dict = sovereign_matrix.get(self.rank_grade, sovereign_matrix['ريادي'])
+        return current_rank_dict.get(self.status, 'تحت التدقيق السيادي')
+
+    @validates('username', 'identity_number', 'owner_name', 'owner_phone', 'trade_name', 'shop_phone', 'bank_acc')
+    def validate_sovereign_fields(self, key, value):
+        clean_value = str(value).strip() if value is not None else ""
+        if not clean_value:
+            raise ValueError(f"خطأ حوكمي صارم: الحقل السيادي ({key}) لا يمكن أن يكون فارغاً.")
+        return clean_value
+
+    @staticmethod
+    def generate_next_sovereign_id():
+        last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
+        if last_supplier and last_supplier.sovereign_id:
+            try:
+                parts = last_supplier.sovereign_id.split('MAH963')
+                last_num = int(parts[-1])
+                return f"SUP-MAH963{last_num + 1}"
+            except (ValueError, IndexError):
+                return f"SUP-MAH963{random.randint(100, 999)}"
+        return "SUP-MAH9631"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "sovereign_id": self.sovereign_id,
+            "wallet_code": self.wallet_code,
+            "username": self.username,
+            "owner_name": self.owner_name,
+            "trade_name": self.trade_name,
+            "shop_number": self.shop_number, 
+            "shop_phone": self.shop_phone,
+            "rank_grade": self.rank_grade,
+            "status": self.status,
+            "state_title": self.state_title,
+            "balance": self.balance
+        }
