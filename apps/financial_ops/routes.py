@@ -29,12 +29,10 @@ def display_management_table():
         ).first()
         
         if wallet:
-            # طلبات السحب (التي تحتاج لاعتماد)
             pending_withdrawals = WalletTransaction.query.filter_by(
                 wallet_id=wallet.id, status='قيد الانتظار'
             ).order_by(WalletTransaction.created_at.desc()).all()
             
-            # سجلات التسويات
             settlements = AdminSettlement.query.filter_by(
                 wallet_id=wallet.id
             ).order_by(AdminSettlement.created_at.desc()).all()
@@ -73,10 +71,21 @@ def handle_supplier_withdrawal(tx_id, decision):
         
         tx.status = 'ناجحة'
         db.session.add(new_settlement)
-        flash("تم اعتماد العملية بنجاح", "success")
+        db.session.commit()
+        
+        # عند الاعتماد الناجح، نعرض صفحة الإشعار (الأكليشه) مباشرة
+        return render_template('admin/settlement_notice.html', 
+                               tx=tx, 
+                               settlement=new_settlement)
+    
     else:
         tx.status = 'مرفوضة'
+        db.session.commit()
         flash("تم رفض العملية", "danger")
-        
-    db.session.commit()
-    return redirect(url_for('financial_ops.display_management_table', search_query=tx.wallet.wallet_code))
+        return redirect(url_for('financial_ops.display_management_table', search_query=tx.wallet.wallet_code))
+
+@financial_blueprint.route('/settlement/create', methods=['POST'])
+@login_required
+def create_settlement():
+    flash("تم تجهيز منطق إنشاء السند", "info")
+    return redirect(url_for('financial_ops.display_management_table'))
