@@ -1,47 +1,119 @@
+apps/statement/routes.py
+
 # coding: utf-8
-from flask import render_template, request, flash
-from flask_login import login_required
-from apps.statement import statement_blueprint
-from apps.models.supplier_db import Supplier
-from apps.models.wallet_db import WalletTransaction 
 
-@statement_blueprint.route('/view', methods=['GET'])
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+
+from flask_login import login_required, current_user
+
+from apps.extensions import db  # التصحيح هنا لضمان استخدام الكائن المركزي المستقر والموحد للمنصة 
+
+from apps.models.admin_db import AdminUser
+
+from apps.models.supplier_db import Supplier  # التعديل الهيكلي الصحيح لمنع الـ ImportError ✅
+
+
+
+# تعريف الـ Blueprint الخاص بلوحة التحكم الإدارية
+
+admin_dashboard = Blueprint('admin_dashboard', __name__, template_folder='templates')
+
+
+
+# ممرات لوحة القيادة المركزية المحدثة
+
+@admin_dashboard.route('/', methods=['GET'])
+
+@admin_dashboard.route('/dashboard', methods=['GET'])
+
 @login_required
-def view_statement():
-    # 1. جلب كل الموردين
-    all_suppliers = Supplier.query.all()
-    
-    # 2. جلب معرف المورد من الرابط
-    supplier_id = request.args.get('supplier_id')
-    selected_supplier = None
-    statements = []
-    balances = {'SAR': 0.0, 'YER': 0.0, 'USD': 0.0}
 
-    if supplier_id:
-        try:
-            # جلب المورد
-            selected_supplier = Supplier.query.get(supplier_id)
-            
-            if selected_supplier:
-                # 3. جلب الحركات (تم وضع شرط مبدئي للتأكد من وجود الحقل)
-                statements = WalletTransaction.query.filter_by(supplier_id=supplier_id).order_by(WalletTransaction.created_at.desc()).all()
-                
-                # 4. جلب الأرصدة بطريقة آمنة لتفادي الـ 500 Error
-                # إذا لم يجد الحقل، سيعود بـ 0.0 بدلاً من التسبب بانهيار السيرفر
-                balances = {
-                    'SAR': getattr(selected_supplier, 'sar_balance', 0.0) or 0.0,
-                    'YER': getattr(selected_supplier, 'yer_balance', 0.0) or 0.0,
-                    'USD': getattr(selected_supplier, 'usd_balance', 0.0) or 0.0
-                }
-        except Exception as e:
-            # في حال حدوث خطأ، سنقوم بطباعته في السيرفر دون إيقافه
-            print(f"Error in view_statement: {e}")
-            flash(f"حدث خطأ أثناء جلب البيانات: {str(e)}", "danger")
+def dashboard():
+
+    # 🚀 تصحيح الشرط الأمني الحرج: التحقق من الصلاحيات المعتمدة فعلياً في قاعدة البيانات (Owner أو Admin)
+
+    # هذا التصحيح ينهي حلقة التوجيه اللانهائية ويسمح بفتح الهيكل فوراً بعد تسجيل الدخول ✅
+
+    if not hasattr(current_user, 'role') or current_user.role not in ['Owner', 'Admin']:
+
+        flash('غير مسموح لك بالدخول إلى هذه المنطقة الأمنية.', 'danger')
+
+        return redirect(url_for('auth_portal.login'))
+
+
+
+    try:
+
+        # حساب المؤشرات الحيوية رقمياً من قواعد البيانات مباشرة
+
+        total_suppliers = Supplier.query.count()
+
+    except Exception as e:
+
+        total_suppliers = 0
+
+
+
+    # بيانات تجريبية مؤقتة لسجل العمليات والنشاطات الإدارية حتى يكتمل ربط المحافظ
+
+    recent_activities = [
+
+        {
+
+            "id": 1024,
+
+            "user": "المؤسس علي",
+
+            "type": "تحديث نظام",
+
+            "amount": 0,
+
+            "date": "2026-05-23 17:30",
+
+            "status": "مكتمل"
+
+        },
+
+        {
+
+            "id": 1023,
+
+            "user": "مورد معتمد",
+
+            "type": "تسوية مالية محفظة",
+
+            "amount": 250,
+
+            "date": "2026-05-23 16:15",
+
+            "status": "معلق"
+
+        }
+
+    ]
+
+
+
+    # إجمالي الأرصدة الافتراضية بانتظام موديول المحافظ
+
+    total_balance = "0.00"
+
+    pending_settlements = 1
+
+
+
+    # استدعاء قالب العرض وتمرير كافة البيانات الديناميكية له
 
     return render_template(
-        'admin/statement.html',
-        all_suppliers=all_suppliers,
-        selected_supplier=selected_supplier,
-        statements=statements,
-        balances=balances
+
+        'admin/dashboard_content.html',
+
+        total_suppliers=total_suppliers,
+
+        total_balance=total_balance,
+
+        pending_settlements=pending_settlements,
+
+        recent_activities=recent_activities
+
     )
