@@ -73,123 +73,57 @@
         <div class="sidebar-header">
             <img src="https://cdn.qumra.cloud/media/67f7f6d5f0b82f44a47bf845/1770229315912-117966978.webp" class="logo-img" alt="سوقك الذكي">
             <h2 class="text-white h5 fw-bold mb-1">محجوب أونلاين</h2>
-            <div class="badge bg-warning text-dark px-3 py-2" style="font-size: 0.7rem; letter-spacing: 1px;">سوقك الذكي</div>
         </div>
 
         <nav class="nav-menu">
-            <a href="{{ url_for('admin_dashboard.dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard.dashboard' and not request.args.get('view') %}active{% endif %}">
+            <a href="{{ url_for('admin_dashboard.dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard.dashboard' %}active{% endif %}">
                 <i class="fas fa-chart-line me-3"></i> <span>مركز القيادة</span>
             </a>
 
             <div class="dropdown-section">
-                <button class="dropdown-btn {% if request.endpoint == 'add_supplier.add_supplier_page' %}active{% endif %}" onclick="toggleDropdown('supplierDropdown', 'supplierArrow')">
-                    <i class="fas fa-handshake me-3"></i> 
-                    <span>شركاء النجاح</span>
-                    <i class="fas fa-chevron-left {% if request.endpoint == 'add_supplier.add_supplier_page' %}rotate{% endif %}" id="supplierArrow"></i>
+                <button class="dropdown-btn" onclick="toggleDropdown('supplierDropdown', 'supplierArrow')">
+                    <i class="fas fa-handshake me-3"></i> <span>شركاء النجاح</span>
+                    <i class="fas fa-chevron-left" id="supplierArrow"></i>
                 </button>
-                <div class="dropdown-container" id="supplierDropdown" style="{% if request.endpoint == 'add_supplier.add_supplier_page' %}display: block;{% endif %}">
-                    <a href="{{ url_for('add_supplier.add_supplier_page') }}" class="{% if request.endpoint == 'add_supplier.add_supplier_page' %}text-warning{% endif %}">
-                        <i class="fas fa-user-plus me-2"></i> تعميد مورد جديد
-                    </a>
-                    <a href="{{ url_for('admin_dashboard.dashboard') }}">
-                        <i class="fas fa-database me-2"></i> سجل الموردين
-                    </a>
+                <div class="dropdown-container" id="supplierDropdown">
+                    <a href="{{ url_for('add_supplier.add_supplier_page') }}"><i class="fas fa-user-plus me-2"></i> تعميد مورد جديد</a>
+                    <a href="{{ url_for('admin_dashboard.dashboard') }}"><i class="fas fa-database me-2"></i> سجل الموردين</a>
                 </div>
             </div>
 
             <div class="dropdown-section">
-                <button class="dropdown-btn {% if 'financial_ops' in request.endpoint or 'statement_blueprint' in request.endpoint %}active{% endif %}" onclick="toggleDropdown('walletDropdown', 'walletArrow')">
-                    <i class="fas fa-wallet me-3"></i> 
-                    <span>إدارة العمليات المالية</span>
-                    <i class="fas fa-chevron-left {% if 'financial_ops' in request.endpoint or 'statement_blueprint' in request.endpoint %}rotate{% endif %}" id="walletArrow"></i>
+                <button class="dropdown-btn" onclick="toggleDropdown('walletDropdown', 'walletArrow')">
+                    <i class="fas fa-wallet me-3"></i> <span>إدارة العمليات المالية</span>
+                    <i class="fas fa-chevron-left" id="walletArrow"></i>
                 </button>
-                <div class="dropdown-container" id="walletDropdown" style="{% if 'financial_ops' in request.endpoint or 'statement_blueprint' in request.endpoint %}display: block;{% endif %}">
-                    <a href="{{ url_for('financial_ops.display_management_table') }}" class="{% if request.endpoint == 'financial_ops.display_management_table' %}text-warning{% endif %}">
-                        <i class="fas fa-scale-balanced me-2"></i> طلبات السحب والتسويات
-                    </a>
-                    <a href="{{ url_for('financial_ops.display_management_table') }}">
-                        <i class="fas fa-money-bill-transfer me-2"></i> عمليات الشحن والسحب
-                    </a>
-                    <a href="{{ url_for('statement_blueprint.view_statement') }}" class="{% if request.endpoint == 'statement_blueprint.view_statement' %}text-warning{% endif %}">
-                        <i class="fas fa-file-invoice-dollar me-2"></i> كشوفات الحسابات
-                    </a>
+                <div class="dropdown-container" id="walletDropdown">
+                    <a href="{{ url_for('financial_ops.display_management_table') }}"><i class="fas fa-scale-balanced me-2"></i> الطلبات والتسويات</a>
+                    <a href="{{ url_for('statement_blueprint.view_statement') }}"><i class="fas fa-file-invoice-dollar me-2"></i> كشوفات الحسابات</a>
                 </div>
             </div>
 
-            <a href="#" class="nav-link">
-                <i class="fas fa-shield-halved me-3"></i> <span>إعدادات السيادة</span>
-            </a>
-
-            <hr style="border-color: rgba(255, 255, 255, 0.15); margin: 1.5rem 0;">
-
             <a href="{{ url_for('auth_portal.logout') }}" class="nav-link text-danger mt-auto">
-                <i class="fas fa-power-off me-3"></i> <span>تسجيل خروج آمن</span>
+                <i class="fas fa-power-off me-3"></i> <span>تسجيل خروج</span>
             </a>
         </nav>
     </aside>
 
     <div class="main-wrapper">
         <header class="top-bar">
-            <div class="d-flex align-items-center">
-                <button class="btn d-lg-none me-3" onclick="toggleSidebar()"><i class="fas fa-bars fs-4"></i></button>
-                <h4 class="mb-0 fw-bold text-dark">{% block header_title %}مركز المراقبة{% endblock %}</h4>
-            </div>
-            
-            <div class="user-badge">
-                <i class="fas fa-user-tie me-2"></i> {{ owner.full_name if owner else 'المؤسس علي' }}
-            </div>
+            <h4 class="mb-0 fw-bold">{% block header_title %}لوحة التحكم{% endblock %}</h4>
+            <div class="user-badge">{{ current_user.username if current_user.is_authenticated else 'زائر' }}</div>
         </header>
-
-        <div class="p-4 content-area">
-            {% block content %}{% endblock %}
-        </div>
+        <div class="p-4 content-area">{% block content %}{% endblock %}</div>
     </div>
 
     <script>
-        function toggleDropdown(dropdownId, arrowId) {
-            const dropdown = document.getElementById(dropdownId);
-            const arrow = document.getElementById(arrowId);
-            const isVisible = dropdown.style.display === "block";
-            
-            if (!isVisible) {
-                document.querySelectorAll('.dropdown-container').forEach(el => {
-                    if(el.id !== dropdownId) el.style.display = 'none';
-                });
-                document.querySelectorAll('.fa-chevron-left').forEach(el => {
-                    if(el.id !== arrowId) el.classList.remove('rotate');
-                });
-            }
-
-            dropdown.style.display = isVisible ? "none" : "block";
-            if (!isVisible) {
-                arrow.classList.add("rotate");
-            } else {
-                arrow.classList.remove("rotate");
-            }
+        function toggleDropdown(id, arrow) {
+            const drop = document.getElementById(id);
+            const arr = document.getElementById(arrow);
+            drop.style.display = (drop.style.display === "block") ? "none" : "block";
+            arr.classList.toggle("rotate");
         }
-
-        function toggleSidebar() {
-            document.getElementById("sidebar").classList.toggle("active");
-        }
-
-        window.onbeforeunload = function() {
-            document.getElementById('loader').classList.remove('d-none');
-            document.getElementById('loader').classList.add('d-grid');
-        };
-
-        document.addEventListener("DOMContentLoaded", function() {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                modal.addEventListener('hidden.bs.modal', function () {
-                    const form = modal.querySelector('form');
-                    if(form) {
-                        form.reset();
-                        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-                        form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
-                    }
-                });
-            });
-        });
+        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("active"); }
     </script>
 </body>
 </html>
