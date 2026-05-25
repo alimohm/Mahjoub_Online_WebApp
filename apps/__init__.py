@@ -17,15 +17,14 @@ def create_app():
     login_manager.login_view = 'auth_portal.login'
 
     with app.app_context():
-        # 1. استيراد الموديلات داخل السياق لكسر حلقة الاستيراد
+        # 1. استيراد الموديلات داخل السياق (لحل مشاكل الاعتماد الدائري)
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.settlements_db import AdminSettlement
         
-        # --- السطر التالي هو "المنقذ" لسيرفرك حالياً ---
+        # إنشاء الجداول تلقائياً (حل طوارئ لعدم وجود Terminal)
         db.create_all() 
-        # ---------------------------------------------
         
         @login_manager.user_loader
         def load_user(user_id):
@@ -35,7 +34,7 @@ def create_app():
         from apps.auth_portal.routes import auth_blueprint
         from apps.admin_dashboard.routes import admin_dashboard
         from apps.add_supplier.routes import admin_suppliers_bp
-        from apps.wallet.routes import wallet_blueprint # تأكد أن اسم البلوبرينت في routes.py هو wallet_blueprint
+        from apps.wallet.routes import wallet_blueprint 
 
         app.register_blueprint(auth_blueprint, url_prefix='/auth')
         app.register_blueprint(admin_dashboard)
