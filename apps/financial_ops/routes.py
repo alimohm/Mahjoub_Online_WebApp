@@ -1,18 +1,15 @@
 # coding: utf-8
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required
-# تم التعديل هنا لكسر حلقة الاستيراد الدائري
 from apps.extensions import db
 from apps.models.wallet_db import SupplierWallet as Wallet, WalletTransaction
 from apps.models.supplier_db import Supplier
 from apps.models.settlements_db import AdminSettlement
-# ملاحظة: تأكدت من مسار استيراد WithdrawalRequest - إذا كان في موديل آخر تأكد من مساره
-# من المفترض أن تكون النماذج مستوردة من الموديلات مباشرة
 
-# تعريف البلوبرينت
-wallet_blueprint = Blueprint('wallet', __name__)
+# تعريف البلوبرينت بالاسم الجديد
+financial_blueprint = Blueprint('financial_ops', __name__)
 
-@wallet_blueprint.route('/management', methods=['GET'])
+@financial_blueprint.route('/management', methods=['GET'])
 @login_required
 def display_management_table():
     search_query = request.args.get('search_query')
@@ -35,13 +32,12 @@ def display_management_table():
         ).first()
         
         if wallet:
-            # جلب طلبات السحب المعلقة (تأكد من وجود نموذج WithdrawalRequest في ملفاتك)
-            # تم الافتراض هنا أنها مرتبطة بـ WalletTransaction أو نموذج مشابه
+            # جلب طلبات السحب المعلقة
             pending_withdrawals = WalletTransaction.query.filter_by(
                 wallet_id=wallet.id, status='معلقة'
             ).all()
             
-            # جلب سندات التسوية من الجدول المخصص للتبويب الثاني
+            # جلب سندات التسوية
             settlements = AdminSettlement.query.filter_by(
                 wallet_id=wallet.id
             ).order_by(AdminSettlement.created_at.desc()).all()
@@ -57,10 +53,9 @@ def display_management_table():
         current_search=search_query
     )
 
-@wallet_blueprint.route('/withdrawal/handle/<int:tx_id>/<decision>', methods=['POST'])
+@financial_blueprint.route('/withdrawal/handle/<int:tx_id>/<decision>', methods=['POST'])
 @login_required
 def handle_supplier_withdrawal(tx_id, decision):
-    # افتراضاً أنك تستخدم WalletTransaction لمعالجة الطلبات
     request_obj = WalletTransaction.query.get_or_404(tx_id)
     
     if decision == 'approve':
@@ -71,5 +66,5 @@ def handle_supplier_withdrawal(tx_id, decision):
         flash("تم رفض العملية", "danger")
         
     db.session.commit()
-    # العودة إلى صفحة الإدارة مع الحفاظ على البحث الحالي
-    return redirect(url_for('wallet.display_management_table', search_query=request_obj.wallet.wallet_code))
+    # العودة إلى صفحة الإدارة باستخدام اسم البلوبرينت الجديد
+    return redirect(url_for('financial_ops.display_management_table', search_query=request_obj.wallet.wallet_code))
