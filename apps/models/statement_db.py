@@ -1,53 +1,65 @@
 # coding: utf-8
-# 📊 نموذج كشوفات الحسابات الموحد - نظام محجوب أونلاين 2026
-# تم تحسين النموذج لضمان الاستقرار المالي والربط المرجعي
+# 📂 apps/statement/routes.py
+# ⚙️ محرك كشوفات الموردين المركزية - نظام محجوب أونلاين 2026
 
-from datetime import datetime
-from apps.extensions import db
+from flask import render_template, request, flash
+from flask_login import login_required
+from apps.statement import statement_blueprint
+from apps.models.supplier_db import Supplier
+from apps.models.statement_db import SupplierStatement
+from sqlalchemy import or_
 
-class SupplierStatement(db.Model):
-    """ 
-    جدول كشف الحساب التاريخي للمورد (Ledger) 
-    يقوم بأرشفة العمليات المالية لضمان الشفافية والمراجعة
+@statement_blueprint.route('/view', methods=['GET'])
+@login_required
+def view_statement():
     """
-    __tablename__ = 'supplier_statements'
+    عرض كشف حساب الموردين مع دعم الفلترة حسب العملة والتاريخ.
+    """
+    q = request.args.get('q', '')
+    currency = request.args.get('currency', 'ALL')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
-    # ⚠️ هام جداً: إضافة هذا السطر يمنع خطأ "Table already defined" عند تحديث التطبيق
-    __table_args__ = {'extend_existing': True}
+    selected_supplier = None
+    statements = []
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    
-    # 🔗 الربط المباشر بالمورد
-    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False, index=True)
-    
-    # 💳 الربط بالمحفظة (nullable=True يسمح بمرونة في الحركات العامة)
-    wallet_id = db.Column(db.Integer, db.ForeignKey('supplier_wallets.id'), nullable=True, index=True)
-    
-    # 🕒 تفاصيل التوقيت والوصف
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    description = db.Column(db.String(255), nullable=False) 
-    currency = db.Column(db.String(10), nullable=False, index=True)    
-    
-    # 🧮 القيم المالية (استخدام Numeric لضمان دقة العمليات الحسابية)
-    debit = db.Column(db.Numeric(15, 2), default=0.00, nullable=False)  
-    credit = db.Column(db.Numeric(15, 2), default=0.00, nullable=False) 
-    
-    # الرصيد التراكمي
-    running_balance = db.Column(db.Numeric(15, 2), nullable=False, default=0.00) 
-    
-    # 🛡️ حقل إضافي لأرباح الإدارة
-    admin_fee = db.Column(db.Numeric(15, 2), default=0.00) 
-    
-    # 🔗 الربط المرجعي (استخدام index لتسريع الاستعلامات)
-    reference_type = db.Column(db.String(50), nullable=True, index=True) 
-    reference_id = db.Column(db.Integer, nullable=True)      
+    # البحث عن المورد وتجهيز كشف الحساب
+    if q:
+        try:
+            # البحث عن المورد (الاسم أو ID)
+            selected_supplier = Supplier.query.filter(or_(
+                Supplier.trade_name.ilike(f'%{q}%'),
+                Supplier.owner_name.ilike(f'%{q}%'),
+                Supplier.sovereign_id == q
+            )).first()
+            
+            if selected_supplier:
+                # إنشاء استعلام الكشف
+                query = SupplierStatement.query.filter_by(supplier_id=selected_supplier.id)
+                
+                # تطبيق الفلاتر الإضافية
+                if currency != 'ALL':
+                    query = query.filter_by(currency=currency)
+                if start_date:
+                    query = query.filter(SupplierStatement.created_at >= start_date)
+                if end_date:
+                    query = query.filter(SupplierStatement.created_at <= end_date)
+                
+                # جلب البيانات مرتبة زمنياً
+                statements = query.order_by(SupplierStatement.created_at.desc()).all()
+            else:
+                flash("لم يتم العثور على مورد بهذه البيانات.", "warning")
+        
+        except Exception as e:
+            print(f"Error in view_statement: {e}")
+            flash("حدث خطأ تقني أثناء تحميل الكشف.", "danger")
+            statements = []
 
-    def __init__(self, **kwargs):
-        super(SupplierStatement, self).__init__(**kwargs)
-        # التأكد من قيم افتراضية آمنة
-        self.debit = self.debit or 0.00
-        self.credit = self.credit or 0.00
-        self.running_balance = self.running_balance or 0.00
-
-    def __repr__(self):
-        return f"<SupplierStatement {self.id} | Supplier: {self.supplier_id} | Balance: {self.running_balance} {self.currency}>"
+    return render_template(
+        'admin/statement.html',
+        selected_supplier=selected_supplier,
+        statements=statements,
+        currency_filter=currency,
+        start_date=start_date,
+        end_date=end_date
+    )
