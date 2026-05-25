@@ -41,7 +41,7 @@
     {% if selected_supplier %}
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-            <h5 class="mb-0 text-primary">المورد: {{ selected_supplier.trade_name }}</h5>
+            <h5 class="mb-0 text-primary">المورد: {{ selected_supplier.trade_name or 'غير معروف' }}</h5>
             <button onclick="window.print()" class="btn btn-dark"><i class="fas fa-print"></i> طباعة الكشف</button>
         </div>
         <div class="table-responsive">
@@ -60,10 +60,10 @@
                 <tbody>
                     {% for stmt in statements %}
                     <tr>
-                        <td>{{ stmt.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ stmt.created_at.strftime('%Y-%m-%d') if stmt.created_at else '---' }}</td>
                         <td><span class="badge bg-secondary">{{ stmt.reference_type or 'عملية' }}</span></td>
-                        <td>{{ stmt.description }}</td>
-                        <td>{{ stmt.currency }}</td>
+                        <td>{{ stmt.description or 'لا توجد تفاصيل' }}</td>
+                        <td>{{ stmt.currency or '-' }}</td>
                         <td class="text-danger">{{ "{:,.2f}".format(stmt.debit or 0) }}</td>
                         <td class="text-success">{{ "{:,.2f}".format(stmt.credit or 0) }}</td>
                         <td class="fw-bold text-primary">{{ "{:,.2f}".format(stmt.running_balance or 0) }}</td>
