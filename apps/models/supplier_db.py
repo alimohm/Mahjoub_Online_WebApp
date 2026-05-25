@@ -6,6 +6,7 @@ import random  # 🧠 استيراد مطلوب للمحرك الداخلي عن
 from apps.extensions import db
 from datetime import datetime
 from sqlalchemy.orm import validates
+from apps.models.statement_db import SupplierStatement # تم استيراد الموديل لربط العلاقات
 
 class Supplier(db.Model):
     __tablename__ = 'suppliers'
@@ -14,9 +15,12 @@ class Supplier(db.Model):
     sovereign_id = db.Column(db.String(50), unique=True, nullable=False, index=True) 
     wallet_code = db.Column(db.String(50), unique=True, nullable=False)  # 💳 العمود المطلوب لربط كود المحفظة برمزها التتابعي المستقر
     
+    # ربط العلاقة مع كشوفات الحسابات
+    statements = db.relationship('SupplierStatement', backref='supplier', lazy='dynamic')
+
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)  # 🔒 الحقل الآمن المعتمد لتخزين الهاش المقابل لـ hashed_password
-    identity_type = db.Column(db.String(50), nullable=False)    
+    identity_type = db.Column(db.String(50), nullable=False)   
     identity_number = db.Column(db.String(50), unique=True, nullable=False)  
     identity_image = db.Column(db.String(255))   
     
@@ -46,10 +50,15 @@ class Supplier(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow) 
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow) 
 
-    # 🏬 الحقل الافتراضي الحصين - يقرأ ويكتب دون الحاجة لعمود في الداتابيز
+    # 📊 خاصية الرصيد لجلبها مباشرة (الحساب التراكمي الأخير)
+    @property
+    def balance(self):
+        last_stmt = self.statements.order_by(SupplierStatement.created_at.desc()).first()
+        return last_stmt.running_balance if last_stmt else 0.0
+
+    # 🏬 الحقل الافتراضي الحصين
     @property
     def shop_number(self):
-        """قراءة رقم المحل من حقل تفاصيل العنوان بشكل آمن دون الحاجة لعمود بالداتابيز"""
         if self.address_detail and "|| Shop:" in self.address_detail:
             try:
                 return self.address_detail.split("|| Shop:")[-1].strip()
@@ -59,7 +68,6 @@ class Supplier(db.Model):
 
     @shop_number.setter
     def shop_number(self, value):
-        """دمج رقم المحل تلقائياً داخل حقل تفاصيل العنوان أثناء الحفظ"""
         clean_val = str(value).strip() if value else ""
         if clean_val:
             base_address = self.address_detail.split("|| Shop:")[0].strip() if self.address_detail else ""
@@ -105,9 +113,10 @@ class Supplier(db.Model):
             "username": self.username,
             "owner_name": self.owner_name,
             "trade_name": self.trade_name,
-            "shop_number": self.shop_number,  # يستمر في العمل طبيعي بالـ API والواجهات والـ Dashboard
+            "shop_number": self.shop_number, 
             "shop_phone": self.shop_phone,
             "rank_grade": self.rank_grade,
             "status": self.status,
-            "state_title": self.state_title  
+            "state_title": self.state_title,
+            "balance": self.balance
         }
