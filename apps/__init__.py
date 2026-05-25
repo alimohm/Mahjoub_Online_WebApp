@@ -2,7 +2,7 @@
 from flask import Flask
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
-from sqlalchemy import text # أضفنا هذا لاستخدام أوامر SQL المباشرة
+from sqlalchemy import text 
 
 def create_app():
     app = Flask(__name__)
@@ -16,27 +16,36 @@ def create_app():
     login_manager.login_view = 'auth_portal.login'
 
     with app.app_context():
+        # 1. استيراد الموديلات
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.settlements_db import AdminSettlement
         from apps.models.statement_db import SupplierStatement 
         
-        # 1. إنشاء الجداول أولاً
+        # 2. إنشاء الجداول
         db.create_all() 
         
-        # 2. حماية برمجية: التأكد من وجود عمود supplier_id في جدول الكشوفات
+        # 3. حماية برمجية متكاملة (Schema Sync)
         try:
-            db.session.execute(text("ALTER TABLE supplier_statements ADD COLUMN IF NOT EXISTS supplier_id VARCHAR(50)"))
-            db.session.commit()
+            with db.engine.begin() as conn:
+                # إصلاح جدول الكشوفات
+                conn.execute(text("ALTER TABLE supplier_statements ADD COLUMN IF NOT EXISTS supplier_id INTEGER"))
+                
+                # إصلاح جدول الحركات المالية وإضافة حقول التجزئة والربح
+                conn.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS cost_price NUMERIC(15, 2) DEFAULT 0.00"))
+                conn.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS retail_price NUMERIC(15, 2) DEFAULT 0.00"))
+                conn.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS profit_margin NUMERIC(15, 2) DEFAULT 0.00"))
+            
+            print("نظام الحماية: تم مزامنة هيكل جداول قاعدة البيانات بنجاح.")
         except Exception as e:
-            db.session.rollback()
-            print(f"نظام الحماية: تم التحقق من هيكل جدول الكشوفات مسبقاً أو حدث خطأ: {e}")
+            print(f"نظام الحماية: حدث خطأ أثناء مزامنة الجداول: {e}")
         
         @login_manager.user_loader
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
+        # 4. تسجيل البلوبرينتس
         from apps.auth_portal.routes import auth_blueprint
         from apps.admin_dashboard.routes import admin_dashboard
         from apps.add_supplier.routes import admin_suppliers_bp
