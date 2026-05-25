@@ -7,6 +7,8 @@ from apps.extensions import db
 
 class SupplierStatement(db.Model):
     __tablename__ = 'supplier_statements'
+    # ⚠️ هذا السطر ضروري لمنع الانهيار عند تكرار تعريف الجدول في Railway
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
@@ -25,14 +27,13 @@ class SupplierStatement(db.Model):
     running_balance = db.Column(db.Numeric(15, 2), nullable=False, default=0.00) 
     
     # 🛡️ نوع الحركة (محوري لشجرة الحسابات)
-    # أمثلة: (SALE, PURCHASE, SETTLEMENT, PROFIT_TRANS, SYSTEM_FEE)
     reference_type = db.Column(db.String(50), nullable=False, index=True) 
-    reference_id = db.Column(db.Integer, nullable=True)     
+    reference_id = db.Column(db.Integer, nullable=True)      
 
     def __repr__(self):
         return f"<Statement {self.id} | {self.reference_type} | {self.currency}>"
 
-    # --- دوال المساعدة للتقارير (تستخدم في الـ Route) ---
+    # --- دوال المساعدة للتقارير ---
     
     @classmethod
     def get_platform_tree(cls, currency='ALL', start_date=None, end_date=None):
