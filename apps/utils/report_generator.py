@@ -8,7 +8,7 @@ from apps.models.supplier_db import Supplier
 
 class ReportGenerator:
     """
-    محرك مركزي آمن لاستخراج التقارير المالية - منصة محجوب أونلاين
+    محرك مركزي آمن ومطور لاستخراج التقارير المالي الشاملة والطباعة - منصة محجوب أونلاين
     """
 
     @staticmethod
@@ -41,7 +41,7 @@ class ReportGenerator:
     @staticmethod
     def get_detailed_transactions(supplier_id=None, currency='ALL', start_date=None, end_date=None):
         """ 
-        استخراج الحركات التفصيلية لمورد معين مع معالجة الربط الآمن لبيانات المورد
+        استخراج الحركات التفصيلية لمورد معين أو لجميع الحسابات (عرض شامل)
         🛡️ تم استخدام cast لحل مشكلة تعارض الأنظمة (character varying = integer) في PostgreSQL
         """
         
@@ -62,8 +62,8 @@ class ReportGenerator:
             cast(SupplierStatement.supplier_id, String) == cast(Supplier.id, String)
         )
         
-        if supplier_id:
-            # معالجة الفلترة بالتحويل النصي أيضاً لضمان مطابقة الـ parameters المتمررة من الـ Route
+        # 🧠 تطوير ذكي: الفلترة بالمورد فقط إذا تم تحديد مورد معين ولم يكن الخيار هو العرض الشامل ALL
+        if supplier_id and str(supplier_id).strip() != '' and str(supplier_id) != 'ALL':
             query = query.filter(cast(SupplierStatement.supplier_id, String) == cast(supplier_id, String))
             
         if currency and currency != 'ALL':
