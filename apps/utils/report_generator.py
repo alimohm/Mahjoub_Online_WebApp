@@ -14,7 +14,7 @@ class ReportGenerator:
     def get_platform_financial_tree(currency='ALL', start_date=None, end_date=None):
         """ استخراج شجرة حسابات المنصة ومجاميع الحركات حسب العملة """
         query = db.session.query(
-            SupplierStatement.currency, # التجميع حسب العملة لضمان توافق الحقول
+            SupplierStatement.currency, 
             func.sum(SupplierStatement.debit).label('total_debit'),
             func.sum(SupplierStatement.credit).label('total_credit')
         )
@@ -41,7 +41,7 @@ class ReportGenerator:
     def get_detailed_transactions(supplier_id=None, currency='ALL', start_date=None, end_date=None):
         """ استخراج الحركات التفصيلية لمورد معين مع تجنب استعلام الحقل غير الموجود في قاعدة البيانات """
         
-        # 🛡️ استعلام انتقائي: نطلب فقط الأعمدة الفعالية والموجودة لتفادي UndefinedColumn Error
+        # 🛡️ استعلام انتقائي: نطلب فقط الأعمدة الموجودة في قاعدة البيانات لتفادي الـ UndefinedColumn Error
         query = db.session.query(
             SupplierStatement.id,
             SupplierStatement.supplier_id,
@@ -65,7 +65,7 @@ class ReportGenerator:
             
         results = query.order_by(SupplierStatement.created_at.desc()).all()
 
-        # بناء كائنات مرنة متوافقة بنسبة 100% مع مسارات النظام والواجهات
+        # بناء الكائنات ومطابقتها برمجياً مع الـ Routes والـ HTML
         statements = []
         for r in results:
             s = SupplierStatement()
@@ -79,7 +79,7 @@ class ReportGenerator:
             s.running_balance = r.running_balance
             s.notes = r.notes
             
-            # حقن قيمة افتراضية آمنة برمجياً لتعويض غياب الحقل في قاعدة البيانات الحالية
+            # حقن قيمة افتراضية آمنة لحماية حقل المرجع من الانهيار
             s.reference_number = "---"
             statements.append(s)
 
@@ -90,7 +90,6 @@ class ReportGenerator:
         """ حساب صافي أرباح المنصة من المحفظة المالية """
         query = WalletTransaction.query
         
-        # إذا تم اختيار كل العملات، نتجنب دمج أرقام عملات مختلفة حسابياً
         if currency and currency != 'ALL':
             query = query.filter(WalletTransaction.currency == currency)
         if start_date:
