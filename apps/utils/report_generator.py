@@ -4,6 +4,7 @@ from sqlalchemy import func
 from apps.extensions import db
 from apps.models.statement_db import SupplierStatement
 from apps.models.wallet_db import WalletTransaction
+from apps.models.supplier_db import Supplier
 
 class ReportGenerator:
     """
@@ -40,11 +41,11 @@ class ReportGenerator:
     @staticmethod
     def get_detailed_transactions(supplier_id=None, currency='ALL', start_date=None, end_date=None):
         """ 
-        استخراج الحركات التفصيلية لمورد معين 
-        🛡️ تم تعديل الاستعلام لتجنب الحقول الناقصة في قاعدة البيانات (reference_number & notes) لتفادي الانهيار تماماً.
+        استخراج الحركات التفصيلية لمورد معين مع معالجة الربط الآمن لبيانات المورد
+        🛡️ حل مشكلة الـ UndefinedColumn والـ AttributeError وتوافق الحقول السيادية.
         """
         
-        # نطلب فقط الأعمدة الأساسية المتواجدة والمستقرة في قاعدة البيانات الفورية
+        # نطلب فقط الأعمدة الأساسية المتواجدة والمستقرة في قاعدة البيانات الفورية مع جلب بيانات المورد الآمنة
         query = db.session.query(
             SupplierStatement.id,
             SupplierStatement.supplier_id,
@@ -53,8 +54,10 @@ class ReportGenerator:
             SupplierStatement.currency,
             SupplierStatement.debit,
             SupplierStatement.credit,
-            SupplierStatement.running_balance
-        )
+            SupplierStatement.running_balance,
+            Supplier.trade_name.label('supplier_trade_name'),
+            Supplier.owner_name.label('supplier_owner_name')
+        ).join(Supplier, SupplierStatement.supplier_id == Supplier.id)
         
         if supplier_id:
             query = query.filter(SupplierStatement.supplier_id == supplier_id)
@@ -67,7 +70,7 @@ class ReportGenerator:
             
         results = query.order_by(SupplierStatement.created_at.desc()).all()
 
-        # بناء البيانات برمجياً وحقن الحقول الناقصة بقيم آمنة متوافقة مع الـ HTML والـ Routes
+        # بناء البيانات برمجياً وحقن الحقول الناقصة والخصائص الافتراضية لحماية قوالب العرض والـ Routes
         statements = []
         for r in results:
             s = SupplierStatement()
@@ -80,9 +83,12 @@ class ReportGenerator:
             s.credit = r.credit
             s.running_balance = r.running_balance
             
-            # حقن الحقول غير الموجودة بقيم افتراضية نظيفة لمنع خطأ الـ AttributeError أو الـ UndefinedColumn
+            # حقن الحقول غير الموجودة في جدول الحركات بقيم افتراضية نظيفة لمنع الأخطاء السابقة
             s.reference_number = "---"
             s.notes = "---"
+            
+            # حماية برمجية مضافة لربط خصائص الاسم المتوقعة في الـ Routes والـ HTML
+            s.supplier_name = r.supplier_trade_name or r.supplier_owner_name or "مورد غير معروف"
             
             statements.append(s)
 
