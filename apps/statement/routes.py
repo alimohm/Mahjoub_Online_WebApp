@@ -15,8 +15,15 @@ def view_statement():
     currencies = ['USD', 'YER', 'SAR'] 
     return render_template('admin/statement.html', currencies=currencies)
 
+# مسار جديد لجلب خلاصة أرصدة كافة المحافظ (الملخص الشامل للمنصة)
+@statement_blueprint.route('/api/statement/summary_all', methods=['GET'])
+@login_required
+def api_get_all_summary():
+    """ جلب خلاصة الأرصدة لكافة الملاك والمتاجر """
+    summary_data = ReportGenerator.get_all_wallets_summary()
+    return jsonify({'results': summary_data})
 
-# 1. البحث الذكي المتوافق بالكامل مع متطلبات الـ Select2 في الواجهة
+# 1. البحث الذكي المتوافق بالكامل
 @statement_blueprint.route('/api/suppliers/search', methods=['GET'])
 @login_required
 def api_search_suppliers():
@@ -25,14 +32,12 @@ def api_search_suppliers():
         return jsonify({"results": []})
 
     try:
-        # تم تنظيف الفلتر من حقل 'store_name' لحل مشكلة الـ AttributeError نهائياً
         suppliers = Supplier.query.filter(or_(
             Supplier.trade_name.ilike(f'%{term}%'),
             Supplier.owner_name.ilike(f'%{term}%'),
             Supplier.sovereign_id.ilike(f'%{term}%')
         )).limit(15).all()
         
-        # استخدام getattr لضمان عدم توقف النظام حتى لو غاب أحد الحقول برمجياً
         results = [
             {
                 'id': s.id, 
@@ -40,55 +45,28 @@ def api_search_suppliers():
             } for s in suppliers
         ]
         return jsonify({"results": results})
-
     except Exception as e:
-        # طباعة الخطأ في سجلات Railway لمتابعة جودة الاستعلام والتحقق اللحظي
         print(f"❌ Error during supplier search: {str(e)}")
-        return jsonify({"results": [], "error": "حدث خطأ داخلي أثناء استعلام قاعدة البيانات"}), 500
+        return jsonify({"results": [], "error": "حدث خطأ داخلي"}), 500
 
-
-# 2. جلب كشف الحساب الشامل والتقارير المالي عبر استدعاء الـ ReportGenerator
+# 2. جلب كشف الحساب التفصيلي
 @statement_blueprint.route('/api/statement/report', methods=['GET'])
 @login_required
 def api_get_report():
-    s_id = request.args.get('id', 'ALL')  # جعل القيمة الافتراضية ALL لعرض الحسابات الشاملة
+    s_id = request.args.get('id', 'ALL')
     curr = request.args.get('currency', 'ALL')
     start_str = request.args.get('start')
     end_str = request.args.get('end')
 
-    # تحويل نصوص التواريخ القادمة من daterangepicker إلى كائنات datetime متوافقة مع قاعدة البيانات
-    start_date = None
-    end_date = None
-    
     try:
-        if start_str and start_str.strip():
-            start_date = datetime.strptime(start_str, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
-        else:
-            start_date = datetime.utcnow() - timedelta(days=30) # افتراضي آخر 30 يوم لحماية الأداء
-            
-        if end_str and end_str.strip():
-            end_date = datetime.strptime(end_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-        else:
-            end_date = datetime.utcnow()
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').replace(hour=0, minute=0, second=0) if start_str else datetime.utcnow() - timedelta(days=30)
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59) if end_str else datetime.utcnow()
     except ValueError:
         return jsonify({'error': 'صيغة التاريخ غير صحيحة'}), 400
 
-    # أ. استخراج الحركات التفصيلية للمورد (أو كل الحسابات إذا كانت القيمة ALL) عبر المحرك المركزي
-    statements = ReportGenerator.get_detailed_transactions(
-        supplier_id=s_id, 
-        currency=curr, 
-        start_date=start_date, 
-        end_date=end_date
-    )
+    statements = ReportGenerator.get_detailed_transactions(s_id, curr, start_date, end_date)
+    total_profit = ReportGenerator.calculate_net_profit(curr, start_date, end_date)
 
-    # ب. حساب صافي أرباح المنصة المرتبطة بالمورد والمحفظة عبر المحرك المركزي
-    total_profit = ReportGenerator.calculate_net_profit(
-        currency=curr, 
-        start_date=start_date, 
-        end_date=end_date
-    )
-
-    # ج. تجميع وإرسال البيانات بصيغة JSON النهائية لتغذية جدول الواجهة الفورية
     return jsonify({
         'summary': {
             'total_debit': float(sum(s.debit for s in statements)) if statements else 0.0,
@@ -98,8 +76,8 @@ def api_get_report():
         },
         'details': [{
             'date': s.created_at.strftime('%Y-%m-%d %H:%M') if s.created_at else '---',
-            'desc': getattr(s, 'description', getattr(s, 'desc', '---')) or '---',
-            'ref': getattr(s, 'reference_number', getattr(s, 'ref', '---')) or '---',
+            'desc': getattr(s, 'description', '---'),
+            'ref': getattr(s, 'reference_number', '---'),
             'currency': getattr(s, 'currency', 'USD'),
             'debit': float(s.debit or 0),
             'credit': float(s.credit or 0),
@@ -107,68 +85,34 @@ def api_get_report():
         } for s in statements]
     })
 
-
-# 3. مسار تصدير وطباعة التقرير المالي كملف PDF مخصص بالهوية البصرية للمنصة
+# 3. مسار تصدير وطباعة التقرير المالي PDF
 @statement_blueprint.route('/api/statement/report/pdf', methods=['GET'])
 @login_required
 def export_report_pdf():
-    """ توليد وتصدير كشف الحساب المالي كملف PDF احترافي أو طباعته فورا """
     s_id = request.args.get('supplier_id', 'ALL')
     curr = request.args.get('currency', 'ALL')
-    start_str = request.args.get('start_date')
-    end_str = request.args.get('end_date')
     
-    start_date = None
-    end_date = None
+    # جلب بيانات المورد للترويسة
+    wallet_code = "---"
+    owner_name = "---"
+    supplier_name = "جميع الموردين (تقرير شامل)"
     
-    try:
-        if start_str and start_str.strip() and start_str != 'undefined':
-            start_date = datetime.strptime(start_str, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
-        else:
-            start_date = datetime.utcnow() - timedelta(days=30)
-            
-        if end_str and end_str.strip() and end_str != 'undefined':
-            end_date = datetime.strptime(end_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-        else:
-            end_date = datetime.utcnow()
-    except ValueError:
-        return "صيغة التواريخ الممررة غير صالحة برمجياً", 400
-    
-    # استخراج الحركات التفصيلية من المحرك المطور
-    statements = ReportGenerator.get_detailed_transactions(
-        supplier_id=s_id, 
-        currency=curr, 
-        start_date=start_date, 
-        end_date=end_date
-    )
-    
-    # حساب الإجماليات برمجياً لضمان الدقة الكاملة حتى لو كانت صفرية للحسابات الخالية من الحركات
-    total_debit = sum(float(s.debit or 0) for s in statements) if statements else 0.0
-    total_credit = sum(float(s.credit or 0) for s in statements) if statements else 0.0
-    net_balance = total_credit - total_debit
-    
-    # تحديد مسمى الحساب المستخرج
-    supplier_name = "جميع الموردين والشركاء (عرض شامل)"
     if s_id and s_id != 'ALL':
         supplier = Supplier.query.get(s_id)
         if supplier:
-            supplier_name = getattr(supplier, 'trade_name', getattr(supplier, 'owner_name', 'مورد معتمد'))
+            wallet_code = getattr(supplier, 'sovereign_id', '---')
+            owner_name = getattr(supplier, 'owner_name', '---')
+            supplier_name = getattr(supplier, 'trade_name', '---')
 
-    # رندرة القالب المتواجد داخل المسار الذي أنشأته للتو
+    statements = ReportGenerator.get_detailed_transactions(s_id, curr)
+    
     html_content = render_template(
         'pdf_template.html',
         statements=statements,
         supplier_name=supplier_name,
+        owner_name=owner_name,
+        wallet_code=wallet_code,
         currency=curr,
-        start_date=start_date.strftime('%Y/%m/%d'),
-        end_date=end_date.strftime('%Y/%m/%d'),
-        total_debit=total_debit,
-        total_credit=total_credit,
-        net_balance=net_balance,
         generated_at=datetime.utcnow().strftime('%Y/%m/%d %H:%M')
     )
-    
-    # لإعطاء مرونة طباعة قصوى وتفادي مشاكل غياب الحزم الخارجية على سيرفرات الاستضافة، 
-    # نقوم بإرجاع المستند كـ HTML مهيأ بأوامر الطباعة التلقائية للمتصفح عبر خيارات العرض المباشر.
-    response = make_response(html_content)
-    return response
+    return make_response(html_content)
