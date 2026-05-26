@@ -15,11 +15,12 @@ def view_statement():
     currencies = ['USD', 'YER', 'SAR'] 
     return render_template('admin/statement.html', currencies=currencies)
 
-# مسار جديد لجلب خلاصة أرصدة كافة المحافظ (الملخص الشامل للمنصة)
+# مسار لجلب خلاصة أرصدة كافة المحافظ (الملخص الشامل للمنصة)
 @statement_blueprint.route('/api/statement/summary_all', methods=['GET'])
 @login_required
 def api_get_all_summary():
     """ جلب خلاصة الأرصدة لكافة الملاك والمتاجر """
+    # نعتمد هنا على دالة في محرك التقارير تقوم بجلب كافة المحافظ
     summary_data = ReportGenerator.get_all_wallets_summary()
     return jsonify({'results': summary_data})
 
@@ -106,6 +107,11 @@ def export_report_pdf():
 
     statements = ReportGenerator.get_detailed_transactions(s_id, curr)
     
+    # حساب الإجماليات المطلوبة في القالب
+    total_debit = sum(s.debit or 0 for s in statements)
+    total_credit = sum(s.credit or 0 for s in statements)
+    net_balance = total_credit - total_debit
+    
     html_content = render_template(
         'pdf_template.html',
         statements=statements,
@@ -113,6 +119,9 @@ def export_report_pdf():
         owner_name=owner_name,
         wallet_code=wallet_code,
         currency=curr,
+        total_debit=total_debit,
+        total_credit=total_credit,
+        net_balance=net_balance,
         generated_at=datetime.utcnow().strftime('%Y/%m/%d %H:%M')
     )
     return make_response(html_content)
