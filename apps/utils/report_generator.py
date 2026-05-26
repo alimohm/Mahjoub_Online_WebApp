@@ -1,6 +1,6 @@
 # coding: utf-8
 # 📂 apps/utils/report_generator.py
-from sqlalchemy import func
+from sqlalchemy import func, cast, String
 from apps.extensions import db
 from apps.models.statement_db import SupplierStatement
 from apps.models.wallet_db import WalletTransaction
@@ -42,10 +42,10 @@ class ReportGenerator:
     def get_detailed_transactions(supplier_id=None, currency='ALL', start_date=None, end_date=None):
         """ 
         استخراج الحركات التفصيلية لمورد معين مع معالجة الربط الآمن لبيانات المورد
-        🛡️ حل مشكلة الـ UndefinedColumn والـ AttributeError وتوافق الحقول السيادية.
+        🛡️ تم استخدام cast لحل مشكلة تعارض الأنظمة (character varying = integer) في PostgreSQL
         """
         
-        # نطلب فقط الأعمدة الأساسية المتواجدة والمستقرة في قاعدة البيانات الفورية مع جلب بيانات المورد الآمنة
+        # 🛡️ نقوم بتحويل الأعمدة برمجياً إلى سلاسل نصية أثناء المقارنة لتفادي خطأ الـ UndefinedFunction تماماً
         query = db.session.query(
             SupplierStatement.id,
             SupplierStatement.supplier_id,
@@ -57,10 +57,15 @@ class ReportGenerator:
             SupplierStatement.running_balance,
             Supplier.trade_name.label('supplier_trade_name'),
             Supplier.owner_name.label('supplier_owner_name')
-        ).join(Supplier, SupplierStatement.supplier_id == Supplier.id)
+        ).join(
+            Supplier, 
+            cast(SupplierStatement.supplier_id, String) == cast(Supplier.id, String)
+        )
         
         if supplier_id:
-            query = query.filter(SupplierStatement.supplier_id == supplier_id)
+            # معالجة الفلترة بالتحويل النصي أيضاً لضمان مطابقة الـ parameters المتمررة من الـ Route
+            query = query.filter(cast(SupplierStatement.supplier_id, String) == cast(supplier_id, String))
+            
         if currency and currency != 'ALL':
             query = query.filter(SupplierStatement.currency == currency)
         if start_date:
@@ -70,7 +75,7 @@ class ReportGenerator:
             
         results = query.order_by(SupplierStatement.created_at.desc()).all()
 
-        # بناء البيانات برمجياً وحقن الحقول الناقصة والخصائص الافتراضية لحماية قوالب العرض والـ Routes
+        # بناء البيانات وحقنها للـ HTML والـ Routes
         statements = []
         for r in results:
             s = SupplierStatement()
@@ -83,11 +88,11 @@ class ReportGenerator:
             s.credit = r.credit
             s.running_balance = r.running_balance
             
-            # حقن الحقول غير الموجودة في جدول الحركات بقيم افتراضية نظيفة لمنع الأخطاء السابقة
+            # حقول الحماية المعتادة
             s.reference_number = "---"
             s.notes = "---"
             
-            # حماية برمجية مضافة لربط خصائص الاسم المتوقعة في الـ Routes والـ HTML
+            # ربط الاسم المطلوب لعرضه في كشف الحساب والبحث الذكي
             s.supplier_name = r.supplier_trade_name or r.supplier_owner_name or "مورد غير معروف"
             
             statements.append(s)
