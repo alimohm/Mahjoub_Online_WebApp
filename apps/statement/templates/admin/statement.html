@@ -18,13 +18,17 @@
     .select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--mahjoub-purple) !important; }
     .btn-mahjoub { background-color: var(--mahjoub-purple); color: white; border-radius: 10px; }
     .btn-mahjoub:hover { background-color: #4a216b; color: white; }
+    .btn-pdf { background-color: #27ae60; color: white; border-radius: 10px; }
+    .btn-pdf:hover { background-color: #1e7e46; color: white; }
+    .btn-back { background-color: #6c757d; color: white; border-radius: 10px; }
+    .btn-back:hover { background-color: #545b62; color: white; }
     .text-purple { color: var(--mahjoub-purple); }
 </style>
 
 <div class="container-fluid py-4" style="direction: rtl; text-align: right;">
     <div class="card mahjoub-toolbar p-4 mb-4">
         <div class="row g-3 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="small fw-bold text-muted mb-2">البحث الذكي عن المورد</label>
                 <select id="supplierSearch" class="form-control" style="width: 100%;"></select>
             </div>
@@ -35,14 +39,25 @@
                     {% for curr in currencies %}<option value="{{ curr }}">{{ curr }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="small fw-bold text-muted mb-2">تحديد الفترة الزمنية</label>
                 <div id="reportrange" class="form-control" style="cursor: pointer; height: 45px; display: flex; align-items: center; border-radius: 10px;">
                     <i class="fa fa-calendar me-2 text-muted"></i> &nbsp;<span></span>
                 </div>
             </div>
-            <div class="col-md-2">
-                <button class="btn btn-mahjoub w-100 py-2" onclick="loadFinancialData()"><i class="fas fa-sync"></i> تحديث</button>
+            
+            <div class="col-md-4">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-mahjoub flex-grow-1 py-2" onclick="loadFinancialData()">
+                        <i class="fas fa-sync"></i> تحديث
+                    </button>
+                    <button id="btnExportPDF" class="btn btn-pdf flex-grow-1 py-2">
+                        <i class="fas fa-file-pdf"></i> طباعة PDF
+                    </button>
+                    <a href="/dashboard" class="btn btn-back py-2 px-3">
+                        <i class="fas fa-arrow-left"></i> رجوع
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -72,7 +87,7 @@
                     </tr>
                 </thead>
                 <tbody id="statementBody">
-                    <tr><td colspan="7" class="text-center py-5 text-muted">يرجى اختيار المورد لعرض البيانات</td></tr>
+                    <tr><td colspan="7" class="text-center py-5 text-muted">يرجى اختيار المورد أو العرض الشامل لرصد البيانات الحالية</td></tr>
                 </tbody>
             </table>
         </div>
@@ -91,7 +106,8 @@
     $(function() {
         // تهيئة البحث الذكي لـ Select2 بالاعتماد على مسار ديناميكي آمن
         $('#supplierSearch').select2({
-            placeholder: "ابحث بالاسم، المتجر، أو الرقم الموحد...",
+            placeholder: "ابحث عن مورد، أو اختر العرض الشامل...",
+            allowClear: true,
             language: {
                 inputTooShort: function () { return "يرجى إدخال حرف واحد أو أكثر للبحث..."; },
                 searching: function () { return "جاري البحث..."; },
@@ -102,13 +118,21 @@
                 dataType: 'json',
                 delay: 250,
                 data: function (params) { return { q: params.term }; },
-                processResults: function (data) { return { results: data.results }; },
+                processResults: function (data) { 
+                    // حقن خيار العرض الشامل كخيار أول في نتائج البحث دائماً
+                    var customResults = data.results;
+                    customResults.unshift({
+                        id: 'ALL',
+                        text: '🔍 جميع الحسابات والموردين (عرض شامل منصة محجوب)'
+                    });
+                    return { results: customResults }; 
+                },
                 cache: true
             },
-            minimumInputLength: 1
+            minimumInputLength: 0
         });
 
-        // التحديث التلقائي والفلترة المباشرة عند الاختيارات
+        // تشغيل الفلترة المباشرة عند التغيير في الحقول
         $('#supplierSearch').on('select2:select', function (e) {
             loadFinancialData();
         });
@@ -133,21 +157,36 @@
             loadFinancialData();
         });
         $('#reportrange span').html(pickerStart.format('YYYY/MM/DD') + ' - ' + pickerEnd.format('YYYY/MM/DD'));
+
+        // ربط حدث زر طباعة وتصدير كشف الحساب المالي PDF
+        $('#btnExportPDF').on('click', function() {
+            let supplierId = $('#supplierSearch').val() || 'ALL';
+            let selectedCurrency = $('#currencyFilter').val();
+            
+            let pdfUrl = "{{ url_for('statement_blueprint.export_report_pdf') }}?supplier_id=" + supplierId + 
+                         "&currency=" + selectedCurrency + 
+                         "&start_date=" + pickerStart.format('YYYY-MM-DD') + 
+                         "&end_date=" + pickerEnd.format('YYYY-MM-DD');
+            
+            // فتح التقرير في صفحة جديدة لعرضه والبدء بالطباعة الفورية للمستخدم
+            window.open(pdfUrl, '_blank');
+        });
+        
+        // جلب البيانات الشاملة افتراضياً عند تحميل الصفحة لأول مرة لحماية تجربة الاستخدام
+        loadFinancialData();
     });
 
     function loadFinancialData() {
-        let supplierId = $('#supplierSearch').val();
-        if(!supplierId) return;
+        let supplierId = $('#supplierSearch').val() || 'ALL'; // إذا كان فارغاً نعتبره عرض شامل لجميع الموردين
 
         let selectedCurrency = $('#currencyFilter').val();
         
-        // ربط ديناميكي كامل بالـ API لتجنب مشاكل الـ Routes المباشرة
         let url = "{{ url_for('statement_blueprint.api_get_report') }}?id=" + supplierId + 
                   "&currency=" + selectedCurrency + 
                   "&start=" + pickerStart.format('YYYY-MM-DD') + 
                   "&end=" + pickerEnd.format('YYYY-MM-DD');
 
-        $('#statementBody').html('<tr><td colspan="7" class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i> جاري جلب حركات كشف الحساب...</td></tr>');
+        $('#statementBody').html('<tr><td colspan="7" class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i> جاري جلب حركات كشف الحساب الشامل...</td></tr>');
 
         fetch(url).then(res => res.json()).then(data => {
             if(data.error) return alert(data.error);
@@ -174,7 +213,7 @@
                     </tr>`;
                 });
             } else {
-                html = '<tr><td colspan="7" class="text-center py-5 text-muted">لا توجد عمليات مسجلة خلال هذه الفترة.</td></tr>';
+                html = '<tr><td colspan="7" class="text-center py-5 text-muted">لا توجد عمليات أو حركات مالية مسجلة خلال هذه الفترة.</td></tr>';
             }
             $('#statementBody').html(html);
         }).catch(err => {
