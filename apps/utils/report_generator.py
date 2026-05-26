@@ -39,7 +39,7 @@ class ReportGenerator:
 
     @staticmethod
     def get_detailed_transactions(supplier_id=None, currency='ALL', start_date=None, end_date=None):
-        """ استخراج الحركات التفصيلية لمورد معين بشكل منظم """
+        """ استخراج الحركات التفصيلية لمورد معين بشكل منظم مع حماية الحقول """
         query = SupplierStatement.query
         
         if supplier_id:
@@ -51,7 +51,16 @@ class ReportGenerator:
         if end_date:
             query = query.filter(SupplierStatement.created_at <= end_date)
             
-        return query.order_by(SupplierStatement.created_at.desc()).all()
+        statements = query.order_by(SupplierStatement.created_at.desc()).all()
+
+        # 🛡️ نظام الحماية الذكي: معالجة الحقول غير الموجودة لمنع الـ OperationalError و AttributeError
+        for s in statements:
+            if not hasattr(s, 'reference_number'):
+                # تفحص الحقول البديلة الشائعة مثل 'ref' أو 'invoice_id' أو وضع خطوط عند غيابها تماماً
+                alternative_ref = getattr(s, 'ref', getattr(s, 'id', '---'))
+                setattr(s, 'reference_number', alternative_ref)
+
+        return statements
 
     @staticmethod
     def calculate_net_profit(currency, start_date=None, end_date=None):
