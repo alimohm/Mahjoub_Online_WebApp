@@ -4,7 +4,7 @@
 from apps.extensions import db
 from apps.models.supplier_db import Supplier
 from apps.models.statement_db import SupplierStatement
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 class ReportGenerator:
 
@@ -29,31 +29,38 @@ class ReportGenerator:
 
     @staticmethod
     def get_all_wallets_summary(currency):
-        """جلب ملخص أرصدة جميع الموردين بآخر رصيد تراكمي"""
-        suppliers = Supplier.query.all()
-        results = []
+        """جلب ملخص أرصدة جميع الموردين بكفاءة عالية"""
+        # استخدام استعلام فرعي لجلب آخر حركة لكل مورد
+        subq = db.session.query(
+            SupplierStatement.supplier_id,
+            func.max(SupplierStatement.created_at).label('max_date')
+        ).group_by(SupplierStatement.supplier_id).subquery()
+
+        # دمج النتائج للحصول على الرصيد النهائي لكل مورد
+        query = db.session.query(Supplier, SupplierStatement.running_balance).join(
+            subq, Supplier.id == subq.c.supplier_id
+        ).join(
+            SupplierStatement, and_(
+                SupplierStatement.supplier_id == subq.c.supplier_id,
+                SupplierStatement.created_at == subq.c.max_date
+            )
+        )
+
+        if currency != 'ALL':
+            query = query.filter(SupplierStatement.currency == currency)
+            
+        data = query.all()
         
-        for s in suppliers:
-            # البحث عن آخر حركة للمورد لضمان دقة الرصيد الحالي
-            query = db.session.query(SupplierStatement).filter(SupplierStatement.supplier_id == s.id)
-            
-            if currency != 'ALL':
-                query = query.filter(SupplierStatement.currency == currency)
-                
-            last_statement = query.order_by(SupplierStatement.created_at.desc()).first()
-            balance = last_statement.running_balance if last_statement else 0.0
-            
-            results.append({
-                'trade_name': getattr(s, 'trade_name', '---'),
-                'owner_name': getattr(s, 'owner_name', '---'),
-                'wallet_code': getattr(s, 'sovereign_id', '---'),
-                'balance': float(balance)
-            })
-        return results
+        return [{
+            'trade_name': getattr(s[0], 'trade_name', '---'),
+            'owner_name': getattr(s[0], 'owner_name', '---'),
+            'wallet_code': getattr(s[0], 'wallet_code', '---'), # أو sovereign_id حسب المودل
+            'balance': float(s[1])
+        } for s in data]
 
     @staticmethod
     def calculate_net_profit(currency, start_date, end_date):
-        """حساب إجمالي الأرباح في الفترة المحددة باستخدام محرك SQL"""
+        """حساب إجمالي الأرباح في الفترة المحددة"""
         query = db.session.query(func.sum(SupplierStatement.profit))
         
         if currency != 'ALL':
