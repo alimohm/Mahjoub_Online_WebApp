@@ -1,19 +1,17 @@
 # coding: utf-8
 # 📂 apps/utils/report_generator.py
 
+from apps.extensions import db
 from apps.models.supplier_db import Supplier
 from apps.models.statement_db import SupplierStatement
-from sqlalchemy import func
 
 class ReportGenerator:
 
     @staticmethod
     def get_detailed_transactions(supplier_id, currency, start_date, end_date):
-        """جلب كشف الحساب التفصيلي باستخدام بناء الاستعلام السلس"""
-        # البدء من الموديل مباشرة
-        query = SupplierStatement.query
+        """جلب كشف الحساب التفصيلي باستخدام الجلسة المباشرة لضمان سلامة الـ SQL"""
+        query = db.session.query(SupplierStatement)
         
-        # إضافة الفلاتر بشكل تدريجي وتجنب مشاكل الـ and_
         if supplier_id != 'ALL':
             query = query.filter(SupplierStatement.supplier_id == supplier_id)
             
@@ -26,7 +24,6 @@ class ReportGenerator:
         if end_date:
             query = query.filter(SupplierStatement.created_at <= end_date)
             
-        # تنفيذ الترتيب والإرجاع
         return query.order_by(SupplierStatement.created_at.asc()).all()
 
     @staticmethod
@@ -36,8 +33,8 @@ class ReportGenerator:
         results = []
         
         for s in suppliers:
-            # بناء استعلام الرصيد الحالي
-            query = SupplierStatement.query.filter(SupplierStatement.supplier_id == s.id)
+            # استخدام الجلسة المباشرة أيضاً هنا للاستقرار
+            query = db.session.query(SupplierStatement).filter(SupplierStatement.supplier_id == s.id)
             
             if currency != 'ALL':
                 query = query.filter(SupplierStatement.currency == currency)
