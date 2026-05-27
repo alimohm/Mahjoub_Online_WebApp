@@ -5,17 +5,15 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from datetime import datetime
+from apps.extensions import db
+from apps.models.admin_db import AdminUser
 
-# الاستيراد المباشر والمحمي للبلوبرينت الموحد لمنع تعذر العثور على الكائن
+# استيراد البلوبرينت من نفس المجلد
 from . import auth_blueprint
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
-    # 🚨 استدعاء محلي متأخر للموديل وقاعدة البيانات الموحدة لحل أزمة الاستيراد الدائري نهائياً
-    from apps.extensions import db # التصحيح هنا لضمان استقرار جلسات الكوميت 
-    from apps.models.admin_db import AdminUser 
-
-    # منع الدخول المتكرر إذا كان المالك مسجلاً بالفعل وتحويله للمسار المعتمد الحقيقي 🚀 ✅
+    # منع الدخول المتكرر إذا كان المالك مسجلاً بالفعل
     if current_user.is_authenticated:
         return redirect(url_for('admin_dashboard.dashboard'))
 
@@ -34,9 +32,7 @@ def login():
                 user.last_login = datetime.utcnow()
                 db.session.commit()
                 
-                flash(f'مرحباً بك في سوقك الذكي.', 'success')
-                
-                # تم التعديل هنا ليوجه فوراً إلى لوحة التحكم الرئيسية المحدثة والمستقرة 🚀 ✅
+                flash('مرحباً بك في سوقك الذكي.', 'success')
                 return redirect(url_for('admin_dashboard.dashboard'))
             else:
                 flash('ليس لديك صلاحيات الوصول لهذه المنطقة السيادية.', 'warning')
