@@ -2,55 +2,40 @@
 import os
 from apps import create_app
 from apps.extensions import db
-from sqlalchemy import text # مهم جداً
+from sqlalchemy import text
 
+# إنشاء التطبيق
 app = create_app()
 
-# دالة الإصلاح التلقائي الذكية
-def apply_schema_fixes():
+def run_db_migrations():
+    """دالة واحدة شاملة لتحديث هيكل قاعدة البيانات عند الإقلاع"""
     with app.app_context():
         try:
-            print("🔧 جاري فحص وتحديث هيكل قاعدة البيانات...")
+            print("🔧 جاري التحقق من تحديثات قاعدة البيانات...")
             
-            # تحديث جدول الموردين (إضافة الأعمدة الجديدة فقط)
-            db.session.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'عام'"))
-            db.session.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS behavior_score FLOAT DEFAULT 100.0"))
-            db.session.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS total_transactions INTEGER DEFAULT 0"))
+            # أوامر التحديث (ALTER TABLE)
+            commands = [
+                # تحديث الموردين
+                "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'عام'",
+                "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS behavior_score FLOAT DEFAULT 100.0",
+                "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS total_transactions INTEGER DEFAULT 0",
+                # تحديث المحافظ
+                "ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _yer_total VARCHAR(255) DEFAULT '0.00'",
+                "ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _sar_total VARCHAR(255) DEFAULT '0.00'",
+                "ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _usd_total VARCHAR(255) DEFAULT '0.00'"
+            ]
             
-            # تحديث جدول المحافظ (إضافة الأعمدة الجديدة فقط)
-            db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _yer_total VARCHAR(255) DEFAULT '0.00'"))
-            db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _sar_total VARCHAR(255) DEFAULT '0.00'"))
-            db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _usd_total VARCHAR(255) DEFAULT '0.00'"))
+            for cmd in commands:
+                db.session.execute(text(cmd))
             
             db.session.commit()
-            print("✅ تم تحديث القاعدة بنجاح. لا تقلق، بياناتك القديمة سليمة.")
+            print("✅ تم تحديث هيكل قاعدة البيانات بنجاح.")
         except Exception as e:
             print(f"⚠️ خطأ أثناء تحديث القاعدة: {e}")
             db.session.rollback()
 
-from sqlalchemy import text
-from apps.extensions import db
-
-# ضع هذا الكود داخل ملف التشغيل الرئيسي (run.py أو main.py)
-# تأكد من استدعاء هذه الدالة بعد إعداد الـ app وقبل تشغيله
-def fix_database_schema():
-    with app.app_context():
-        try:
-            # إضافة الأعمدة الناقصة في جدول المحافظ
-            db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _yer_total VARCHAR(255) DEFAULT '0.00'"))
-            db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _sar_total VARCHAR(255) DEFAULT '0.00'"))
-            db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _usd_total VARCHAR(255) DEFAULT '0.00'"))
-            db.session.commit()
-            print("✅ تم تحديث هيكل قاعدة البيانات وإضافة الأعمدة المشفرة بنجاح.")
-        except Exception as e:
-            print(f"❌ فشل تحديث القاعدة: {e}")
-
-# قم باستدعاء الدالة هنا قبل app.run()
-# fix_database_schema()
-
-
-# تشغيل الفحص عند الإقلاع
-apply_schema_fixes()
+# تشغيل الفحص قبل بدء السيرفر
+run_db_migrations()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
