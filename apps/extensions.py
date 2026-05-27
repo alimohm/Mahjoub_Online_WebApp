@@ -4,9 +4,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
-# تهيئة الامتدادات (بدون ربطها بالتطبيق حالياً - يتم ذلك في create_app)
+# تهيئة الامتدادات (بدون ربطها بالتطبيق حالياً)
+# هذا هو التصميم الصحيح لنمط المصنع (Factory Pattern)
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 
-# هذا الملف الآن هو المصدر الموثوق الوحيد لـ db و login_manager
+# ملاحظة: 
+# عند الحاجة لاستخدام قاعدة البيانات أو إدارة المستخدمين في أي ملف،
+# استخدم دائماً: 
+# from apps.extensions import db, login_manager
