@@ -12,7 +12,7 @@ class SupplierStatement(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     
-    # الربط مع المورد (العلاقة هنا تتم عبر الـ ID مباشرة)
+    # الربط مع المورد
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
     
     # تفاصيل العملية
@@ -26,9 +26,6 @@ class SupplierStatement(db.Model):
     
     # الرصيد التراكمي
     running_balance = db.Column(db.Float, nullable=False)
-    
-    # ملاحظات
-    notes = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f'<SupplierStatement {self.id} - Supplier ID: {self.supplier_id}>'
