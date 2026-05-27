@@ -9,10 +9,9 @@ app = create_app()
 def auto_fix_database():
     with app.app_context():
         try:
-            print("🔧 جاري فحص هيكل قاعدة البيانات...")
+            print("🔧 جاري إصلاح هيكل قاعدة البيانات تلقائياً...")
             inspector = inspect(db.engine)
-            
-            # إصلاح جدول المعاملات
+            # إضافة الأعمدة المفقودة لجدول المعاملات
             if 'wallet_transactions' in inspector.get_table_names():
                 cols = [c['name'] for c in inspector.get_columns('wallet_transactions')]
                 for col in ['_amount', '_profit_margin', '_notes']:
@@ -20,22 +19,19 @@ def auto_fix_database():
                         db.session.execute(text(f"ALTER TABLE wallet_transactions ADD COLUMN {col} VARCHAR(255)"))
                 db.session.commit()
             
-            # إصلاح جدول المحافظ
+            # إضافة الأعمدة المفقودة لجدول المحافظ
             if 'supplier_wallets' in inspector.get_table_names():
                 cols = [c['name'] for c in inspector.get_columns('supplier_wallets')]
                 for col in ['_yer_total', '_sar_total', '_usd_total']:
                     if col not in cols:
                         db.session.execute(text(f"ALTER TABLE supplier_wallets ADD COLUMN {col} VARCHAR(255)"))
                 db.session.commit()
-                
-            print("✅ تم تحديث هيكل الجداول بنجاح.")
+            print("✅ تم إصلاح الهيكل بنجاح.")
         except Exception as e:
-            print(f"❌ خطأ أثناء الإصلاح التلقائي: {e}")
+            print(f"❌ فشل الإصلاح: {e}")
             db.session.rollback()
 
-# استدعاء دالة الإصلاح قبل البدء
 auto_fix_database()
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
