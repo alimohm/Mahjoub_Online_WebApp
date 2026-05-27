@@ -1,34 +1,39 @@
+# coding: utf-8
 import os
 from apps import create_app
 from apps.extensions import db
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
 app = create_app()
 
-def run_db_migrations():
-    """تحديث هيكل قاعدة البيانات تلقائياً عند الإقلاع"""
+def auto_fix_database():
+    """هذه الدالة تقوم بفحص الأعمدة المفقودة وإضافتها برمجياً"""
     with app.app_context():
         try:
-            print("🔧 جاري التحقق من تحديثات قاعدة البيانات...")
+            print("🔧 جاري فحص هيكل قاعدة البيانات...")
             
-            # أوامر SQL لإضافة الأعمدة إذا لم تكن موجودة
-            commands = [
-                "ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _yer_total VARCHAR(255) DEFAULT '0.00'",
-                "ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _sar_total VARCHAR(255) DEFAULT '0.00'",
-                "ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS _usd_total VARCHAR(255) DEFAULT '0.00'"
-            ]
+            # 1. فحص جدول المحافظ
+            inspector = inspect(db.engine)
+            columns = [c['name'] for c in inspector.get_columns('supplier_wallets')]
             
-            for cmd in commands:
-                db.session.execute(text(cmd))
+            # قائمة الأعمدة التي نتوقع وجودها
+            required_columns = ['_yer_total', '_sar_total', '_usd_total']
             
-            db.session.commit()
-            print("✅ تم تحديث هيكل قاعدة البيانات بنجاح.")
+            for col in required_columns:
+                if col not in columns:
+                    print(f"⚠️ العمود {col} مفقود، جاري إضافته...")
+                    db.session.execute(text(f"ALTER TABLE supplier_wallets ADD COLUMN {col} VARCHAR(255)"))
+                    db.session.commit()
+                    print(f"✅ تم إضافة {col} بنجاح.")
+            
+            print("🚀 قاعدة البيانات محدثة وجاهزة للعمل.")
+            
         except Exception as e:
-            print(f"⚠️ خطأ أثناء تحديث القاعدة: {e}")
+            print(f"❌ خطأ أثناء التحديث التلقائي: {str(e)}")
             db.session.rollback()
 
-# تشغيل الفحص قبل بدء السيرفر
-run_db_migrations()
+# استدعاء دالة الإصلاح قبل تشغيل التطبيق
+auto_fix_database()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
