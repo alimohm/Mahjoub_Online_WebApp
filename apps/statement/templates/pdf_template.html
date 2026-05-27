@@ -11,10 +11,24 @@
         .statement-table th { background-color: #632C8F; color: white; padding: 10px; text-align: right; }
         .statement-table td { border-bottom: 1px solid #ddd; padding: 8px; }
         .summary-box { float: left; width: 300px; margin-top: 20px; }
-        .footer { position: fixed; bottom: 0; width: 100%; font-size: 12px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px; }
+        
+        /* تنسيقات الطباعة */
+        @media print {
+            .no-print { display: none !important; }
+            .footer { position: fixed; bottom: 0; }
+        }
+        
+        .footer { text-align: center; margin-top: 50px; font-size: 12px; border-top: 1px solid #ccc; padding-top: 10px; }
+        .signature-area { display: flex; justify-content: space-between; margin-top: 60px; }
     </style>
 </head>
 <body>
+
+<div class="no-print" style="margin-bottom: 20px;">
+    <button onclick="window.close()" style="background:#dc3545; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">
+        <i class="fas fa-times"></i> إغلاق النافذة
+    </button>
+</div>
 
 <div class="header">
     <h1>كشف حساب المورد</h1>
@@ -66,9 +80,26 @@
     </table>
 </div>
 
-<div class="footer">
-    هذا التقرير مستخرج إلكترونياً من نظام محجوب أونلاين ولا يحتاج لختم.
+<div class="signature-area">
+    <div style="text-align:center;">
+        <p>توقيع المحاسب</p>
+        <br>__________
+    </div>
+    <div style="text-align:center;">
+        <p>توقيع المورد</p>
+        <br>__________
+    </div>
 </div>
+
+<div class="footer">
+    <p>هذا التقرير مستخرج إلكترونياً من نظام محجوب أونلاين ولا يحتاج لختم.</p>
+</div>
+
+<script>
+    window.onload = function() {
+        window.print();
+    };
+</script>
 
 </body>
 </html>
