@@ -98,7 +98,7 @@
 
     $(function() {
         $('#supplierSearch').select2({
-            placeholder: "🔍 ابحث باسم المورد أو كود WEL",
+            placeholder: "🔍 ابحث باسم المورد أو كود SUP",
             ajax: {
                 url: "{{ url_for('statement_blueprint.api_search_suppliers') }}",
                 dataType: 'json',
@@ -159,7 +159,7 @@
 
     function loadAllWalletsSummary() {
         $('#summaryCards').hide();
-        $('#tableHeader').html('<tr><th>الاسم التجاري</th><th>اسم المالك</th><th>كود المحفظة</th><th>الرصيد</th><th>الحالة</th></tr>');
+        $('#tableHeader').html('<tr><th>الاسم التجاري</th><th>اسم المالك</th><th>كود SUP</th><th>الرصيد</th><th>الحالة</th></tr>');
         fetch("{{ url_for('statement_blueprint.api_get_all_summary') }}?currency=" + $('#currencyFilter').val())
         .then(res => res.json()).then(data => {
             let html = data.results.map(s => `<tr><td>${s.trade_name}</td><td>${s.owner_name}</td><td><code>${s.wallet_code}</code></td><td>${s.balance.toLocaleString()}</td><td><span class="badge ${s.balance >= 0 ? 'bg-success' : 'bg-danger'}">${s.balance >= 0 ? 'دائن' : 'مدين'}</span></td></tr>`).join('');
