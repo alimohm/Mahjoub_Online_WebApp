@@ -32,7 +32,7 @@ def api_search_suppliers():
             'text': f"{getattr(s, 'trade_name', '---')} (المالك: {getattr(s, 'owner_name', '---')}) - WEL: {getattr(s, 'sovereign_id', '---')}"
         } for s in suppliers]
         return jsonify({"results": results})
-    except Exception as e:
+    except Exception:
         return jsonify({"results": []}), 500
 
 # 2. ملخص أرصدة كافة الموردين
@@ -43,7 +43,7 @@ def api_get_all_summary():
     summary_data = ReportGenerator.get_all_wallets_summary(currency=curr)
     return jsonify({'results': summary_data})
 
-# 3. تقرير كشف الحساب (التفصيلي) - تمت إضافة معالجة الأخطاء
+# 3. تقرير كشف الحساب (التفصيلي)
 @statement_blueprint.route('/api/statement/report', methods=['GET'])
 @login_required
 def api_get_report():
@@ -67,7 +67,7 @@ def api_get_report():
                 'total_profit': float(total_profit)
             },
             'details': [{
-                'date': s.created_at.strftime('%Y-%m-%d %H:%M'),
+                'date': s.created_at.strftime('%Y-%m-%d'),
                 'desc': getattr(s, 'description', '---'),
                 'currency': getattr(s, 'currency', 'USD'),
                 'debit': float(s.debit or 0),
@@ -76,7 +76,6 @@ def api_get_report():
             } for s in statements]
         })
     except Exception as e:
-        print(f"Error in api_get_report: {e}") # سيظهر الخطأ في الـ Terminal
         return jsonify({'error': str(e)}), 500
 
 # 4. تصدير PDF
@@ -89,7 +88,7 @@ def export_report_pdf():
     end_str = request.args.get('end_date')
     
     start_date = datetime.strptime(start_str, '%Y-%m-%d') if start_str and start_str != 'null' else None
-    end_date = datetime.strptime(end_str, '%Y-%m-%d') if end_str and end_str != 'null' else None
+    end_date = datetime.strptime(end_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59) if end_str and end_str != 'null' else None
 
     wallet_code = "---"
     supplier_name = "تقرير شامل للمنصة"
