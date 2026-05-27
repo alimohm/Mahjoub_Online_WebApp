@@ -82,7 +82,7 @@ def api_get_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 4. تصدير PDF (PDF Export Route) - معدل ليكون ديناميكياً ودقيقاً
+# 4. تصدير كشف حساب تفصيلي (PDF)
 @statement_blueprint.route('/api/statement/report/pdf', methods=['GET'])
 @login_required
 def export_report_pdf():
@@ -94,31 +94,41 @@ def export_report_pdf():
     start_date = datetime.strptime(start_str, '%Y-%m-%d') if start_str and start_str not in ['null', 'undefined'] else None
     end_date = datetime.strptime(end_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59) if end_str and end_str not in ['null', 'undefined'] else None
 
-    # قيم افتراضية ديناميكية
     display_wallet_code = "---"
     display_supplier_name = "تقرير شامل للمنصة"
     
     if s_id and s_id != 'ALL':
         supplier = Supplier.query.get(s_id)
         if supplier:
-            # استدعاء الحقول بدقة من المودل
             display_wallet_code = getattr(supplier, 'wallet_code', '---')
             display_supplier_name = getattr(supplier, 'trade_name', '---')
 
     statements = ReportGenerator.get_detailed_transactions(s_id, curr, start_date, end_date)
     
-    total_debit = sum(s.debit or 0 for s in statements)
-    total_credit = sum(s.credit or 0 for s in statements)
-    
     return render_template(
         'pdf_template.html',
         statements=statements,
         supplier_name=display_supplier_name,
-        wallet_code=display_wallet_code,  # تم تمرير الكود الصحيح
+        wallet_code=display_wallet_code,
         currency=curr,
-        total_debit=total_debit,
-        total_credit=total_credit,
-        net_balance=total_credit - total_debit,
+        total_debit=sum(s.debit or 0 for s in statements),
+        total_credit=sum(s.credit or 0 for s in statements),
+        net_balance=sum(s.credit or 0 for s in statements) - sum(s.debit or 0 for s in statements),
+        generated_at=datetime.utcnow().strftime('%Y/%m/%d %H:%M'),
+        current_user=current_user
+    )
+
+# 5. تصدير ملخص أرصدة (PDF)
+@statement_blueprint.route('/api/statement/summary/pdf', methods=['GET'])
+@login_required
+def export_summary_pdf():
+    curr = request.args.get('currency', 'ALL')
+    summary_data = ReportGenerator.get_all_wallets_summary(currency=curr)
+    
+    return render_template(
+        'summary_pdf_template.html',
+        results=summary_data,
+        currency=curr,
         generated_at=datetime.utcnow().strftime('%Y/%m/%d %H:%M'),
         current_user=current_user
     )
