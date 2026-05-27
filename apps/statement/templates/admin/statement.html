@@ -42,7 +42,7 @@
             <div class="col-md-3">
                 <div class="d-flex gap-2">
                     <button class="btn btn-mahjoub flex-grow-1" onclick="refreshData()"><i class="fas fa-sync"></i> تحديث</button>
-                    <button class="btn btn-success flex-grow-1" onclick="openPDFModal()"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-success flex-grow-1" onclick="openPDFModal()"><i class="fas fa-file-pdf"></i> عرض الكشف</button>
                 </div>
             </div>
         </div>
@@ -69,8 +69,20 @@
 </div>
 
 <div class="modal fade" id="pdfModal" tabindex="-1">
-    <div class="modal-dialog modal-xl" style="max-width: 95%;">
-        <div class="modal-content"><div class="modal-body p-0"><iframe id="pdfFrame" style="width:100%; height:85vh;" src=""></iframe></div></div>
+    <div class="modal-dialog modal-xl" style="max-width: 90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title text-purple"><i class="fas fa-file-invoice"></i> معاينة كشف الحساب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="pdfFrame" style="width:100%; height:75vh; border:none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> إغلاق</button>
+                <button class="btn btn-primary" onclick="printFrame()"><i class="fas fa-print"></i> طباعة الكشف</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -85,7 +97,6 @@
     var pickerEnd = moment();
 
     $(function() {
-        // تهيئة البحث
         $('#supplierSearch').select2({
             placeholder: "🔍 ابحث باسم المورد أو كود WEL",
             ajax: {
@@ -100,12 +111,8 @@
             }
         });
 
-        // تفعيل التحديث التلقائي عند تغيير الفلاتر
-        $('#supplierSearch, #viewType, #currencyFilter').on('change', function() {
-            refreshData();
-        });
+        $('#supplierSearch, #viewType, #currencyFilter').on('change', refreshData);
 
-        // تهيئة التاريخ
         $('#reportrange').daterangepicker({
             startDate: pickerStart, endDate: pickerEnd,
             locale: { format: 'YYYY/MM/DD' }
@@ -135,10 +142,7 @@
         $('#statementBody').html('<tr><td colspan="6" class="text-center py-3 text-muted">جاري تحميل البيانات...</td></tr>');
 
         fetch(url).then(res => res.json()).then(data => {
-            if (data.error) {
-                $('#statementBody').html(`<tr><td colspan="6" class="text-center text-danger">خطأ: ${data.error}</td></tr>`);
-                return;
-            }
+            if (data.error) return;
             $('#totalProfit').text(data.summary.total_profit.toLocaleString());
             $('#totalDebit').text(data.summary.total_debit.toLocaleString());
             $('#totalCredit').text(data.summary.total_credit.toLocaleString());
@@ -169,6 +173,11 @@
                   "&start_date=" + pickerStart.format('YYYY-MM-DD') + "&end_date=" + pickerEnd.format('YYYY-MM-DD');
         $('#pdfFrame').attr('src', url);
         new bootstrap.Modal(document.getElementById('pdfModal')).show();
+    }
+
+    function printFrame() {
+        var iframe = document.getElementById('pdfFrame');
+        iframe.contentWindow.print();
     }
 </script>
 {% endblock %}
