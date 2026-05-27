@@ -4,15 +4,17 @@ import os
 import sys
 from apps import create_app
 
-# تهيئة كائن التطبيق بشكل مباشر ليكون مكشوفاً لـ gunicorn في بيئة الإنتاج
+# إنشاء التطبيق
 app = create_app()
 
-# رسالة تأكيدية تظهر في الـ Logs عند نجاح المصنع
+# فحص أمني: التأكد من وجود مفتاح التشفير قبل الإقلاع
+if not app.config.get('ENCRYPTION_KEY') and not os.environ.get('ENCRYPTION_KEY'):
+    print("❌ خطأ حرج: ENCRYPTION_KEY غير موجود في الإعدادات أو متغيرات البيئة!")
+    sys.exit(1) # إيقاف التشغيل فوراً لمنع حدوث أخطاء فك التشفير
+
 print("✅ المصنع المركزي للنواة يعمل بنجاح!")
+print("🛡️ نظام التشفير (AES-256) مفعل وجاهز.")
 
 if __name__ == "__main__":
-    # الحصول على المنفذ من متغيرات البيئة 
     port = int(os.environ.get("PORT", 5000))
-    
-    # التشغيل المحلي أو الاحتياطي
     app.run(host="0.0.0.0", port=port, debug=False)
