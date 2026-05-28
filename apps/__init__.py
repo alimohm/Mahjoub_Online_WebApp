@@ -33,7 +33,7 @@ def create_app():
                 print(f"⚠️ تحذير: فشل تسجيل البلوبرينت {blueprint.name}: {e}")
 
         try:
-            # 1. استيراد الموديلات
+            # 1. استيراد الموديلات الأساسية
             from apps.models.admin_db import AdminUser
             from apps.models.supplier_db import Supplier
             from apps.models.wallet_db import SupplierWallet, WalletTransaction
@@ -44,25 +44,45 @@ def create_app():
 
             @login_manager.user_loader
             def load_user(user_id):
-                return AdminUser.query.get(int(user_id))
+                try:
+                    return AdminUser.query.get(int(user_id))
+                except:
+                    return None
 
-            # 2. استيراد وتسجيل البلوبرينتس
-            from apps.auth_portal.routes import auth_blueprint
-            from apps.admin_dashboard.routes import admin_dashboard
-            from apps.add_supplier.routes import add_supplier as add_supplier_bp
-            from apps.financial_ops.routes import financial_blueprint 
-            from apps.statement.routes import statement_blueprint
+            # 2. استيراد وتسجيل البلوبرينتس (تم عزل كل استيراد داخل بلوك آمن)
+            try:
+                from apps.auth_portal.routes import auth_blueprint
+                safe_register(auth_blueprint, '/auth')
+            except Exception as e:
+                print(f"❌ تعذر تحميل auth_blueprint: {e}")
 
-            # تسجيل المسارات بأمان
-            safe_register(auth_blueprint, '/auth')
-            safe_register(admin_dashboard)        # الـ Dashboard ستعود للعمل الآن
-            safe_register(add_supplier_bp, '/suppliers')
-            safe_register(financial_blueprint, '/finance')
-            safe_register(statement_blueprint, '/statement')
+            try:
+                from apps.admin_dashboard.routes import admin_dashboard
+                safe_register(admin_dashboard)
+            except Exception as e:
+                print(f"❌ تعذر تحميل admin_dashboard: {e}")
+
+            try:
+                from apps.add_supplier.routes import add_supplier as add_supplier_bp
+                safe_register(add_supplier_bp, '/suppliers')
+            except Exception as e:
+                print(f"❌ تعذر تحميل add_supplier: {e}")
+
+            try:
+                from apps.financial_ops.routes import financial_blueprint
+                safe_register(financial_blueprint, '/finance')
+            except Exception as e:
+                print(f"❌ تعذر تحميل financial_blueprint: {e}")
+
+            try:
+                from apps.statement.routes import statement_blueprint
+                safe_register(statement_blueprint, '/statement')
+            except Exception as e:
+                print(f"❌ تعذر تحميل statement_blueprint: {e}")
             
             print("🚀 تم تشغيل محرك المنصة بنجاح.")
 
         except Exception as e:
-            print(f"❌ خطأ في تهيئة التطبيق: {e}")
+            print(f"❌ خطأ جسيم في تهيئة التطبيق: {e}")
 
     return app
