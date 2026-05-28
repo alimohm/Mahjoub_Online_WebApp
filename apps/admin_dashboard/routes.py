@@ -5,7 +5,6 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required
 from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
-from apps.utils.security import cipher_suite
 
 # تعريف الـ Blueprint
 admin_dashboard = Blueprint(
@@ -18,48 +17,51 @@ admin_dashboard = Blueprint(
 @login_required
 def dashboard():
     """
-    تحميل بيانات لوحة التحكم مع تأمين الاستعلامات
+    تحميل بيانات لوحة التحكم مع تحصين كامل ضد انهيار قاعدة البيانات
     """
+    # قيم افتراضية لمنع انهيار الصفحة
+    stats = {
+        'total_suppliers': 0,
+        'total_balance': "0.00",
+        'pending_settlements': 0,
+        'recent_activities': []
+    }
+
     try:
         # 1. إحصائيات الموردين
-        total_suppliers = Supplier.query.count()
+        stats['total_suppliers'] = Supplier.query.count()
         
-        # 2. حساب الأرصدة
-        wallets = SupplierWallet.query.all()
-        total_sar_balance = sum([w.sar_total for w in wallets])
-        total_yer_balance = sum([w.yer_total for w in wallets])
-        total_balance = total_sar_balance + (total_yer_balance / 3.75) 
-        
-        # 3. آخر 5 عمليات (ترتيب آمن)
-        # نستخدم قائمة فارغة كـ fallback إذا فشل الاستعلام بسبب نقص أعمدة
+        # 2. حساب الأرصدة (تحقق من وجود الأعمدة ديناميكياً)
         try:
-            recent_activities = WalletTransaction.query.order_by(
-                WalletTransaction.created_at.desc()
-            ).limit(5).all()
-        except:
-            recent_activities = []
-        
-        # 4. التسويات المعلقة (معالجة استثناء في حال عدم وجود عمود status)
-        try:
-            pending_settlements = WalletTransaction.query.filter_by(status='معلقة').count()
-        except:
-            pending_settlements = 0
+            wallets = SupplierWallet.query.all()
+            total_sar = sum([getattr(w, 'sar_total', 0) for w in wallets])
+            total_yer = sum([getattr(w, 'yer_total', 0) for w in wallets])
+            total_balance = total_sar + (total_yer / 3.75) if total_yer else total_sar
+            stats['total_balance'] = f"{total_balance:,.2f}"
+        except Exception as e:
+            print(f"⚠️ Balance Calculation Warning: {e}")
 
-        return render_template(
-            'admin/dashboard_content.html',
-            total_suppliers=total_suppliers,
-            total_balance=f"{total_balance:,.2f}",
-            pending_settlements=pending_settlements,
-            recent_activities=recent_activities
-        )
+        # 3. آخر 5 عمليات (ترتيب آمن)
+        try:
+            # استخدام id للترتيب إذا فشل created_at
+            recent_activities = WalletTransaction.query.order_by(
+                getattr(WalletTransaction, 'created_at', WalletTransaction.id).desc()
+            ).limit(5).all()
+            stats['recent_activities'] = recent_activities
+        except Exception as e:
+            print(f"⚠️ Activities Query Warning: {e}")
+            stats['recent_activities'] = []
+        
+        # 4. التسويات المعلقة
+        try:
+            stats['pending_settlements'] = WalletTransaction.query.filter_by(status='معلقة').count()
+        except Exception as e:
+            print(f"⚠️ Settlements Query Warning: {e}")
+            stats['pending_settlements'] = 0
+
+        return render_template('admin/dashboard_content.html', **stats)
         
     except Exception as e:
-        print(f"❌ Error loading dashboard: {str(e)}")
-        
-        return """
-        <div style="text-align:center; margin-top:50px; font-family:sans-serif; direction:rtl;">
-            <h2>عذراً، حدث خطأ تقني في عرض البيانات</h2>
-            <p>يتم العمل على مزامنة هيكل قاعدة البيانات، يرجى المحاولة بعد قليل.</p>
-            <a href="/admin/dashboard" style="padding:10px; background:#632C8F; color:white; text-decoration:none; border-radius:5px;">حاول مجدداً</a>
-        </div>
-        """, 500
+        print(f"❌ Critical Dashboard Error: {str(e)}")
+        # نرسل القيم الافتراضية حتى تظهر الصفحة ولا تظهر رسالة 500
+        return render_template('admin/dashboard_content.html', **stats)
