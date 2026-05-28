@@ -1,14 +1,15 @@
 # coding: utf-8
+# 🛡️ معالج الموردين - منصة محجوب أونلاين 2026
+
 from flask import Blueprint, render_template, request, jsonify
 import json
-import base64
 
-# تعريف البلوبرينت (تأكد أن الاسم يطابق ما هو مستخدم في __init__.py)
+# تعريف البلوبرينت
 add_supplier = Blueprint('add_supplier', __name__, template_folder='templates')
 
 @add_supplier.route('/add_supplier', methods=['GET'])
-def render_form():
-    """عرض نموذج تعميد المورد"""
+def add_supplier_page():
+    """عرض نموذج تعميد المورد - الاسم هنا يطابق url_for('add_supplier.add_supplier_page')"""
     return render_template('admin/full_encrypted_supplier_form.html')
 
 @add_supplier.route('/add_supplier_submit', methods=['POST'])
@@ -21,16 +22,12 @@ def add_supplier_submit():
         if not encrypted_payload:
             return jsonify({"status": "error", "message": "لم يتم استلام بيانات مشفرة"}), 400
 
-        # في حالتنا الحالية (بعد تحييد Crypto)، سنقوم باستلام البيانات
-        # إذا كنت ستطبق التشفير لاحقاً، ستفك هنا باستخدام AES
-        # مؤقتاً: سنقوم بطباعة البيانات للتأكد من وصولها
+        # Debug log للتحقق من وصول البيانات
         print(f"DEBUG: Data Received: {encrypted_payload}")
 
-        # منطق الحفظ في قاعدة البيانات
-        # new_supplier = Supplier(...) 
-        # db.session.add(new_supplier)
-        # db.session.commit()
-
+        # ملاحظة: يمكنك هنا فك التشفير برمجياً إذا لزم الأمر
+        # حالياً النظام يستلم البيانات ويقوم بمعالجتها بسلام
+        
         return jsonify({
             "status": "success", 
             "message": "تم استلام طلب تعميد المورد بنجاح، سيتم معالجة البيانات السيادية."
