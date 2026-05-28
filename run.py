@@ -1,38 +1,29 @@
 # coding: utf-8
 from apps import create_app
 from apps.extensions import db
-from sqlalchemy import text, inspect
+from sqlalchemy import text
 import os
 
+# إنشاء التطبيق
 app = create_app()
 
-def auto_fix_db():
+# دالة الترميم التلقائي
+def repair_database():
     with app.app_context():
         try:
-            print("🔧 جاري التحقق من هيكل قاعدة البيانات...")
-            inspector = inspect(db.engine)
-            
-            # التأكد من وجود الجدول أولاً
-            if 'wallet_transactions' in inspector.get_table_names():
-                # الحصول على قائمة الأعمدة الحالية
-                columns = [c['name'] for c in inspector.get_columns('wallet_transactions')]
-                
-                # الأعمدة التي يحتاجها الكود الجديد
-                needed_cols = ['_amount', '_profit_margin', '_notes']
-                
-                for col in needed_cols:
-                    if col not in columns:
-                        print(f"➕ جاري إضافة العمود المفقود: {col}")
-                        db.session.execute(text(f"ALTER TABLE wallet_transactions ADD COLUMN {col} VARCHAR(255)"))
-                
-                db.session.commit()
-                print("✅ تم تحديث أعمدة قاعدة البيانات بنجاح.")
+            print("🚀 جاري محاولة ترميم قاعدة البيانات...")
+            # تنفيذ أوامر إضافة الأعمدة برمجياً
+            db.session.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS _amount VARCHAR(255)"))
+            db.session.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS _profit_margin VARCHAR(255)"))
+            db.session.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS _notes TEXT"))
+            db.session.commit()
+            print("✅ تم ترميم الأعمدة بنجاح.")
         except Exception as e:
-            print(f"❌ خطأ أثناء الإصلاح التلقائي: {e}")
+            print(f"⚠️ فشل الترميم (ربما الأعمدة موجودة مسبقاً): {e}")
             db.session.rollback()
 
-# استدعاء دالة الإصلاح قبل تشغيل التطبيق
-auto_fix_db()
+# تشغيل وظيفة الترميم قبل بدء التطبيق
+repair_database()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
