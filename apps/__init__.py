@@ -7,7 +7,6 @@ from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager
 
-# تعريف الدالة مباشرة، بدون محاولة استيراد 'create_app' من 'apps'
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -23,7 +22,8 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth_blueprint.login' # تأكد من اسم البلوبرينت الصحيح هنا
+    # تأكد من أن اسم الـ login_view يطابق المسار المسجل للـ auth
+    login_manager.login_view = 'auth_blueprint.login' 
 
     with app.app_context():
         try:
@@ -48,7 +48,12 @@ def create_app():
             from apps.statement.routes import statement_blueprint
 
             app.register_blueprint(auth_blueprint, url_prefix='/auth')
+            
+            # تم تعديل تسجيل الـ dashboard ليصبح منظماً
+            # بما أن المسار في routes.py هو '/admin/dashboard'
+            # فإنه سيعمل مباشرة عند زيارة /admin/dashboard
             app.register_blueprint(admin_dashboard)
+            
             app.register_blueprint(admin_suppliers_bp, url_prefix='/suppliers')
             app.register_blueprint(financial_blueprint, url_prefix='/finance')
             app.register_blueprint(statement_blueprint, url_prefix='/statement')
