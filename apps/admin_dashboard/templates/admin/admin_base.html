@@ -106,13 +106,18 @@
             arrow.classList.toggle("rotate", !isShown);
         }
 
-        // إظهار اللودر عند التنقل
+        // إظهار اللودر عند التنقل مع حماية من التعليق
         document.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', function(e) {
-                if(this.href && !this.href.includes('#')) {
+                if(this.href && !this.href.includes('#') && !this.href.includes('javascript:')) {
                     document.getElementById('loader').classList.remove('d-none');
                 }
             });
+        });
+
+        // إخفاء اللودر عند تحميل الصفحة بالكامل
+        window.addEventListener('load', () => {
+            document.getElementById('loader').classList.add('d-none');
         });
     </script>
 </body>
