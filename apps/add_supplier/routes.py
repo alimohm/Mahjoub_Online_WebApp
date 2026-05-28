@@ -3,58 +3,56 @@ import base64
 import hashlib
 from flask import Blueprint, render_template, request, jsonify
 from Crypto.Cipher import AES
-from Crypto.Protocol.KDF import PBKDF2
-from Crypto.Util.Padding import unpad # استخدام مكتبة موثوقة للـ Padding
+from Crypto.Util.Padding import unpad
 
 add_supplier = Blueprint('add_supplier', __name__, template_folder='templates')
 
-SECRET_PASSWORD = "YOUR_SUPER_SECRET_AES_KEY_256"
+# استخدم مفتاحاً ثابتاً بسيطاً لتجنب مشاكل الـ Salt/PBKDF2 مؤقتاً للتأكد من الاستقرار
+# في الإنتاج، يجب أن تكون هذه القيمة مخزنة بشكل آمن
+SECRET_KEY = "12345678901234567890123456789012" # 32 bytes لـ AES-256
 
-def decrypt_aes_cryptojs(encrypted_text, password):
+def decrypt_data(encrypted_str):
+    """محرك فك التشفير المباشر (AES-CBC)"""
     try:
-        # 1. تنظيف النص (قد يتم إضافة مسافات زائدة أحياناً)
-        encrypted_text = encrypted_text.strip()
-        encrypted_data = base64.b64decode(encrypted_text)
+        # فك تشفير Base64
+        raw_data = base64.b64decode(encrypted_str)
         
-        if encrypted_data[:8] != b'Salted__':
-            raise ValueError("تنسيق التشفير غير مدعوم: لا يوجد Salted")
-    
-        salt = encrypted_data[8:16]
-        ciphertext = encrypted_data[16:]
+        # استخراج الـ IV (أول 16 بايت) والبيانات المشفرة
+        iv = raw_data[:16]
+        ciphertext = raw_data[16:]
         
-        # 2. اشتقاق المفتاح
-        key_iv = PBKDF2(password, salt, 48, count=10000, hmac_hash_module=hashlib.sha256)
-        key = key_iv[:32]
-        iv = key_iv[32:]
+        # إعداد المحرك
+        cipher = AES.new(SECRET_KEY.encode('utf-8'), AES.MODE_CBC, iv)
         
-        # 3. فك التشفير مع الحماية من الـ Padding
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        decrypted_data = cipher.decrypt(ciphertext)
-        
-        # 4. إزالة الحشوة بشكل آمن
-        return unpad(decrypted_data, AES.block_size).decode('utf-8')
+        # فك التشفير وإزالة الـ Padding
+        decrypted = unpad(cipher.decrypt(ciphertext), AES.block_size)
+        return decrypted.decode('utf-8')
     except Exception as e:
-        raise Exception(f"فشل فك التشفير: {str(e)}")
+        print(f"Error in Decryption: {e}")
+        return None
 
 @add_supplier.route('/add_supplier_submit', methods=['POST'])
 def add_supplier_submit():
     encrypted_payload = request.form.get('full_encrypted_data')
     
     if not encrypted_payload:
-        return jsonify({"status": "error", "message": "البيانات فارغة"}), 400
+        return jsonify({"status": "error", "message": "لا يوجد بيانات مشفرة"}), 400
+
+    decrypted_json = decrypt_data(encrypted_payload)
+    
+    if not decrypted_json:
+        return jsonify({"status": "error", "message": "فشل فك التشفير - مفتاح غير متطابق أو بيانات تالفة"}), 400
 
     try:
-        decrypted_json = decrypt_aes_cryptojs(encrypted_payload, SECRET_PASSWORD)
         data = json.loads(decrypted_json)
+        # هنا يمكنك طباعة البيانات للتأكد: print(data)
         
-        # --- هنا تبدأ عملية التعميد ---
-        # مثال: حفظ البيانات في قاعدة البيانات
-        # supplier = Supplier(username=data['auth']['username'], ...)
-        # db.session.commit()
+        # قم بعمليات الحفظ في قاعدة البيانات هنا
         
-        return jsonify({"status": "success", "message": "تمت معالجة البيانات بنجاح"})
-        
+        return jsonify({"status": "success", "message": "تمت معالجة البيانات السيادية بنجاح"})
     except Exception as e:
-        # تسجيل الخطأ في الـ Logs لتسهيل التصحيح
-        print(f"CRITICAL ERROR: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": f"خطأ في تحليل البيانات: {str(e)}"}), 500
+
+@add_supplier.route('/add_supplier', methods=['GET'])
+def render_form():
+    return render_template('admin/full_encrypted_supplier_form.html')
