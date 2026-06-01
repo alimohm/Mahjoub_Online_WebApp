@@ -18,8 +18,9 @@ dependencies = [
 ]
 
 [tool.vercel]
-# هنا قمنا بتغيير نقطة الدخول لتشير إلى ملف run.py والمتغير app بداخله
+# نقطة دخول Vercel: توجه إلى ملف run.py وتحديداً كائن التطبيق 'app'
 entrypoint = "run.py:app"
 
 [tool.setuptools]
+# حزمة التطبيق الرئيسية التي تحتوي على المنطق البرمجي
 packages = ["apps"]
