@@ -13,9 +13,13 @@ from . import auth_blueprint
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
-    # منع الدخول المتكرر إذا كان المالك مسجلاً بالفعل
+    # منع الدخول المتكرر إذا كان المستخدم مسجلاً بالفعل
     if current_user.is_authenticated:
-        return redirect(url_for('admin_dashboard.dashboard'))
+        try:
+            return redirect(url_for('admin_dashboard.dashboard'))
+        except Exception:
+            # توجيه احتياطي في حال اختلاف المسمى البرمجي للمسار الرئيسي
+            return redirect('/')
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -33,7 +37,10 @@ def login():
                 db.session.commit()
                 
                 flash('مرحباً بك في سوقك الذكي.', 'success')
-                return redirect(url_for('admin_dashboard.dashboard'))
+                try:
+                    return redirect(url_for('admin_dashboard.dashboard'))
+                except Exception:
+                    return redirect('/')
             else:
                 flash('ليس لديك صلاحيات الوصول لهذه المنطقة السيادية.', 'warning')
         else:
@@ -46,4 +53,5 @@ def login():
 def logout():
     logout_user()
     flash('تم تسجيل الخروج من المنطقة السيادية بنجاح.', 'info')
-    return redirect(url_for('auth_portal.login'))
+    # الاستدعاء الصحيح للمسار بناءً على اسم البلوبرينت المسجل للتنقل المرن
+    return redirect(url_for('auth_blueprint.login'))
