@@ -81,12 +81,12 @@ def create_app():
             except Exception as e:
                 print(f"❌ تعذر تحميل statement_blueprint: {e}")
             
+            print("🚀 تم تشغيل محرك المنصة بنجاح وتوحيد التوجيه السحابي الديناميكي.")
+
             # 🔄 توجيه تلقائي: عند دخول المالك للنطاق الصافي، يتم نقله فوراً لصفحة تسجيل الدخول
             @app.route('/')
             def root_redirect():
                 return redirect('/auth/login')
-            
-            print("🚀 تم تشغيل محرك المنصة بنجاح وتوحيد التوجيه السحابي الديناميكي.")
 
         except Exception as e:
             print(f"❌ خطأ جسيم في تهيئة التطبيق: {e}")
