@@ -21,4 +21,6 @@ class Config:
     # إيقاف تتبع التعديلات لرفع الأداء
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # 🛡️ إعدادات المح
+    # 🌐 إعدادات النطاقات الفرعية (Subdomains) للمنصة
+    # نقوم بجلب النطاق الرئيسي من متغيرات البيئة في Vercel أو استخدام النطاق الافتراضي
+    SERVER_NAME = os.environ.get('SERVER_NAME', 'mahjoub.online')
