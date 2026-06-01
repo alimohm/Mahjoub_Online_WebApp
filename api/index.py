@@ -1,4 +1,7 @@
-from run import app
+import sys
+import os
 
-# Vercel يتوقع تصدير متغير باسم 'app' ليقوم بتشغيله
-# تأكد أن ملف run.py يحتوي على متغير app الخاص بتطبيق Flask
+# هذا السطر يجبر بايثون على رؤية المجلد الرئيسي للمشروع
+sys.path.append(os.getcwd())
+
+from run import app
