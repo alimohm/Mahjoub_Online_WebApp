@@ -22,16 +22,14 @@ def create_app():
     login_manager.login_view = 'auth_blueprint.login' 
 
     with app.app_context():
-        # دالة تسجيل آمنة تمنع انهيار النظام وتدعم النطاقات الفرعية (Subdomains)
-        def safe_register(blueprint, url_prefix=None, subdomain=None):
+        # دالة تسجيل آمنة تمنع انهيار النظام وتدعم استجابة مرنة لكافة النطاقات
+        def safe_register(blueprint, url_prefix=None):
             try:
-                if subdomain:
-                    app.register_blueprint(blueprint, subdomain=subdomain)
-                elif url_prefix:
+                if url_prefix:
                     app.register_blueprint(blueprint, url_prefix=url_prefix)
                 else:
                     app.register_blueprint(blueprint)
-                print(f"✅ تم تسجيل: {blueprint.name} " + (f"على النطاق الفرعي [{subdomain}]" if subdomain else ""))
+                print(f"✅ تم تسجيل: {blueprint.name}")
             except Exception as e:
                 print(f"⚠️ تحذير: فشل تسجيل البلوبرينت {blueprint.name}: {e}")
 
@@ -52,40 +50,38 @@ def create_app():
                 except:
                     return None
 
-            # 2. استيراد وتسجيل البلوبرينتس (ربط لوحة التحكم بالنطاق الفرعي admin)
+            # 2. استيراد وتسجيل البلوبرينتس (إزالة قيود النطاق الفرعي الصارمة لحل مشكلة 404)
             try:
                 from apps.auth_portal.routes import auth_blueprint
-                # بوابات الدخول والتوثيق تعمل على النطاق الفرعي لضمان الأمان
-                safe_register(auth_blueprint, url_prefix='/auth', subdomain='admin')
+                safe_register(auth_blueprint, url_prefix='/auth')
             except Exception as e:
                 print(f"❌ تعذر تحميل auth_blueprint: {e}")
 
             try:
                 from apps.admin_dashboard.routes import admin_dashboard
-                # 🚀 توجيه لوحة التحكم الرئيسية لتعمل مباشرة عند فتح admin.mahjoub.online
-                safe_register(admin_dashboard, subdomain='admin')
+                safe_register(admin_dashboard) # لكي يخدم الرابط الرئيسي / مباشرة
             except Exception as e:
                 print(f"❌ تعذر تحميل admin_dashboard: {e}")
 
             try:
                 from apps.add_supplier.routes import add_supplier as add_supplier_bp
-                safe_register(add_supplier_bp, url_prefix='/suppliers', subdomain='admin')
+                safe_register(add_supplier_bp, url_prefix='/suppliers')
             except Exception as e:
                 print(f"❌ تعذر تحميل add_supplier: {e}")
 
             try:
                 from apps.financial_ops.routes import financial_blueprint
-                safe_register(financial_blueprint, url_prefix='/finance', subdomain='admin')
+                safe_register(financial_blueprint, url_prefix='/finance')
             except Exception as e:
                 print(f"❌ تعذر تحميل financial_blueprint: {e}")
 
             try:
                 from apps.statement.routes import statement_blueprint
-                safe_register(statement_blueprint, url_prefix='/statement', subdomain='admin')
+                safe_register(statement_blueprint, url_prefix='/statement')
             except Exception as e:
                 print(f"❌ تعذر تحميل statement_blueprint: {e}")
             
-            print("🚀 تم تشغيل محرك المنصة بنجاح وتوزيع النطاقات الفرعية.")
+            print("🚀 تم تشغيل محرك المنصة بنجاح واستعادة المسارات الافتراضية.")
 
         except Exception as e:
             print(f"❌ خطأ جسيم في تهيئة التطبيق: {e}")
