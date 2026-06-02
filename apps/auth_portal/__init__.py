@@ -2,17 +2,19 @@
 
 from flask import Blueprint
 
-# تعريف البلوبرينت (اسم البلوبرينت، اسم الوحدة)
-auth_bp = Blueprint('auth_portal', __name__)
+# تعريف البلوبرينت
+# تأكد أن اسم البلوبرينت هنا هو نفسه الذي تستخدمه في routes.py
+auth_blueprint = Blueprint('auth_portal', __name__, template_folder='templates')
 
-# استيراد المسارات (Routes) هنا في الأسفل لتجنب الاستيراد الدائري
-from apps.auth_portal import routes
+# لا تستورد الـ routes هنا في الأعلى لتجنب الاستيراد الدائري
+# الاستيراد سيتم داخل دالة التسجيل إذا لزم الأمر، أو يكتفي Flask بالتعرف عليه عبر البلوبرينت
 
 def register_auth_portal(app):
-    """تسجيل بلوبرينت المصادقة بشكل آمن"""
+    """تسجيل بلوبرينت المصادقة"""
     try:
-        from apps.auth_portal.routes import auth_portal as auth_routes_bp
-        app.register_blueprint(auth_routes_bp, url_prefix='/auth')
+        # هنا نستورد الـ routes فقط عند الحاجة لتسجيل المسارات
+        from apps.auth_portal.routes import auth_blueprint
+        app.register_blueprint(auth_blueprint, url_prefix='')
         print("✅ تم تسجيل بلوبرينت المصادقة (Auth Portal) بنجاح.")
     except Exception as e:
         print(f"❌ فشل تسجيل بلوبرينت المصادقة: {e}")
