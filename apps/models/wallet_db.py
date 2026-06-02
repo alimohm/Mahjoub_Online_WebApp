@@ -3,16 +3,16 @@ import os
 from apps.extensions import db
 from apps.utils.security import AESCipher
 
-# جلب المفتاح من البيئة
+# جلب المفتاح من البيئة (تأكد من إضافته في إعدادات Render)
 encryption_key = os.getenv('ENCRYPTION_KEY')
 
 if not encryption_key:
-    print("⚠️ تحذير: لم يتم العثور على ENCRYPTION_KEY في البيئة! يتم استخدام مفتاح التطوير.")
+    print("⚠️ تحذير: لم يتم العثور على ENCRYPTION_KEY في البيئة! تم استخدام مفتاح افتراضي.")
     encryption_key = '00000000000000000000000000000000'
 
 cipher = AESCipher(encryption_key)
 
-class wallet(db.Model):  # تم تغيير الاسم من SupplierWallet إلى Wallet ليطابق `apps/models/__init__.py`
+class Wallet(db.Model):  # تم التصحيح إلى Wallet (حرف كبير)
     __tablename__ = 'supplier_wallets'
     __table_args__ = {'extend_existing': True}
 
@@ -20,6 +20,7 @@ class wallet(db.Model):  # تم تغيير الاسم من SupplierWallet إلى
     supplier_id = db.Column(db.String(50), db.ForeignKey('suppliers.sovereign_id'), nullable=False, unique=True)
     wallet_code = db.Column(db.String(50), nullable=False, unique=True)
     
+    # حقول مشفرة
     _yer_total = db.Column(db.String(255), default=lambda: cipher.encrypt("0.0"))
     _sar_total = db.Column(db.String(255), default=lambda: cipher.encrypt("0.0"))
     _usd_total = db.Column(db.String(255), default=lambda: cipher.encrypt("0.0"))
@@ -30,6 +31,7 @@ class wallet(db.Model):  # تم تغيير الاسم من SupplierWallet إلى
 
     transactions = db.relationship('WalletTransaction', backref='wallet', lazy=True, cascade="all, delete-orphan")
 
+    # الخصائص (Properties)
     @property
     def yer_total(self): 
         try: return float(cipher.decrypt(self._yer_total))
@@ -66,6 +68,7 @@ class WalletTransaction(db.Model):
     _profit_margin = db.Column(db.String(255), nullable=True)
     _notes = db.Column(db.String(500), nullable=True)
     
+    # أعمدة الهجرة (Legacy Columns)
     legacy_amount = db.Column('amount', db.String(255), nullable=True)
     legacy_profit_margin = db.Column('profit_margin', db.String(255), nullable=True)
     legacy_notes = db.Column('notes', db.Text, nullable=True)
