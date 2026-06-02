@@ -1,65 +1,46 @@
 # coding: utf-8
-# 🏦 نموذج تسويات الموردين - منصة محجوب أونلاين 2026
-# هذا الملف مخصص حصراً لنموذج التسويات المالية لضمان فصل المهام (Separation of Concerns)
-
-import os
 import hashlib
 from apps.extensions import db
-from apps.utils.security import AESCipher
-
-# تهيئة مشفر البيانات السيادي للمنصة لحماية بيانات التحويلات البنكية
-encryption_key = os.getenv('ENCRYPTION_KEY')
-if not encryption_key:
-    print("⚠️ تحذير أمني: ENCRYPTION_KEY غير موجود في نموذج التسويات! تم تفعيل المفتاح الاحتياطي.")
-    encryption_key = '00000000000000000000000000000000'
-
-cipher = AESCipher(encryption_key)
+from apps.utils.security import AESCipher # استيراد الكلاس مباشرة
 
 class AdminSettlement(db.Model):
-    """ نموذج تسجيل عمليات التسوية المالية للموردين - النسخة المحصنة بالتشفير والهاش المفهرس """
+    """ نموذج تسجيل عمليات التسوية المالية للموردين """
     __tablename__ = 'admin_settlements'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    
-    # ربط التسوية بالمورد الأساسي (مفهرس لتسريع كشوفات التسويات)
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False, index=True)
     
-    # 🔐 حقول التخزين المشفرة للحماية المطلقة من المتلصصين وقراصنة البيانات
+    # حقول التخزين المشفرة
     _amount = db.Column('amount_enc', db.String(255), nullable=False)
     _reference_number = db.Column('reference_number_enc', db.String(255), nullable=True)
     _notes = db.Column('notes_enc', db.Text, nullable=True)
     
-    # ⚡ الـ Blind Index: يتيح للإدارة البحث عن رقم الحوالة أو السند فوراً دون فك تشفير الجدول بالكامل
+    # الفهرس الأعمى للبحث
     reference_hash = db.Column('reference_hash', db.String(64), unique=True, nullable=True, index=True)
     
-    # البيانات الإدارية العامة
     currency = db.Column(db.String(10), default='USD', nullable=False)
-    payment_method = db.Column(db.String(50), nullable=True) # تحويل بنكي، كريمي، نقدي، إلخ
-    
-    # 🛡️ حالة التسوية لضبط الحوكمة ومنع التلاعب أو التكرار (قيد الانتظار، مكتملة، ملغاة)
+    payment_method = db.Column(db.String(50), nullable=True)
     status = db.Column(db.String(20), default='مكتملة', nullable=False, index=True)
-    
-    # ضبط التوقيت السيادي الموحد عبر السيرفر مباشرة
     settlement_date = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False, index=True)
 
-    # --- بوابات التشفير وفك التشفير الآمنة (Properties) ---
+    # --- بوابات التشفير (تستخدم AESCipher مباشرة) ---
 
     @property
     def amount(self):
         try:
-            return float(cipher.decrypt(self._amount)) if self._amount else 0.0
+            return float(AESCipher.decrypt(self._amount)) if self._amount else 0.0
         except Exception:
             return 0.0
 
     @amount.setter
     def amount(self, value):
-        self._amount = cipher.encrypt(str(float(value or 0.0)))
+        self._amount = AESCipher.encrypt(str(float(value or 0.0)))
 
     @property
     def reference_number(self):
         try:
-            return cipher.decrypt(self._reference_number) if self._reference_number else ""
+            return AESCipher.decrypt(self._reference_number) if self._reference_number else ""
         except Exception:
             return ""
 
@@ -67,8 +48,7 @@ class AdminSettlement(db.Model):
     def reference_number(self, value):
         if value:
             clean_ref = str(value).strip()
-            self._reference_number = cipher.encrypt(clean_ref)
-            # توليد الفهرس الأعمى SHA-256 للبحث السريع الآمن
+            self._reference_number = AESCipher.encrypt(clean_ref)
             self.reference_hash = hashlib.sha256(clean_ref.encode('utf-8')).hexdigest()
         else:
             self._reference_number = None
@@ -77,13 +57,13 @@ class AdminSettlement(db.Model):
     @property
     def notes(self):
         try:
-            return cipher.decrypt(self._notes) if self._notes else ""
+            return AESCipher.decrypt(self._notes) if self._notes else ""
         except Exception:
             return ""
 
     @notes.setter
     def notes(self, value):
-        self._notes = cipher.encrypt(str(value)) if value else None
+        self._notes = AESCipher.encrypt(str(value)) if value else None
 
     def __repr__(self):
         return f"<AdminSettlement {self.id} | Supplier: {self.supplier_id} | Status: {self.status}>"
