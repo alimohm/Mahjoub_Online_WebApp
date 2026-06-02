@@ -30,6 +30,7 @@
         .sovereign-card {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 35px;
             border: 1px solid rgba(212, 175, 55, 0.2);
             padding: 45px;
@@ -38,23 +39,24 @@
             box-shadow: 0 25px 60px rgba(0,0,0,0.7);
         }
 
-        /* ⚪ تعديل اللوجو ليصبح أبيض ناصع */
+        /* ⚪ تم إصلاح دالة الظل ودمجها برمجياً بشكل سليم */
         .logo-section img {
             width: 100px; 
             margin-bottom: 15px;
-            filter: brightness(0) invert(1); /* تحويل اللوجو للون الأبيض */
-            drop-shadow: 0 0 15px rgba(255,255,255,0.3);
+            filter: brightness(0) invert(1) drop-shadow(0 0 15px rgba(255,255,255,0.2));
         }
 
         .brand-name {
             font-size: 2rem; font-weight: 900;
             color: var(--sovereign-gold);
             margin: 0;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
         .philosophy-text {
             font-size: 0.75rem; color: #b3a2c7;
             margin-bottom: 25px; font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
         .form-group { text-align: right; margin-bottom: 18px; }
@@ -62,15 +64,27 @@
         .form-group label {
             display: block; margin-bottom: 7px;
             font-size: 0.8rem; color: var(--sovereign-gold);
+            font-weight: 700;
         }
 
         .input-box { position: relative; }
 
-        .input-box i {
+        /* أيقونة اليمين الأساسية */
+        .input-box i.main-icon {
             position: absolute; right: 15px; top: 50%;
             transform: translateY(-50%); color: var(--sovereign-gold);
             opacity: 0.7;
+            transition: 0.3s;
         }
+
+        /* أيقونة كشف كلمة المرور جهة اليسار */
+        .input-box .toggle-password {
+            position: absolute; left: 15px; top: 50%;
+            transform: translateY(-50%); color: #b3a2c7;
+            cursor: pointer; opacity: 0.5; transition: 0.3s;
+            z-index: 10;
+        }
+        .input-box .toggle-password:hover { color: var(--sovereign-gold); opacity: 1; }
 
         .input-box input {
             width: 100%; padding: 14px 45px 14px 15px;
@@ -78,12 +92,20 @@
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 15px; color: #fff;
             outline: none; transition: 0.3s; box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
         }
+
+        /* تعديل المسافة اليسارية لحساب أيقونة كشف كلمة المرور */
+        .input-box input[type="password"], 
+        .input-box input[type="text"]#password-field { padding-left: 45px; }
 
         .input-box input:focus {
             border-color: var(--sovereign-gold);
             background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
         }
+        
+        .input-box input:focus + i.main-icon { opacity: 1; }
 
         .btn-access {
             width: 100%; padding: 15px;
@@ -92,12 +114,19 @@
             color: var(--deep-space); font-weight: 800;
             font-size: 1.1rem; cursor: pointer;
             transition: 0.4s; margin-top: 15px;
+            font-family: 'Cairo', sans-serif;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
         }
 
-        /* 🔑 تنسيق زر نسيت كلمة المرور */
+        .btn-access:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(212, 175, 55, 0.3);
+            background: linear-gradient(90deg, #f1c40f, var(--sovereign-gold));
+        }
+
         .forgot-password {
             margin-top: 20px;
-            display: block;
+            display: inline-block;
             font-size: 0.85rem;
             color: rgba(255,255,255,0.6);
             text-decoration: none;
@@ -109,12 +138,13 @@
             text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
         }
 
-        /* نظام التنبيهات الملون المطور */
+        /* نظام التنبيهات المطور مع ضبط الهوامش الأصلية للـ RTL */
         .flash-container { margin-bottom: 20px; }
         .flash-message {
             padding: 12px; border-radius: 12px;
             font-size: 0.85rem; text-align: right;
             margin-bottom: 8px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
         }
         .flash-danger { background: rgba(255, 77, 77, 0.15); border: 1px solid #ff4d4d; color: #ff6666; }
         .flash-warning { background: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; color: #f39c12; }
@@ -136,7 +166,7 @@
             <div class="flash-container">
             {% for category, message in messages %}
               <div class="flash-message flash-{{ category if category in ['danger', 'warning', 'success', 'info'] else 'danger' }}">
-                  <i class="fas fa-shield-halved me-2"></i> {{ message }}
+                  <i class="fas fa-shield-halved"></i> <span>{{ message }}</span>
               </div>
             {% endfor %}
             </div>
@@ -149,21 +179,22 @@
             <div class="form-group">
                 <label>الهوية الرقمية</label>
                 <div class="input-box">
-                    <i class="fas fa-user-shield"></i>
-                    <input type="text" name="username" placeholder="اسم المستخدم" required>
+                    <i class="fas fa-user-shield main-icon"></i>
+                    <input type="text" name="username" placeholder="اسم المستخدم" required autocomplete="username" autofocus>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>مفتاح التشفير</label>
                 <div class="input-box">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" name="password" placeholder="كلمة المرور" required>
+                    <i class="fas fa-lock main-icon"></i>
+                    <input type="password" name="password" id="password-field" placeholder="كلمة المرور" required autocomplete="current-password">
+                    <i class="fas fa-eye toggle-password" id="password-toggle-icon"></i>
                 </div>
             </div>
 
             <button type="submit" class="btn-access">
-                تسجيل الدخول <i class="fas fa-key ms-1"></i>
+                <span>تسجيل الدخول</span> <i class="fas fa-key"></i>
             </button>
         </form>
 
@@ -171,10 +202,27 @@
             <i class="fas fa-question-circle"></i> نسيت كلمة المرور؟
         </a>
 
-        <div style="margin-top: 35px; font-size: 0.65rem; opacity: 0.4;">
+        <div style="margin-top: 35px; font-size: 0.65rem; opacity: 0.4; letter-spacing: 1px;">
             نظام حوكمة سوقك الذكي © 2026
         </div>
     </div>
+
+    <script>
+        const passwordField = document.getElementById('password-field');
+        const toggleIcon = document.getElementById('password-toggle-icon');
+
+        toggleIcon.addEventListener('click', function() {
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                this.classList.remove('fa-eye');
+                this.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                this.classList.remove('fa-eye-slash');
+                this.classList.add('fa-eye');
+            }
+        });
+    </script>
 
 </body>
 </html>
