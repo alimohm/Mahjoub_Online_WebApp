@@ -1,4 +1,6 @@
 # coding: utf-8
+# 📂 apps/models/__init__.py
+
 from apps.models.admin_db import AdminUser
 from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import Wallet, WalletTransaction
