@@ -7,13 +7,12 @@ from apps.utils.security import AESCipher
 encryption_key = os.getenv('ENCRYPTION_KEY')
 
 if not encryption_key:
-    # هذا السطر سيظهر في الـ Logs، إذا رأيته، فالمشكلة في إعدادات Render
     print("⚠️ تحذير: لم يتم العثور على ENCRYPTION_KEY في البيئة! يتم استخدام مفتاح التطوير.")
     encryption_key = '00000000000000000000000000000000'
 
 cipher = AESCipher(encryption_key)
 
-class SupplierWallet(db.Model):
+class Wallet(db.Model):  # تم تغيير الاسم من SupplierWallet إلى Wallet ليطابق `apps/models/__init__.py`
     __tablename__ = 'supplier_wallets'
     __table_args__ = {'extend_existing': True}
 
