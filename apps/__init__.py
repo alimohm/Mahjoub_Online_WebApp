@@ -21,11 +21,11 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # ✅ استيراد النماذج (Models) لضمان تسجيل الجداول في قاعدة البيانات
+        # ✅ استيراد النماذج (Models) بالأسماء الصحيحة والمطابقة للحزمة
         from apps.models import (
             AdminUser, 
             Supplier, 
-            SupplierWallet, 
+            Wallet,             # تم التصحيح هنا
             WalletTransaction, 
             AdminSettlement, 
             SupplierStatement
