@@ -22,16 +22,19 @@ def create_app():
 
     with app.app_context():
         # ✅ استيراد النماذج (Models) بالأسماء الصحيحة والمطابقة للحزمة
+        # تأكد أن apps/models/__init__.py يحتوي على هذه الأسماء في __all__
         from apps.models import (
             AdminUser, 
             Supplier, 
-            Wallet,             # تم التصحيح هنا
+            Wallet, 
             WalletTransaction, 
             AdminSettlement, 
             SupplierStatement
         )
         
-        print("⚡ تم تحميل النماذج (Models) بنجاح.")
+        # إنشاء الجداول إذا لم تكن موجودة
+        db.create_all()
+        print("⚡ تم تحميل النماذج (Models) وإنشاء الجداول بنجاح.")
 
         @login_manager.user_loader
         def load_user(user_id):
