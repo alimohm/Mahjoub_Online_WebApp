@@ -3,8 +3,7 @@
 
 from flask import Blueprint, render_template
 from flask_login import login_required
-from apps.models.supplier_db import Supplier
-from apps.models.wallet_db import SupplierWallet, WalletTransaction
+from apps.extensions import db # استيراد db فقط من مكان آمن
 from sqlalchemy import func
 
 # تعريف الـ Blueprint
@@ -18,8 +17,12 @@ admin_dashboard = Blueprint(
 @login_required
 def dashboard():
     """
-    تحميل بيانات لوحة التحكم مع تحصين كامل ضد انهيار قاعدة البيانات في بيئة Vercel
+    تحميل بيانات لوحة التحكم مع تحصين كامل ضد انهيار قاعدة البيانات
     """
+    # 1. الاستيراد المحلي (Lazy Import) - هنا نكسر الحلقة الدائرية
+    from apps.models.supplier_db import Supplier
+    from apps.models.wallet_db import SupplierWallet, WalletTransaction
+    
     # قيم افتراضية لضمان عدم انهيار القالب (Template)
     stats = {
         'total_suppliers': 0,
@@ -29,23 +32,22 @@ def dashboard():
     }
 
     try:
-        # 1. إحصائيات الموردين - استخدام دقة عالية
+        # إحصائيات الموردين
         stats['total_suppliers'] = Supplier.query.count()
         
-        # 2. حساب الأرصدة - استخدام دوال SQL لسرعة الأداء في PostgreSQL
-        # بدلاً من جلب كل السجلات، نحسب المجموع مباشرة من السيرفر
+        # حساب الأرصدة
         sar_sum = db.session.query(func.sum(SupplierWallet.sar_total)).scalar() or 0
         yer_sum = db.session.query(func.sum(SupplierWallet.yer_total)).scalar() or 0
         
         total_balance = sar_sum + (yer_sum / 3.75)
         stats['total_balance'] = f"{total_balance:,.2f}"
 
-        # 3. آخر 5 عمليات - ترتيب آمن
+        # آخر 5 عمليات
         stats['recent_activities'] = WalletTransaction.query.order_by(
             WalletTransaction.id.desc()
         ).limit(5).all()
         
-        # 4. التسويات المعلقة - استعلام دقيق
+        # التسويات المعلقة
         stats['pending_settlements'] = WalletTransaction.query.filter_by(status='معلقة').count()
 
         return render_template('admin/dashboard_content.html', **stats)
