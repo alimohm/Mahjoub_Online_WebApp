@@ -12,7 +12,7 @@ if not encryption_key:
 
 cipher = AESCipher(encryption_key)
 
-class Wallet(db.Model):  # تم تغيير الاسم من SupplierWallet إلى Wallet ليطابق `apps/models/__init__.py`
+class wallet(db.Model):  # تم تغيير الاسم من SupplierWallet إلى Wallet ليطابق `apps/models/__init__.py`
     __tablename__ = 'supplier_wallets'
     __table_args__ = {'extend_existing': True}
 
