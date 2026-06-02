@@ -3,10 +3,8 @@ import os
 from apps.extensions import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-# تأكد من أن مسار الاستيراد هذا صحيح بناءً على هيكلية مشروعك
-from apps.utils import AESCipher 
+from apps.utils import AESCipher
 
-# تهيئة مشفر البيانات السيادي
 encryption_key = os.getenv('ENCRYPTION_KEY', '00000000000000000000000000000000')
 cipher = AESCipher(encryption_key)
 
@@ -23,6 +21,3 @@ class AdminUser(db.Model, UserMixin):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
-    def __repr__(self):
-        return f'<AdminUser {self.username}>'
