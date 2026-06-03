@@ -19,7 +19,7 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 🛡️ بناء قاعدة البيانات: استيراد شامل لكافة النماذج لضمان عدم وجود جداول مفقودة
+        # 🛡️ بناء قاعدة البيانات
         try:
             from apps.models.admin_db import AdminUser
             from apps.models.supplier_db import Supplier
@@ -39,6 +39,7 @@ def create_app():
             except: return None
 
         # 🛡️ التسجيل الدفاعي (Defensive Registration)
+        # ملاحظة: تأكد أن اسم الـ Blueprint في الملفات هو نفس الاسم المسجل هنا
         blueprints_map = [
             ('apps.auth_portal.routes', 'auth_portal', ''),
             ('apps.add_supplier.routes', 'add_supplier', '/suppliers'),
@@ -56,7 +57,7 @@ def create_app():
             except Exception as e:
                 print(f"⚠️ تحذير: فشل تسجيل {bp_name}، الخطأ: {e}")
 
-        # 4. توجيه المسارات الأمنية (الخداع الاستراتيجي)
+        # 4. توجيه المسارات الأمنية
         @app.route('/')
         def root_redirect():
             return redirect('/login')
@@ -65,11 +66,11 @@ def create_app():
         def robots_txt():
             return "User-agent: *\nDisallow: /", 200, {'Content-Type': 'text/plain'}
 
-        # 🛡️ الحماية الأمنية المتقدمة (Security Headers لتقييم A+)
+        # 🛡️ الحماية الأمنية المتقدمة (Security Headers)
         @app.after_request
         def add_security_headers(response):
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-            response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+            response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.qumra.cloud;"
             response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
             response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
             response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet, noimageindex"
