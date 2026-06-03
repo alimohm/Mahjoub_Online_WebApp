@@ -4,39 +4,42 @@
 import os
 
 class Config:
-    # 🛡️ مفتاح الأمان السيادي للمنصة (يُجلب من متغيرات البيئة في Render)
+    # 🛡️ مفتاح الأمان السيادي للمنصة
     SECRET_KEY = os.environ.get('SECRET_KEY', 'SOVEREIGN_KEY_2026')
     
-    # 1. جلب رابط قاعدة البيانات السحابية (Neon / Postgres)
+    # 1. جلب رابط قاعدة البيانات السحابية
     _db_url = os.environ.get('DATABASE_URL')
     
-    # 2. ⚡ إصلاح بادئة الرابط تلقائياً لتتوافق مع معايير SQLAlchemy الحديثة ومحرك Psycopg2
-    # هذا التعديل يضمن قبول الرابط سواءً بدأ بـ postgres أو postgresql وتحويله للمحرك الآمن فوراً
+    # 2. ⚡ إصلاح بادئة الرابط تلقائياً
     if _db_url:
         if _db_url.startswith("postgres://"):
             _db_url = _db_url.replace("postgres://", "postgresql+psycopg2://", 1)
         elif _db_url.startswith("postgresql://"):
             _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
         
-    # 3. إسناد الرابط المصحح أو الاعتماد على SQLite كخيار احتياطي للمطور محلياً
+    # 3. إسناد الرابط المصحح
     SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///mahjoub_online.db'
     
-    # 4. ❌ تعطيل تتبع التعديلات (لإلغاء العمليات الإضافية وتحسين الأداء الاقتصادي للسيرفر)
+    # 4. ❌ تعطيل تتبع التعديلات
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # 5. 💎 حوكمة وإدارة الاتصالات لبيئة Render المستقرة
-    # تم ضبط الخواص لضمان استمرارية الاتصال وتفادي أخطاء المهلة (Timeouts) مع الـ Pooling في Neon
+    # 5. 💎 حوكمة وإدارة الاتصالات لبيئة Render
     SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_size": 15,             # الحد الأقصى للاتصالات المتزامنة المفتوحة
-        "max_overflow": 10,          # اتصالات إضافية مؤقتة عند الضغط العالي
-        "pool_timeout": 30,          # عدد الثواني للانتظار قبل إطلاق استثناء الفشل
-        "pool_recycle": 1800,        # إعادة تدوير الاتصال كل 30 دقيقة لمنع موته من طرف الخادم
-        "pool_pre_ping": True        # فحص سلامة القناة قبل إرسال أي استعلام لضمان عدم حدوث Crash
+        "pool_size": 15,
+        "max_overflow": 10,
+        "pool_timeout": 30,
+        "pool_recycle": 1800,
+        "pool_pre_ping": True
     }
     
     # 6. إعدادات البنية التحتية السحابية (Qomra Cloud API)
     QUMRA_API_KEY = os.environ.get('QUMRA_API_KEY')
     QUMRA_API_URL = os.environ.get('QUMRA_API_URL')
 
-    # 7. الحفاظ على ترميز ونقاء النصوص والبيانات باللغة العربية
+    # 7. إعدادات WhatsApp Cloud API (تم إضافتها للربط السحابي)
+    WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '1190456080809834')
+    WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN', 'EAAMcZAOecIhEBRoG7TsbeexoZAbZANZARhKEmIiom76iUwoUz6SAEy74Jd8ZBWJFvNZClJIi7JcfLeYHggzGpMVZA1yvNiegEVZASz6r0lgJWPM9JGk1zyHHqUECx6chagEOzeH6W4HxUThr0IT7zeFOybDzpuuD2VL3N14LRBPCUmBfbllJpDEizeNB8mgXczac9OXGadUu0zVaZBBEugHbVD0ZCQRIKzUstpT7BpSPjvmkffxmcG4AfJgBOcaOd8MUUuJTEVagPXKlwVDUqAqlZAAZA0iR2nsZD')
+    WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'Mahjoub_WhatsApp_Secure_2026')
+
+    # 8. الحفاظ على ترميز ونقاء النصوص والبيانات باللغة العربية
     JSON_AS_ASCII = False
