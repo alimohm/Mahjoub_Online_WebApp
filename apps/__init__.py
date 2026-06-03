@@ -1,7 +1,7 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع الرئيسي المحمي للتطبيق
+# 📂 apps/__init__.py - المصنع الرئيسي المحمي والمحصن للتطبيق
 
-from flask import Flask, redirect
+from flask import Flask, redirect, url_for
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager
@@ -54,10 +54,10 @@ def create_app():
             except Exception as e:
                 print(f"⚠️ [Warning] فشل تسجيل {bp_name}، السيرفر سيستمر بالعمل: {e}")
         
-        # 4. توجيه المسار الرئيسي بالتطبيق
+        # 4. توجيه المسار الرئيسي بالتطبيق ديناميكياً للمسار السري الذكي
         @app.route('/')
         def root_redirect():
-            return redirect('/login')
+            return redirect(url_for('auth_portal.login'))
 
         # 🤖 [الطبقة الأولى] مسار ديناميكي لملف robots.txt لمنع زحف البوتات
         @app.route('/robots.txt')
@@ -66,14 +66,37 @@ def create_app():
             response.headers["Content-Type"] = "text/plain"
             return response
 
-        # 🛡️ [الطبقة الثانية] حقن الهيدرز الأمنية لمنع الأرشفة والحماية من الاختراق
+        # 🛡️ [الطبقة الثانية] حقن جدار الحماية السيادي (Security Headers) لرفع التقييم لـ (أ)
         @app.after_request
         def add_security_headers(response):
-            # منع الأرشفة والحفظ نهائياً في خوادم البحث والكاش (Google Cache)
+            # أ. منع الأرشفة والحفظ نهائياً في خوادم البحث والكاش (Google Cache)
             response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet"
-            # حماية ضد ثغرات Clickjacking ومنع وضع السيرفر داخل إطارات خارجية (iFrames)
+            
+            # ب. حماية ضد ثغرات Clickjacking ومنع وضع السيرفر داخل إطارات خارجية (iFrames)
             response.headers["X-Frame-Options"] = "DENY"
+            
+            # ج. منع المتصفح من تخمين نوع الملفات لحظر الملفات الخبيثة المتخفية
             response.headers["X-Content-Type-Options"] = "nosniff"
+            
+            # د. أمن النقل المشدد (HSTS) - إجبار المتصفح على الاتصال المشفر دائماً لمدة سنة كاملة
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+            
+            # هـ. سياسة أمان المحتوى (CSP) - حظر حقن الأكواد الخبيثة مع السماح بسحابة Qomra وواجهات Meta
+            response.headers['Content-Security-Policy'] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https:; "
+                "connect-src 'self' https://api.qumra.cloud https://graph.facebook.com;"
+            )
+            
+            # و. سياسة الإحالة (Referrer Policy) - حماية بيانات الرابط السري من التسريب للخارج عند الانتقال لروابط أخرى
+            response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+            
+            # ز. سياسة الأذونات (Permissions Policy) - إغلاق الكاميرا والموقع الجغرافي تماماً لقطع أي محاولة استغلال
+            response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=(), payment=()'
+            
             return response
 
     return app
