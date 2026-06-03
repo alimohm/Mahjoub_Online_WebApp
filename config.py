@@ -36,8 +36,9 @@ class Config:
     QUMRA_API_KEY = os.environ.get('QUMRA_API_KEY')
     QUMRA_API_URL = os.environ.get('QUMRA_API_URL')
 
-    # 7. إعدادات WhatsApp Cloud API (تحديث للمعرف الرسمي)
-    WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '866883313183677')
+    # 7. إعدادات WhatsApp Cloud API (تحديث للمعرف التجريبي المعتمد)
+    WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '1190456080809834')
+    # ملاحظة: تأكد من تحديث هذا الرمز برمزك الخاص عند الانتقال للإنتاج
     WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN', 'EAAMcZAOecIhEBRoG7TsbeexoZAbZANZARhKEmIiom76iUwoUz6SAEy74Jd8ZBWJFvNZClJIi7JcfLeYHggzGpMVZA1yvNiegEVZASz6r0lgJWPM9JGk1zyHHqUECx6chagEOzeH6W4HxUThr0IT7zeFOybDzpuuD2VL3N14LRBPCUmBfbllJpDEizeNB8mgXczac9OXGadUu0zVaZBBEugHbVD0ZCQRIKzUstpT7BpSPjvmkffxmcG4AfJgBOcaOd8MUUuJTEVagPXKlwVDUqAqlZAAZA0iR2nsZD')
     WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'Mahjoub_WhatsApp_Secure_2026')
 
