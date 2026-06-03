@@ -65,4 +65,23 @@ def login():
 @auth_portal.route('/login', methods=['GET', 'POST'])
 def decoy_login():
     # 🛡️ أي محاولة وصول لهذا المسار ستؤدي لـ "حظر فوراً" (403 Forbidden)
-    #
+    # هذا يشتت البوتات ويحمي الرابط السري من الاكتشاف
+    abort(403)
+
+# -------------------------------------------------------------------------
+# 3. تسجيل الخروج (جلسة محصنة)
+# -------------------------------------------------------------------------
+@auth_portal.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    # تحويل الزائر للجذر، الذي بدوره سيحوله للمسار السري
+    return redirect(url_for('auth_portal.login'))
+
+# -------------------------------------------------------------------------
+# 4. مسار الهوية (مغلق ومحمي)
+# -------------------------------------------------------------------------
+@auth_portal.route('/upload-identity', methods=['GET', 'POST'])
+@login_required
+def upload_identity():
+    return render_template('auth/upload_id.html')
