@@ -14,7 +14,7 @@ from apps.models.admin_db import AdminUser
 SECRET_LOGIN_PATH = os.environ.get('ADMIN_LOGIN_PATH', '/m7jb_sovereign_hq_v2_99x')
 
 # -------------------------------------------------------------------------
-# 1. المسار السري (الدخول المباشر)
+# 1. المسار السري (الدخول المباشر) - مع معالجة استثنائية لمنع الانهيار
 # -------------------------------------------------------------------------
 @auth_portal.route(SECRET_LOGIN_PATH, methods=['GET', 'POST'])
 def login():
@@ -28,26 +28,40 @@ def login():
         # 🛡️ تأخير زمني لمنع القوة الغاشمة
         time.sleep(random.uniform(0.8, 1.5))
         
-        user = AdminUser.query.filter_by(username=username).first()
         error_msg = 'بيانات الدخول غير صحيحة.'
-
-        if user:
-            if hasattr(user, 'is_locked') and user.is_locked():
-                flash('الحساب مقفل مؤقتاً.', 'danger')
-            elif user.check_password(password):
-                if user.role in ['Owner', 'Admin']:
-                    login_user(user)
-                    if hasattr(user, 'reset_failed_attempts'):
-                        user.reset_failed_attempts()
-                    return redirect(url_for('admin_dashboard.dashboard'))
+        
+        try:
+            # التحقق الآمن من المستخدم
+            user = AdminUser.query.filter_by(username=username).first()
+            
+            if user:
+                # 🛡️ نظام القفل
+                if hasattr(user, 'is_locked') and user.is_locked():
+                    flash('الحساب مقفل مؤقتاً.', 'danger')
+                
+                # التحقق من كلمة المرور
+                elif user.check_password(password):
+                    if user.role in ['Owner', 'Admin']:
+                        login_user(user)
+                        if hasattr(user, 'reset_failed_attempts'):
+                            user.reset_failed_attempts()
+                            db.session.commit() # حفظ التغييرات
+                        return redirect(url_for('admin_dashboard.dashboard'))
+                    else:
+                        flash(error_msg, 'danger')
                 else:
+                    # تسجيل فشل
+                    if hasattr(user, 'increment_failed_attempts'):
+                        user.increment_failed_attempts()
+                        db.session.commit() # حفظ التغييرات
                     flash(error_msg, 'danger')
             else:
-                if hasattr(user, 'increment_failed_attempts'):
-                    user.increment_failed_attempts()
                 flash(error_msg, 'danger')
-        else:
-            flash(error_msg, 'danger')
+                
+        except Exception as e:
+            # هذا الجزء يحمي السيرفر من الانهيار إذا تعطلت قاعدة البيانات
+            print(f"🚨 خطأ فني في بوابة الدخول: {e}")
+            flash('عذراً، النظام غير متاح حالياً. يرجى المحاولة لاحقاً.', 'warning')
     
     return render_template('auth/login.html')
 
