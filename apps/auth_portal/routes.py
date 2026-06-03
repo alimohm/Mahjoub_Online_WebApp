@@ -11,7 +11,7 @@ from . import auth_portal
 from apps.models.admin_db import AdminUser
 
 # مسار الدخول السري (يُجلب من إعدادات البيئة لضمان عدم كشفه في الكود)
-SECRET_LOGIN_PATH = os.environ.get('ADMIN_LOGIN_PATH', '/gatekeeper_secure_entry_2026')
+SECRET_LOGIN_PATH = os.environ.get('ADMIN_LOGIN_PATH', '/m7jb_sovereign_hq_v2_99x')
 
 # -------------------------------------------------------------------------
 # 1. المسار السري (الدخول المباشر)
@@ -27,7 +27,7 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         
-        # محرك أمني: تأخير زمني وهمي لمنع هجمات التخمين (Brute Force)
+        # 🛡️ الحماية من هجمات التخمين: تأخير زمني عشوائي (بين 0.8 و 1.5 ثانية)
         time.sleep(random.uniform(0.8, 1.5))
         
         # التحقق من وجود المستخدم
@@ -35,17 +35,16 @@ def login():
         error_msg = 'بيانات الدخول غير صحيحة.'
 
         if user:
-            # التحقق من حالة القفل
+            # 🛡️ نظام القفل التصاعدي
             if hasattr(user, 'is_locked') and user.is_locked():
                 flash('الحساب مقفل مؤقتاً. يرجى الانتظار.', 'danger')
-            # التحقق من كلمة المرور (تأكد أن دالة check_password موجودة في الموديل)
+            # التحقق من كلمة المرور
             elif user.check_password(password):
                 if user.role in ['Owner', 'Admin']:
                     login_user(user)
-                    # إعادة تعيين محاولات الفشل
+                    # إعادة تعيين عداد الفشل عند النجاح
                     if hasattr(user, 'reset_failed_attempts'):
                         user.reset_failed_attempts()
-                        db.session.commit()
                     return redirect(url_for('admin_dashboard.dashboard'))
                 else:
                     flash(error_msg, 'danger')
@@ -53,9 +52,9 @@ def login():
                 # تسجيل محاولة فاشلة
                 if hasattr(user, 'increment_failed_attempts'):
                     user.increment_failed_attempts()
-                    db.session.commit()
                 flash(error_msg, 'danger')
         else:
+            # رسالة موحدة لمنع كشف وجود المستخدم (Enumeration Attack)
             flash(error_msg, 'danger')
     
     return render_template('auth/login.html')
@@ -65,22 +64,5 @@ def login():
 # -------------------------------------------------------------------------
 @auth_portal.route('/login', methods=['GET', 'POST'])
 def decoy_login():
-    # أي بوت يحاول الوصول لـ /login سيتم طرده فوراً لمنع التجسس
-    abort(403)
-
-# -------------------------------------------------------------------------
-# 3. تسجيل الخروج
-# -------------------------------------------------------------------------
-@auth_portal.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('auth_portal.login'))
-
-# -------------------------------------------------------------------------
-# 4. مسار الهوية (اختياري - يمكنك حذفه إذا لم تستخدمه)
-# -------------------------------------------------------------------------
-@auth_portal.route('/upload-identity', methods=['GET', 'POST'])
-@login_required
-def upload_identity():
-    return render_template('auth/upload_id.html')
+    # 🛡️ أي محاولة وصول لهذا المسار ستؤدي لـ "حظر فوراً" (403 Forbidden)
+    #
