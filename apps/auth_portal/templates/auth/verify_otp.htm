@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق الأمني | محجوب أونلاين</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --royal-purple: #632C8F; --sovereign-gold: #D4AF37; --deep-space: #1a0b2e; }
+        body { margin: 0; font-family: 'Cairo', sans-serif; background: radial-gradient(circle at center, #2a114d 0%, var(--deep-space) 100%); height: 100vh; display: flex; justify-content: center; align-items: center; color: #fff; }
+        .sovereign-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border-radius: 35px; border: 1px solid rgba(212, 175, 55, 0.2); padding: 45px; text-align: center; width: 100%; max-width: 400px; box-shadow: 0 25px 60px rgba(0,0,0,0.7); }
+        .brand-name { color: var(--sovereign-gold); margin-bottom: 10px; }
+        .philosophy-text { font-size: 0.8rem; color: #b3a2c7; margin-bottom: 25px; }
+        .input-box { position: relative; margin-bottom: 20px; }
+        .input-box input { width: 100%; padding: 15px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: #fff; text-align: center; font-size: 1.5rem; letter-spacing: 10px; outline: none; }
+        .btn-access { width: 100%; padding: 15px; background: linear-gradient(90deg, var(--sovereign-gold), #b8860b); border: none; border-radius: 15px; color: var(--deep-space); font-weight: 800; cursor: pointer; transition: 0.3s; }
+        #timer { font-size: 1rem; color: var(--sovereign-gold); margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="sovereign-card">
+        <h1 class="brand-name">التحقق الأمني</h1>
+        <p class="philosophy-text">تم إرسال كود التحقق عبر واتساب</p>
+        
+        <form action="{{ url_for('auth_portal.verify_otp') }}" method="POST">
+            <div class="input-box">
+                <input type="text" name="otp" placeholder="000000" maxlength="6" required autofocus>
+            </div>
+            <button type="submit" id="submit-btn" class="btn-access">تأكيد الهوية</button>
+        </form>
+
+        <div id="timer">02:00</div>
+    </div>
+
+    <script>
+        let timeLeft = 120; // 120 ثانية = دقيقتين
+        const timerDisplay = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+
+        const countdown = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                timerDisplay.innerHTML = "انتهت صلاحية الكود. <a href='{{ url_for('auth_portal.login') }}' style='color:#fff'>إعادة إرسال؟</a>";
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = "0.5";
+            } else {
+                let mins = Math.floor(timeLeft / 60);
+                let secs = timeLeft % 60;
+                timerDisplay.innerHTML = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                timeLeft--;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
