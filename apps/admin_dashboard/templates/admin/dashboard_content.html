@@ -1,139 +1,80 @@
 {% extends "admin/admin_base.html" %}
 
-{% block title %}مركز القيادة - محجوب أونلاين{% endblock %}
+{% block title %}القيادة المركزية | محجوب أونلاين{% endblock %}
 
-{% block header_title %}مركز المراقبة والتحكم{% endblock %}
+{% block header_title %}مركز القيادة والتحكم{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
-    <div>
-        <h1 class="h2 fw-bold text-dark">مرحباً بك في مركز القيادة</h1>
-        <p class="text-muted small mb-0">نظرة عامة على أداء ومؤشرات النظام الحالية لمنصة محجوب أونلاين.</p>
-    </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-sm btn-outline-purple px-3 py-2 rounded-3 text-purple" onclick="window.location.reload();" style="border: 1px solid var(--royal-purple); transition: all 0.3s;">
-            <i class="fas fa-sync-alt me-1"></i> تحديث فوري للنظام
-        </button>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100 card-hover" style="border-right: 5px solid var(--royal-purple) !important; border-radius: 16px;">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between">
+<div class="container-fluid">
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm border-0 bg-white">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <div class="text-muted small fw-bold text-uppercase mb-2">إجمالي الموردين</div>
-                        <div class="h2 mb-0 fw-bold text-dark">{{ total_suppliers if total_suppliers else '0' }}</div>
+                        <h6 class="text-muted mb-2">إجمالي الموردين</h6>
+                        <h3 class="fw-bold text-dark">{{ total_suppliers }}</h3>
                     </div>
-                    <div class="p-3 rounded-4" style="background: rgba(99, 44, 143, 0.1); color: var(--royal-purple);">
-                        <i class="fas fa-handshake fa-2x"></i>
+                    <i class="fas fa-users fa-2x text-primary opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm border-0 bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">إجمالي الأرصدة (محول)</h6>
+                        <h3 class="fw-bold text-dark">{{ total_balance }}</h3>
                     </div>
+                    <i class="fas fa-wallet fa-2x text-success opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm border-0 bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">تسويات معلقة</h6>
+                        <h3 class="fw-bold text-danger">{{ pending_settlements }}</h3>
+                    </div>
+                    <i class="fas fa-clock fa-2x text-danger opacity-50"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100 card-hover" style="border-right: 5px solid var(--mahjoub-gold) !important; border-radius: 16px;">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-muted small fw-bold text-uppercase mb-2">أرصدة المحافظ الكلية</div>
-                        <div class="h2 mb-0 fw-bold text-dark text-gradient-gold">{{ total_balance if total_balance else '0.00' }} <span style="font-size: 0.9rem; color: var(--deep-black);">ر.س</span></div>
-                    </div>
-                    <div class="p-3 rounded-4" style="background: rgba(212, 175, 55, 0.1); color: var(--mahjoub-gold);">
-                        <i class="fas fa-wallet fa-2x"></i>
-                    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-history me-2"></i> آخر العمليات المالية</h5>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100 card-hover" style="border-right: 5px solid #20c997 !important; border-radius: 16px;">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-muted small fw-bold text-uppercase mb-2">تسويات معلقة</div>
-                        <div class="h2 mb-0 fw-bold text-success">{{ pending_settlements if pending_settlements else '0' }}</div>
-                    </div>
-                    <div class="p-3 rounded-4" style="background: rgba(32, 201, 151, 0.1); color: #20c997;">
-                        <i class="fas fa-scale-balanced fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100 card-hover" style="border-right: 5px solid #0d6efd !important; border-radius: 16px;">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-muted small fw-bold text-uppercase mb-2">حالة البيئة الرقمية</div>
-                        <div class="h5 mb-0 fw-bold text-success d-flex align-items-center">
-                            <i class="fas fa-circle-check me-2 animate-pulse"></i> مستقر وآمن
-                        </div>
-                    </div>
-                    <div class="p-3 rounded-4" style="background: rgba(13, 110, 253, 0.1); color: #0d6efd;">
-                        <i class="fas fa-server fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                    <i class="fas fa-list-check me-2 text-purple" style="color: var(--royal-purple);"></i>
-                    آخر النشاطات والعمليات المركزية
-                </h5>
-                <span class="badge bg-light text-dark px-3 py-2 rounded-pill border fw-normal">محدث تلقائياً</span>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 text-center">
-                        <thead class="table-light text-secondary small text-uppercase">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <th class="py-3 fw-bold">رقم العملية</th>
-                                <th class="py-3 fw-bold">الطرف المسؤول</th>
-                                <th class="py-3 fw-bold">نوع النشاط</th>
-                                <th class="py-3 fw-bold">القيمة المادية</th>
-                                <th class="py-3 fw-bold">التاريخ والوقت</th>
-                                <th class="py-3 fw-bold">الحالة الإدارية</th>
+                                <th class="px-4">رقم العملية</th>
+                                <th>المورد</th>
+                                <th>القيمة</th>
+                                <th>الحالة</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% if recent_activities %}
-                                {% for activity in recent_activities %}
-                                <tr style="transition: background-color 0.2s;">
-                                    <td class="fw-bold text-purple">#{{ activity.id }}</td>
-                                    <td class="fw-semibold text-dark">{{ activity.user }}</td>
-                                    <td><span class="text-secondary">{{ activity.type }}</span></td>
-                                    <td class="text-purple fw-bold">{{ activity.amount }} ر.س</td>
-                                    <td class="small text-muted" dir="ltr">{{ activity.date }}</td>
-                                    <td>
-                                        <span class="badge {% if activity.status == 'مكتمل' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-warning-subtle text-warning border border-warning-subtle{% endif %} px-3 py-2 rounded-pill fw-bold" style="font-size: 0.8rem;">
-                                            {{ activity.status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
+                            {% for activity in recent_activities %}
+                            <tr>
+                                <td class="px-4 text-muted">#{{ activity.id }}</td>
+                                <td>{{ activity.supplier.name if activity.supplier else 'غير معروف' }}</td>
+                                <td class="fw-bold">{{ activity.amount }}</td>
+                                <td>
+                                    <span class="badge {% if activity.status == 'معلقة' %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ activity.status }}
+                                    </span>
+                                </td>
+                            </tr>
                             {% else %}
-                                <tr>
-                                    <td colspan="6" class="py-5 text-muted">
-                                        <div class="py-4">
-                                            <i class="fas fa-folder-open fa-3x d-block mb-3 text-black-50"></i>
-                                            <span class="fs-6 fw-semibold">لا توجد نشاطات أو عمليات مسجلة في الوقت الحالي.</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">لا توجد عمليات مسجلة حالياً</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -141,34 +82,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* أنيميشن نبضي لحالة الاستقرار */
-    @keyframes pulse {
-        0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.15); opacity: 0.8; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    .animate-pulse {
-        animation: pulse 2s infinite ease-in-out;
-    }
-
-    /* تأثيرات المرور الفاخرة فوق الكروت */
-    .card-hover {
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-    }
-    .card-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(99, 44, 143, 0.08) !important;
-    }
-
-    /* تفاصيل البراند البنفسجي */
-    .text-purple {
-        color: var(--royal-purple) !important;
-    }
-    .btn-outline-purple:hover {
-        background-color: var(--royal-purple) !important;
-        color: #ffffff !important;
-    }
-</style>
 {% endblock %}
