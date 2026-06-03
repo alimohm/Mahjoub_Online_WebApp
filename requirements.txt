@@ -13,3 +13,5 @@ email-validator==2.1.1
 PyGithub==2.3.0
 cryptography==42.0.5
 requests==2.31.0
+weasyprint==62.1
+CairoSVG==2.7.1
