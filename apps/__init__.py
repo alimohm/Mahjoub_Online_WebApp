@@ -37,14 +37,13 @@ def create_app():
             return AdminUser.query.get(int(user_id)) if user_id else None
 
         # 3. تسجيل المسارات (Blueprints)
-        # تم إضافة محرك الويب هوك (api.webhook) ضمن قائمة المسارات
         blueprints = [
             ('apps.auth_portal.routes', 'auth_blueprint', ''),
             ('apps.add_supplier.routes', 'add_supplier', '/suppliers'),
             ('apps.financial_ops.routes', 'financial_blueprint', '/financial_ops'),
             ('apps.statement.routes', 'statement_blueprint', '/statement'),
             ('apps.admin_dashboard.routes', 'admin_dashboard', '/admin'),
-            ('api.webhook', 'webhook_bp', '') # 👈 إضافة محرك الويب هوك المستقل
+            ('api.webhook', 'webhook_bp', '')
         ]
 
         for module_path, bp_name, prefix in blueprints:
@@ -54,11 +53,12 @@ def create_app():
                 app.register_blueprint(blueprint, url_prefix=prefix)
                 print(f"✅ تم تسجيل {bp_name} بنجاح.")
             except Exception as e:
-                print(f"⚠️ [Warning] فشل تسجيل {bp_name}، السيرفر سيستمر بالعمل: {e}")
+                print(f"⚠️ [Warning] فشل تسجيل {bp_name}: {e}")
         
-        # 4. توجيه المسارات الأمنية والردود
+        # 4. توجيه المسارات الأمنية (تم تعديل الـ redirect ليعتمد على المسار الصحيح)
         @app.route('/')
         def root_redirect():
+            # هذا يوجه المستخدم للمسار المعرف باسم 'login' داخل auth_blueprint
             return redirect(url_for('auth_blueprint.login'))
 
         @app.route('/robots.txt')
@@ -75,7 +75,6 @@ def create_app():
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
             
-            # السماح بالاتصال مع Meta في سياسة CSP
             response.headers['Content-Security-Policy'] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
