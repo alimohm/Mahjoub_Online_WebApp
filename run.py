@@ -1,23 +1,29 @@
-# 📂 run.py - نسخة التشخيص الجذري
-import sys
-import traceback
+# 📂 inject_admin.py
 from apps import create_app
+from apps.extensions import db
+from apps.models.admin_db import AdminUser
 
-print("🚀 بدء تشغيل تطبيق محجوب أونلاين...")
-
-try:
-    # محاولة إنشاء التطبيق
+def inject_sovereign_admin():
     app = create_app()
-    print("✅ تم إنشاء كائن التطبيق بنجاح.")
-    
-    # التحقق من أن التطبيق يعمل فعلياً
-    if app:
-        print("🎉 التطبيق جاهز للإقلاع بواسطة Gunicorn.")
-    else:
-        print("❌ التطبيق لم يعد أي شيء (None)!")
-        sys.exit(1)
+    with app.app_context():
+        # بيانات الدخول المطلوبة
+        u, p, ph = "mahjoub", "123", "0000000000"
+        
+        # التحقق من وجود المستخدم
+        existing = AdminUser.query.filter_by(username=u).first()
+        if existing:
+            print(f"⚠️ المستخدم {u} موجود مسبقاً في قاعدة البيانات.")
+            return
 
-except Exception as e:
-    print("🚨 كارثة حرجة عند تشغيل create_app:")
-    traceback.print_exc() # هذا السطر سيجبر Render على كتابة الخطأ الحقيقي في السجلات
-    sys.exit(1) # إغلاق التطبيق برمز خطأ ليظهر في الـ Logs
+        # إنشاء الهوية السيادية
+        new_admin = AdminUser(username=u, phone_number=ph, role='Owner')
+        # التشفير هنا سيقوم بتحويل '123' إلى رمز مشفر غير قابل للقراءة
+        new_admin.set_password(p) 
+        
+        db.session.add(new_admin)
+        db.session.commit()
+        print(f"✅ تم حقن الهوية السيادية بنجاح للمستخدم: {u}")
+        print("🔒 ملاحظة: تم تخزين كلمة المرور مشفرة كـ (Hash) في قاعدة البيانات.")
+
+if __name__ == "__main__":
+    inject_sovereign_admin()
