@@ -10,27 +10,28 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 
     <style>
+        /* تعريف الألوان والهوية */
         :root {
             --royal-purple: #1a0b2e;
             --deep-black: #08020d;
             --mahjoub-gold: #D4AF37;
             --sidebar-width: 280px;
-            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s ease;
         }
 
-        body { font-family: 'Cairo', sans-serif; background-color: #f4f7f6; margin: 0; }
+        body { font-family: 'Cairo', sans-serif !important; background-color: #f4f7f6 !important; margin: 0; }
 
+        /* الهيكل الجانبي (Sidebar) */
         .sidebar {
             width: var(--sidebar-width);
-            background: linear-gradient(180deg, var(--royal-purple) 0%, var(--deep-black) 100%);
-            height: 100vh;
-            position: fixed;
-            right: 0;
-            top: 0;
-            z-index: 1000;
-            transition: var(--transition);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-            overflow-y: auto;
+            background: linear-gradient(180deg, var(--royal-purple) 0%, var(--deep-black) 100%) !important;
+            height: 100vh !important;
+            position: fixed !important;
+            right: 0 !important;
+            top: 0 !important;
+            z-index: 1000 !important;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3) !important;
+            overflow-y: auto !important;
         }
 
         .logo-container { padding: 30px 10px; text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
@@ -38,11 +39,11 @@
 
         .nav-menu { padding: 20px 15px; }
         .nav-link {
-            display: flex; align-items: center; padding: 14px 15px;
-            color: rgba(255,255,255,0.7); text-decoration: none;
-            border-radius: 12px; transition: var(--transition); cursor: pointer;
+            display: flex !important; align-items: center !important; padding: 14px 15px !important;
+            color: rgba(255,255,255,0.7) !important; text-decoration: none !important;
+            border-radius: 12px !important; transition: var(--transition) !important; cursor: pointer !important;
         }
-        .nav-link:hover { background: rgba(212, 175, 55, 0.15); color: var(--mahjoub-gold); }
+        .nav-link:hover { background: rgba(212, 175, 55, 0.2) !important; color: var(--mahjoub-gold) !important; }
         
         .dropdown-content {
             display: none; list-style: none; padding: 0 35px 0 0;
@@ -51,14 +52,16 @@
         .dropdown-content a { color: #aaa; text-decoration: none; padding: 8px 0; display: block; font-size: 0.9rem; }
         .dropdown-content a:hover { color: var(--mahjoub-gold); }
 
-        .main-wrapper { margin-right: var(--sidebar-width); transition: var(--transition); }
-        .top-navbar { background: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .content-body { padding: 30px; }
+        /* المحتوى الرئيسي */
+        .main-wrapper { margin-right: var(--sidebar-width) !important; transition: var(--transition) !important; }
+        .top-navbar { background: #fff !important; padding: 15px 30px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important; }
+        .content-body { padding: 30px !important; }
 
+        /* استجابة الجوال */
         @media (max-width: 992px) {
-            .sidebar { width: 80px; }
+            .sidebar { width: 80px !important; }
             .sidebar .nav-link span, .sidebar .sidebar-title, .dropdown-content { display: none !important; }
-            .main-wrapper { margin-right: 80px; }
+            .main-wrapper { margin-right: 80px !important; }
         }
     </style>
 </head>
@@ -108,7 +111,7 @@
             {% block content %}
             <div class="card p-5 text-center border-0 shadow-sm">
                 <h3>مرحباً بك في لوحة تحكم محجوب أونلاين</h3>
-                <p>النظام جاهز. تم تفعيل كافة الأقسام المالية والإدارية.</p>
+                <p>تم تفعيل نظام الحماية والاستقرار البصري لبيئة العمل.</p>
             </div>
             {% endblock %}
         </section>
