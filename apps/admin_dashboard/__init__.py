@@ -1,7 +1,14 @@
 # coding: utf-8
-# 🛡️ الحارس الأمني لمجلد الداشبورد
+# 📂 apps/admin_dashboard/__init__.py
 
-from .routes import admin_dashboard
+from flask import Blueprint
 
-# ملاحظة: يتم استيراد admin_dashboard من ملف routes.py
-# ليكون جاهزاً للاستخدام عند تسجيله في التطبيق الرئيسي
+# تعريف الـ Blueprint الخاص بلوحة التحكم
+admin_dashboard = Blueprint(
+    'admin_dashboard', 
+    __name__, 
+    template_folder='templates'  # المجلد الذي يحتوي على ملفات HTML الخاصة بالداشبورد
+)
+
+# استيراد المسارات لربطها بالـ Blueprint
+from . import routes
