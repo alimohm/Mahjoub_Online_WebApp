@@ -1,8 +1,9 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن والمحمي (Security Hardened)
+# 📂 apps/__init__.py - المصنع المحصن والمحمي (Security Hardened & Session Secured)
 
 import os
-from flask import Flask, redirect, abort
+from datetime import timedelta
+from flask import Flask, redirect
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager
@@ -10,6 +11,13 @@ from apps.extensions import db, login_manager
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # 🛡️ إعدادات الأمان للجلسات (Session Security)
+    # إغلاق الجلسة تلقائياً بعد 15 دقيقة من الخمول
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # حماية ضد سرقة الجلسة (XSS)
+    app.config['SESSION_COOKIE_SECURE'] = True    # فرض الاتصال الآمن (HTTPS فقط)
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     
     # 🛡️ الحماية من التزييف (ProxyFix لضمان صحة عناوين الـ IP)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -58,46 +66,28 @@ def create_app():
         def robots_txt():
             return "User-agent: *\nDisallow: /", 200, {'Content-Type': 'text/plain'}
 
-        # 🛡️ منع الوصول المباشر للروابط الجذرية المجهولة
         @app.route('/')
         def root_redirect():
-            # تحويل أي شخص يصل للجذر إلى المسار السري أو حظر الوصول
-            return redirect('/m7jb_sovereign_hq_v2_99x')
+            return redirect('/login')
 
-        # 🛡️ الحماية المتقدمة (Security Headers - الحصن المنيع)
+        # 🛡️ الحماية المتقدمة (Security Headers)
         @app.after_request
         def add_security_headers(response):
-            # إجبار المتصفح على استخدام HTTPS (HSTS)
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-            
-            # سياسة صارمة جداً تمنع أي مصدر خارجي غير موثوق
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline'; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
                 "font-src 'self' https://fonts.gstatic.com; "
                 "img-src 'self' https://cdn.qumra.cloud; "
-                "frame-ancestors 'none';" # منع الهجمات من نوع Clickjacking
+                "frame-ancestors 'none';"
             )
-            
-            # منع المتصفح من تخمين أنواع المحتوى (MIME Sniffing)
             response.headers["X-Content-Type-Options"] = "nosniff"
-            
-            # منع الموقع من الظهور داخل IFrame
             response.headers["X-Frame-Options"] = "DENY"
-            
-            # إيقاف الأرشفة والزحف نهائياً عبر الأكواد
             response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet, noimageindex"
-            
-            # تقليل المعلومات المسربة في الـ Referrer
             response.headers["Referrer-Policy"] = "no-referrer"
-            
-            # تعطيل ميزات المتصفح الحساسة
             response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
-            
-            # إزالة رؤوس التعريف بالخادم (Server Fingerprinting)
             response.headers.pop("Server", None)
-            
             return response
 
     return app
