@@ -3,7 +3,7 @@
 
 from apps.extensions import db
 from apps.utils.security import AESCipher
-from apps.config.constants import RANKS, STATUSES, BANKS, FINANCIAL_COMPANIES
+from apps.config.constants import RANKS, STATUSES, FINANCE
 from datetime import datetime
 
 class Supplier(db.Model):
@@ -108,7 +108,6 @@ class Supplier(db.Model):
     # --- مصفوفة الصلاحيات السيادية ---
     def can_access(self, action):
         """التحقق من صلاحية الوصول بناءً على الحالة والرتبة"""
-        # استخدام الثوابت للتحقق
         if self.status in [STATUSES[3], STATUSES[4]]: # مرفوض أو محظور
             return False
         
