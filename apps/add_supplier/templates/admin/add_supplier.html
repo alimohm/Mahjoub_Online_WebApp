@@ -292,7 +292,6 @@
     let geoData = {};
     let finData = {};
 
-    // تحميل البيانات من ملف خارجي (يجب وضع المسار الصحيح للملف)
     async function loadData() {
         try {
             const response = await fetch('/static/data/system_config.json'); 
@@ -365,11 +364,9 @@
 
         try {
             const formData = new FormData(this);
-            const plainFormData = Object.fromEntries(formData.entries());
             const response = await fetch(this.action, { 
                 method: 'POST', 
-                body: JSON.stringify(plainFormData),
-                headers: { 'Content-Type': 'application/json' }
+                body: formData
             });
             const result = await response.json();
             
