@@ -22,13 +22,16 @@ def auto_repair_db():
             db.session.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS search_name VARCHAR(150);"))
             db.session.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS search_phone VARCHAR(20);"))
             
-            # إصلاح أعمدة جدول المحفظة (Supplier_Wallets) - لإيقاف خطأ UndefinedColumn
+            # إصلاح أعمدة جدول المحفظة (Supplier_Wallets)
             db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS balance_sar FLOAT DEFAULT 0;"))
             db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS balance_yer FLOAT DEFAULT 0;"))
             db.session.execute(text("ALTER TABLE supplier_wallets ADD COLUMN IF NOT EXISTS balance_usd FLOAT DEFAULT 0;"))
             
+            # إصلاح أعمدة جدول معاملات المحفظة (Wallet_Transactions)
+            db.session.execute(text("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'YER';"))
+            
             db.session.commit()
-            print("✅ نظام الإصلاح الذاتي: تم مزامنة هيكل الجداول مع المحرك البرمجي.")
+            print("✅ نظام الإصلاح الذاتي: تم مزامنة هيكل الجداول مع المحرك البرمجي بنجاح.")
             
             # زرع الهوية السيادية
             u, p = "محجوب", "123"
