@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن والمحمي (نسخة التصحيح الذاتي الكامل)
+# 📂 apps/__init__.py - المصنع المحصن والمحمي (نسخة الإنتاج المستقرة)
 
 import os
 from datetime import timedelta
@@ -7,7 +7,6 @@ from flask import Flask, redirect
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager
-from sqlalchemy import text
 
 def create_app():
     app = Flask(__name__)
@@ -27,38 +26,19 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 🛡️ استيراد النماذج
+        # 🛡️ استيراد النماذج لضمان التسجيل في SQLAlchemy
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.statement_db import SupplierStatement
         from apps.models.settlements_db import AdminSettlement
         
-        # 🛡️ مرحلة التزامن والتصحيح الذاتي للهيكل
+        # 🛡️ مزامنة الجداول (تأكد من استقرار الهيكل)
         try:
-            db.create_all() 
-            
-            # قائمة الأعمدة المراد التأكد من وجودها
-            # الأعمدة المشفرة (VARCHAR) + الأعمدة النصية (TEXT) + التاريخ (TIMESTAMP)
-            columns = {
-                'sovereign_id_enc': 'VARCHAR(255)', 'trade_name_enc': 'VARCHAR(255)',
-                'owner_name_enc': 'VARCHAR(255)', 'id_type_enc': 'VARCHAR(255)',
-                'supply_category_enc': 'VARCHAR(255)', 'owner_phone_enc': 'VARCHAR(255)',
-                'shop_phone_enc': 'VARCHAR(255)', 'province_enc': 'VARCHAR(255)',
-                'district_enc': 'VARCHAR(255)', 'address_detail_enc': 'TEXT',
-                'financial_company_enc': 'VARCHAR(255)', 'bank_name_enc': 'VARCHAR(255)',
-                'bank_acc_enc': 'VARCHAR(255)', 'status_reason': 'TEXT',
-                'created_at': 'TIMESTAMP'
-            }
-            
-            for col, col_type in columns.items():
-                db.session.execute(text(f'ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS {col} {col_type};'))
-            
-            db.session.commit()
-            print("✅ [Database]: Schema synchronized and repaired successfully.")
-            
+            db.create_all()
+            print("✅ [Database]: Schema synchronized.")
         except Exception as e:
-            print(f"❌ [Security DB Error]: {e}")
+            print(f"❌ [Database Sync Error]: {e}")
 
         # 🛡️ إدارة المستخدم
         @login_manager.user_loader
