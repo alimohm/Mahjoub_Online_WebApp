@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن والمحمي (نسخة التصحيح الذاتي)
+# 📂 apps/__init__.py - المصنع المحصن والمحمي (نسخة التصحيح الذاتي الكامل)
 
 import os
 from datetime import timedelta
@@ -27,7 +27,7 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 🛡️ استيراد النماذج لضمان تسجيل الجداول في db
+        # 🛡️ استيراد النماذج
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
@@ -38,15 +38,22 @@ def create_app():
         try:
             db.create_all() 
             
-            # آلية إضافة الأعمدة المشفرة يدوياً إذا لم تكن موجودة (حل الـ UndefinedColumn)
-            cols_to_add = [
-                'sovereign_id_enc', 'trade_name_enc', 'owner_name_enc', 
-                'id_type_enc', 'supply_category_enc', 'owner_phone_enc',
-                'shop_phone_enc', 'province_enc', 'district_enc',
-                'address_detail_enc', 'financial_company_enc', 'bank_name_enc', 'bank_acc_enc'
-            ]
-            for col in cols_to_add:
-                db.session.execute(text(f'ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS {col} VARCHAR(255);'))
+            # قائمة الأعمدة المراد التأكد من وجودها
+            # الأعمدة المشفرة (VARCHAR) + الأعمدة النصية (TEXT) + التاريخ (TIMESTAMP)
+            columns = {
+                'sovereign_id_enc': 'VARCHAR(255)', 'trade_name_enc': 'VARCHAR(255)',
+                'owner_name_enc': 'VARCHAR(255)', 'id_type_enc': 'VARCHAR(255)',
+                'supply_category_enc': 'VARCHAR(255)', 'owner_phone_enc': 'VARCHAR(255)',
+                'shop_phone_enc': 'VARCHAR(255)', 'province_enc': 'VARCHAR(255)',
+                'district_enc': 'VARCHAR(255)', 'address_detail_enc': 'TEXT',
+                'financial_company_enc': 'VARCHAR(255)', 'bank_name_enc': 'VARCHAR(255)',
+                'bank_acc_enc': 'VARCHAR(255)', 'status_reason': 'TEXT',
+                'created_at': 'TIMESTAMP'
+            }
+            
+            for col, col_type in columns.items():
+                db.session.execute(text(f'ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS {col} {col_type};'))
+            
             db.session.commit()
             print("✅ [Database]: Schema synchronized and repaired successfully.")
             
@@ -89,18 +96,13 @@ def create_app():
         def add_security_headers(response):
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline'; "
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
                 "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-                "img-src 'self' https://cdn.qumra.cloud; "
-                "frame-ancestors 'none';"
+                "img-src 'self' https://cdn.qumra.cloud; frame-ancestors 'none';"
             )
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
-            response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet, noimageindex"
-            response.headers["Referrer-Policy"] = "no-referrer"
-            response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
             response.headers.pop("Server", None)
             return response
 
