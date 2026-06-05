@@ -23,7 +23,7 @@ def create_app():
     
     # 🛡️ تهيئة الإضافات
     db.init_app(app)
-    migrate.init_app(app, db) # 🚀 تفعيل نظام المهاجرات الاحترافي
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'auth_portal.login' 
 
@@ -39,14 +39,14 @@ def create_app():
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
-        # 🛡️ تسجيل دفاعي صارم للمسارات
+        # 🛡️ تسجيل دفاعي صارم للمسارات (الخريطة الكاملة)
         blueprints_map = [
             ('apps.auth_portal.routes', 'auth_portal', ''),
             ('apps.add_supplier.routes', 'add_supplier_bp', '/suppliers'),
             ('apps.financial_ops.routes', 'financial_blueprint', '/financial_ops'),
-            # ('apps.statement.routes', 'statement_blueprint', '/statement'), 
             ('apps.admin_dashboard.routes', 'admin_dashboard', '/admin'),
-            ('api.webhook', 'webhook_bp', '/api')
+            ('apps.api.search', 'api_search', '/api'),        # محرك البحث
+            ('apps.wallet.routes', 'wallet_app', '/wallet')    # تطبيق المحفظة المستقل
         ]
 
         for module_path, bp_name, prefix in blueprints_map:
