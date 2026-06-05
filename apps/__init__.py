@@ -57,14 +57,13 @@ def create_app():
             return AdminUser.query.get(int(user_id))
 
         # 8. تسجيل المسارات (Blueprints)
-        # المسارات الديناميكية (تتجاهل الأخطاء البسيطة في الوحدات غير الجاهزة)
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
         safe_register(app, 'apps.admin_dashboard.routes', 'admin_dashboard', '/admin')
         safe_register(app, 'apps.api.search', 'api_search', '/api')
         
-        # تسجيل المحفظة باستيراد مباشر لضمان ثباتها في هيكلية التطبيق
+        # تسجيل المحفظة باستيراد مباشر لضمان ثباتها
         try:
             from apps.wallet.routes import wallet_app
             app.register_blueprint(wallet_app, url_prefix='/wallet')
