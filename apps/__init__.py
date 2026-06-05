@@ -1,9 +1,10 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (نسخة الإنتاج المستقرة)
+# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (نسخة الإنتاج التلقائية)
 
 import os
 from datetime import timedelta
 from flask import Flask, redirect
+from flask_migrate import upgrade  # 🚀 تم استيراد أداة الترحيل التلقائي
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager, migrate
@@ -12,34 +13,39 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # 🛡️ إعدادات الأمان للجلسات
+    # 🛡️ إعدادات الأمان
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)
     app.config['SESSION_COOKIE_HTTPONLY'] = True  
     app.config['SESSION_COOKIE_SECURE'] = True    
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     
-    # 🛡️ الحماية من التزييف (ProxyFix)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
-    # 🛡️ تهيئة الإضافات
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
+        # 🚀 التحديث التلقائي لقاعدة البيانات (يحل مشكلة UndefinedColumn)
+        try:
+            print("🔄 Running database migration upgrade...")
+            upgrade() 
+            print("✅ Database updated successfully!")
+        except Exception as e:
+            print(f"⚠️ Migration note: {e}")
+
         # 🛡️ استيراد النماذج
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.vault_db import AdminVault, VaultTransaction
         
-        # 🛡️ إدارة المستخدم
         @login_manager.user_loader
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
-        # 🛡️ تسجيل دفاعي صارم للمسارات (منع انهيار السيرفر)
+        # 🛡️ تسجيل دفاعي للمسارات
         def safe_register(module_path, attr_name, prefix):
             try:
                 module = __import__(module_path, fromlist=[attr_name])
@@ -55,7 +61,6 @@ def create_app():
         safe_register('apps.api.search', 'api_search', '/api')
         safe_register('apps.wallet.routes', 'wallet_app', '/wallet')
 
-        # 🛡️ مسارات النظام الأساسية
         @app.route('/robots.txt')
         def robots_txt():
             return "User-agent: *\nDisallow: /", 200, {'Content-Type': 'text/plain'}
@@ -64,7 +69,6 @@ def create_app():
         def root_redirect():
             return redirect('/login')
 
-        # 🛡️ الحماية المتقدمة (Security Headers)
         @app.after_request
         def add_security_headers(response):
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
@@ -81,5 +85,4 @@ def create_app():
 
     return app
 
-# إطلاق المصنع
 app = create_app()
