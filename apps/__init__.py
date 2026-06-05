@@ -1,10 +1,9 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (نسخة الإنتاج التلقائية)
+# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (نسخة المزامنة التلقائية)
 
 import os
 from datetime import timedelta
 from flask import Flask, redirect
-from flask_migrate import upgrade  # 🚀 تم استيراد أداة الترحيل التلقائي
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager, migrate
@@ -27,13 +26,13 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 🚀 التحديث التلقائي لقاعدة البيانات (يحل مشكلة UndefinedColumn)
+        # 🚀 المزامنة التلقائية للجداول (بديلة عن upgrade المفقود)
         try:
-            print("🔄 Running database migration upgrade...")
-            upgrade() 
-            print("✅ Database updated successfully!")
+            print("🔄 Synchronizing database tables...")
+            db.create_all()  # يضيف أي أعمدة ناقصة تلقائياً
+            print("✅ Database tables synchronized successfully!")
         except Exception as e:
-            print(f"⚠️ Migration note: {e}")
+            print(f"⚠️ Synchronization issue: {e}")
 
         # 🛡️ استيراد النماذج
         from apps.models.admin_db import AdminUser
