@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/add_supplier/routes.py
+# 📂 apps/add_supplier/routes.py - معالج الأرشفة السيادية
 
 import os
 from flask import render_template, request, jsonify
@@ -24,23 +24,22 @@ def add_supplier():
 
     if request.method == 'POST':
         try:
-            # 1. استقبال البيانات من نموذج الـ FormData
+            # 1. استقبال البيانات الأساسية
             username = request.form.get('username')
             password = request.form.get('password')
             
             if not username or not password:
                 return jsonify({"status": "error", "message": "بيانات الدخول الأساسية ناقصة"}), 400
 
-            # 2. معالجة صورة الهوية (اختياري)
+            # 2. معالجة صورة الهوية (حفظ المسار فقط، التشفير يتم للبيانات النصية)
             identity_image = request.files.get('identity_image')
-            image_path = None
             if identity_image:
                 filename = secure_filename(f"{username}_{datetime.now().strftime('%Y%m%d')}_{identity_image.filename}")
                 identity_image.save(os.path.join(UPLOAD_FOLDER, filename))
-                image_path = filename
+                # ملاحظة: إذا كنت تريد حفظ مسار الصورة مشفراً، أضف عموداً لذلك في المودل
 
             # 3. إنشاء المورد الجديد
-            # ملاحظة: التشفير يتم تلقائياً عبر الـ setters في نموذج Supplier
+            # ملاحظة: التشفير يتم تلقائياً بفضل الـ setters الموجودة في Supplier Model
             new_supplier = Supplier(
                 username=username,
                 password_hash=generate_password_hash(password),
