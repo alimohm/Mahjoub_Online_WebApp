@@ -37,7 +37,7 @@ def view_wallet(supplier_id):
                            transactions=transactions,
                            pagination=pagination)
 
-@wallet_app.route('/api/stats')
+@wallet_app.route('/stats')
 @login_required
 def get_stats():
     # 5. حساب إجمالي أرصدة النظام (لصناديق الإحصائيات في الصفحة الرئيسية)
