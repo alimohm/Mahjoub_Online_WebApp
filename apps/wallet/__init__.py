@@ -1,2 +1,5 @@
-from apps.wallet.routes import wallet_app
-app.register_blueprint(wallet_app, url_prefix='/wallet')
+# 📂 apps/wallet/__init__.py
+from .routes import wallet_app
+
+# هذا الملف الآن يعمل كواجهة للمجلد (Interface)
+# ولا يحاول الوصول لمتغير 'app' غير معرف
