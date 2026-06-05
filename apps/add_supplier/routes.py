@@ -11,7 +11,7 @@ from apps.extensions import db
 from apps.config import constants
 from datetime import datetime
 
-# إعداد مسار حفظ الصور (تأكد من وجود المجلد)
+# إعداد مسار حفظ الصور
 UPLOAD_FOLDER = 'apps/static/uploads/identities'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -19,7 +19,6 @@ if not os.path.exists(UPLOAD_FOLDER):
 @add_supplier_bp.route('/add', methods=['GET', 'POST'])
 def add_supplier():
     if request.method == 'GET':
-        # تمرير الثوابت للقالب
         return render_template('admin/add_supplier.html', constants=constants, next_id="963")
 
     if request.method == 'POST':
@@ -31,15 +30,16 @@ def add_supplier():
             if not username or not password:
                 return jsonify({"status": "error", "message": "بيانات الدخول الأساسية ناقصة"}), 400
 
-            # 2. معالجة صورة الهوية (حفظ المسار فقط، التشفير يتم للبيانات النصية)
+            # 2. معالجة صورة الهوية
             identity_image = request.files.get('identity_image')
+            image_path = None
             if identity_image:
                 filename = secure_filename(f"{username}_{datetime.now().strftime('%Y%m%d')}_{identity_image.filename}")
-                identity_image.save(os.path.join(UPLOAD_FOLDER, filename))
-                # ملاحظة: إذا كنت تريد حفظ مسار الصورة مشفراً، أضف عموداً لذلك في المودل
+                save_path = os.path.join(UPLOAD_FOLDER, filename)
+                identity_image.save(save_path)
+                image_path = filename
 
-            # 3. إنشاء المورد الجديد
-            # ملاحظة: التشفير يتم تلقائياً بفضل الـ setters الموجودة في Supplier Model
+            # 3. إنشاء المورد الجديد مع حقول البحث المحدثة
             new_supplier = Supplier(
                 username=username,
                 password_hash=generate_password_hash(password),
@@ -54,7 +54,10 @@ def add_supplier():
                 district=request.form.get('district'),
                 address_detail=request.form.get('address_detail'),
                 bank_name=request.form.get('bank_name'),
-                bank_acc=request.form.get('bank_acc')
+                bank_acc=request.form.get('bank_acc'),
+                # الحقول المضافة للبحث
+                search_name=request.form.get('trade_name'),
+                search_phone=request.form.get('phone')
             )
             
             # 4. الحفظ في قاعدة البيانات
