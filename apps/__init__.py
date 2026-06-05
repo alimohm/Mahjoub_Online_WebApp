@@ -29,7 +29,7 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = True    
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     
-    # 3. إعدادات الوكيل
+    # 3. إعدادات الوكيل لضمان عمل HTTPS على Render
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
     # 4. تهيئة الامتدادات
@@ -39,13 +39,13 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 5. استيراد النماذج
+        # 5. استيراد النماذج لضمان تهيئتها
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.vault_db import AdminVault, VaultTransaction
         
-        # 6. المزامنة
+        # 6. المزامنة التلقائية للجداول
         try:
             db.create_all()  
         except Exception as e:
@@ -57,17 +57,20 @@ def create_app():
             return AdminUser.query.get(int(user_id))
 
         # 8. تسجيل المسارات (Blueprints)
-        # المسارات الديناميكية
+        # المسارات الديناميكية (تتجاهل الأخطاء البسيطة في الوحدات غير الجاهزة)
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
         safe_register(app, 'apps.admin_dashboard.routes', 'admin_dashboard', '/admin')
         safe_register(app, 'apps.api.search', 'api_search', '/api')
         
-        # تسجيل المحفظة باستيراد مباشر لضمان الاستقرار (بناءً على تفضيلك)
-        from apps.wallet.routes import wallet_app
-        app.register_blueprint(wallet_app, url_prefix='/wallet')
-        print("✅ Registered: apps.wallet.routes")
+        # تسجيل المحفظة باستيراد مباشر لضمان ثباتها في هيكلية التطبيق
+        try:
+            from apps.wallet.routes import wallet_app
+            app.register_blueprint(wallet_app, url_prefix='/wallet')
+            print("✅ Registered: apps.wallet.routes")
+        except Exception as e:
+            print(f"⚠️ Error registering wallet_app: {e}")
 
         # 9. المسارات العامة
         @app.route('/robots.txt')
@@ -78,7 +81,7 @@ def create_app():
         def root_redirect():
             return redirect('/login')
 
-        # 10. ترويسات الأمان
+        # 10. ترويسات الأمان (Security Headers)
         @app.after_request
         def add_security_headers(response):
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
@@ -95,4 +98,5 @@ def create_app():
 
     return app
 
+# تعيين نقطة الدخول (Entry Point) التي سيستخدمها Gunicorn
 app = create_app()
