@@ -28,18 +28,17 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 🛡️ استيراد النماذج الموجودة فعلياً فقط
+        # 🛡️ استيراد النماذج الموجودة فعلياً
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
+        from apps.models.wallet_db import SupplierWallet, WalletTransaction
         
-        # ملاحظة: سيتم إضافة استيرادات النماذج المالية هنا تباعاً فور الانتهاء من كتابتها.
-
         # 🛡️ إدارة المستخدم
         @login_manager.user_loader
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
-        # 🛡️ تسجيل دفاعي صارم للمسارات (تم التعليق على المسارات غير المكتملة)
+        # 🛡️ تسجيل دفاعي صارم للمسارات
         blueprints_map = [
             ('apps.auth_portal.routes', 'auth_portal', ''),
             ('apps.add_supplier.routes', 'add_supplier_bp', '/suppliers'),
