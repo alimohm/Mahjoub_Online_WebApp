@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (نسخة نهائية)
+# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (النسخة النهائية المستقرة)
 
 import os
 from datetime import timedelta
@@ -8,7 +8,7 @@ from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager, migrate
 
-# 🛡️ دالة تسجيل آمنة للـ Blueprints
+# 🛡️ دالة تسجيل آمنة للـ Blueprints الديناميكية
 def safe_register(app_instance, module_path, attr_name, prefix):
     try:
         module = __import__(module_path, fromlist=[attr_name])
@@ -29,7 +29,7 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = True    
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     
-    # 3. إعدادات الوكيل (لضمان عمل HTTPS بشكل صحيح على Render)
+    # 3. إعدادات الوكيل
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
     # 4. تهيئة الامتدادات
@@ -39,13 +39,13 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 5. استيراد النماذج (Models) لضمان تسجيلها في قاعدة البيانات
+        # 5. استيراد النماذج
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.vault_db import AdminVault, VaultTransaction
         
-        # 6. المزامنة التلقائية للجداول
+        # 6. المزامنة
         try:
             db.create_all()  
         except Exception as e:
@@ -57,14 +57,19 @@ def create_app():
             return AdminUser.query.get(int(user_id))
 
         # 8. تسجيل المسارات (Blueprints)
+        # المسارات الديناميكية
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
         safe_register(app, 'apps.admin_dashboard.routes', 'admin_dashboard', '/admin')
         safe_register(app, 'apps.api.search', 'api_search', '/api')
-        safe_register(app, 'apps.wallet.routes', 'wallet_app', '/wallet')
+        
+        # تسجيل المحفظة باستيراد مباشر لضمان الاستقرار (بناءً على تفضيلك)
+        from apps.wallet.routes import wallet_app
+        app.register_blueprint(wallet_app, url_prefix='/wallet')
+        print("✅ Registered: apps.wallet.routes")
 
-        # 9. المسارات العامة والأمان
+        # 9. المسارات العامة
         @app.route('/robots.txt')
         def robots_txt():
             return "User-agent: *\nDisallow: /", 200, {'Content-Type': 'text/plain'}
@@ -73,7 +78,7 @@ def create_app():
         def root_redirect():
             return redirect('/login')
 
-        # 10. ترويسات الأمان (Security Headers)
+        # 10. ترويسات الأمان
         @app.after_request
         def add_security_headers(response):
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
@@ -90,5 +95,4 @@ def create_app():
 
     return app
 
-# تعيين نقطة الدخول (Entry Point)
 app = create_app()
