@@ -17,7 +17,7 @@
     .stat-box h3 { color: var(--mahjoub-gold); margin: 0; }
 
     .mahjoub-card { border-radius: 20px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; padding: 20px; }
-    .btn-mahjoub { background-color: var(--mahjoub-purple) !important; color: white !important; }
+    .btn-mahjoub { background-color: var(--mahjoub-purple) !important; color: white !important; transition: 0.3s; }
     .btn-mahjoub:hover { background-color: var(--mahjoub-gold) !important; }
 </style>
 
@@ -50,7 +50,7 @@
             placeholder: "ابحث عن المورد بالاسم أو رقم الهاتف...",
             allowClear: true,
             ajax: { 
-                url: '/api/search', // المسار المحدث
+                url: '/api/search',
                 dataType: 'json', 
                 delay: 250, 
                 data: params => ({ q: params.term }), 
@@ -61,18 +61,24 @@
         });
     });
 
+    // دالة لجلب المحفظة مع دعم الـ Pagination
     function loadWallet(page = 1) {
         let supplierId = $('#supplierSearch').val();
+        
+        // إذا كنا ننتقل لصفحة تالية ولم نعد نملك الـ supplierId في الـ Select2
+        // نعتمد على المتغير المخزن إن وجد، أو نطلب الاختيار
         if(!supplierId) {
             Swal.fire('تنبيه', 'يرجى اختيار مورد من القائمة أولاً', 'warning');
             return;
         }
         
-        document.getElementById('walletDisplayArea').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div> جاري تحميل كشف الحساب...</div>';
+        document.getElementById('walletDisplayArea').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div> جاري التحميل...</div>';
         
         fetch(`/wallet/view/${supplierId}?page=${page}`)
         .then(r => r.text())
-        .then(html => { document.getElementById('walletDisplayArea').innerHTML = html; })
+        .then(html => { 
+            document.getElementById('walletDisplayArea').innerHTML = html; 
+        })
         .catch(err => {
             document.getElementById('walletDisplayArea').innerHTML = '<div class="alert alert-danger">حدث خطأ أثناء جلب البيانات.</div>';
         });
