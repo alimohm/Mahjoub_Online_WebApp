@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (النسخة المصححة)
+# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (النسخة النهائية المصححة)
 
 import os
 from datetime import timedelta
@@ -43,22 +43,26 @@ def create_app():
         try:
             db.create_all()  
             
-            # --- زراعة البيانات المصححة ---
+            # --- زراعة البيانات المصححة لمنع خطأ NotNullViolation ---
             if Supplier.query.count() == 0:
                 print("⚠️ النظام: قاعدة البيانات فارغة، جاري زراعة 21 مورد تجريبي...")
                 for i in range(1, 22):
-                    # استخدام الخصائص (Properties) التي تتولى التشفير وتحديث الفهارس تلقائياً
+                    # استخدام أسماء الأعمدة المباشرة كما هي معرفة في الموديل
                     s = Supplier(
-                        sovereign_id_enc=f"SID-{i:03d}",
                         username=f"supplier_{i:02d}",
                         password_hash=generate_password_hash("password123"),
-                        trade_name=f"مورد تجريبي {i:02d}",
-                        owner_name=f"صاحب المورد {i:02d}",
-                        owner_phone=f"05000000{i:02d}",
-                        shop_phone=f"01000000{i:02d}"
+                        sovereign_id_enc=f"SID-{i:03d}",
+                        search_name=f"مورد تجريبي {i:02d}",
+                        search_phone=f"05000000{i:02d}",
+                        trade_name_enc=f"مورد تجريبي {i:02d}",
+                        owner_name_enc=f"صاحب المورد {i:02d}",
+                        owner_phone_enc=f"05000000{i:02d}",
+                        shop_phone_enc=f"01000000{i:02d}",
+                        status="قيد المراجعة",
+                        rank_grade="ريادي"
                     )
                     db.session.add(s)
-                    db.session.flush() 
+                    db.session.flush() # تثبيت المورد للحصول على s.id
                     
                     w = SupplierWallet(
                         supplier_id=s.id, 
@@ -72,6 +76,7 @@ def create_app():
             
         except Exception as e:
             print(f"⚠️ Synchronization issue: {e}")
+            db.session.rollback()
 
         @login_manager.user_loader
         def load_user(user_id):
@@ -90,6 +95,7 @@ def create_app():
         except Exception as e:
             print(f"⚠️ Error registering wallet_app: {e}")
 
+        # ... بقية الإعدادات (Security Headers و Redirects) كما هي
         @app.route('/robots.txt')
         def robots_txt():
             return "User-agent: *\nDisallow: /", 200, {'Content-Type': 'text/plain'}
