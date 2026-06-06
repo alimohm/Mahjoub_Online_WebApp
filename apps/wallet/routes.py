@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/wallet/routes.py - النسخة المعتمدة للإنتاج
+# 📂 apps/wallet/routes.py - النسخة المعتمدة والمصححة للمسارات
 
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
@@ -17,7 +17,7 @@ wallet_app = Blueprint(
 @wallet_app.route('/dashboard')
 @login_required
 def wallet_dashboard():
-    # حساب إجماليات النظام مع معالجة استباقية لأي خطأ في قاعدة البيانات
+    # حساب إجماليات النظام
     try:
         total_sar = db.session.query(db.func.sum(SupplierWallet.balance_sar)).scalar()
         total_yer = db.session.query(db.func.sum(SupplierWallet.balance_yer)).scalar()
@@ -32,8 +32,9 @@ def wallet_dashboard():
         print(f"DEBUG: Error in wallet_dashboard: {e}")
         total_system_sar = total_system_yer = total_system_usd = 0.0
     
+    # تصحيح المسار ليتوافق مع: apps/wallet/templates/admin/wallet_app.html
     return render_template(
-        'wallet/dashboard.html', 
+        'admin/wallet_app.html', 
         total_system_sar=total_system_sar,
         total_system_yer=total_system_yer,
         total_system_usd=total_system_usd
@@ -49,7 +50,8 @@ def view_wallet(supplier_id):
         transactions = WalletTransaction.query.filter_by(wallet_id=wallet.id)\
             .order_by(WalletTransaction.created_at.desc()).all()
     
-    return render_template('wallet/view_wallet.html', wallet=wallet, transactions=transactions)
+    # تأكد من وجود ملف view_wallet.html في المسار: apps/wallet/templates/admin/view_wallet.html
+    return render_template('admin/view_wallet.html', wallet=wallet, transactions=transactions)
 
 # 3. إضافة عملية مالية (API)
 @wallet_app.route('/add_transaction', methods=['POST'])
