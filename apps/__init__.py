@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (النسخة النهائية المصححة)
+# coding: utf-8
+# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (النسخة النهائية لـ 11 مورد)
 
 import os
 from datetime import timedelta
@@ -43,10 +43,10 @@ def create_app():
         try:
             # التحقق من خلو قاعدة البيانات للبدء في الزرع
             if Supplier.query.count() == 0:
-                print("⚠️ النظام: قاعدة البيانات فارغة، جاري زراعة 21 مورد تجريبي...")
-                for i in range(1, 22):
+                print("⚠️ النظام: قاعدة البيانات فارغة، جاري زراعة 11 مورد تجريبي...")
+                for i in range(1, 12): # تم التعديل إلى 11 مورد
                     try:
-                        # إنشاء المورد مع الحقول الإجبارية فقط في البداية
+                        # إنشاء المورد
                         s = Supplier(
                             username=f"supplier_{i:02d}",
                             password_hash=generate_password_hash("password123"),
@@ -56,7 +56,7 @@ def create_app():
                             status="قيد المراجعة",
                             rank_grade="ريادي"
                         )
-                        # إضافة الحقول الاختيارية أو المشفرة
+                        # إضافة الحقول الاختيارية والمشفرة
                         s.sovereign_id = f"SID-{i:03d}"
                         s.wallet_code = f"WC-{i:03d}"
                         s.trade_name = f"مورد تجريبي {i:02d}"
