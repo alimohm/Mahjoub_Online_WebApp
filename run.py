@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 run.py - المحرك التلقائي لبيئة الإنتاج (Self-Healing & Auto-Seeding)
+# 📂 run.py - المحرك التلقائي لبيئة الإنتاج (مصفى من عمليات الزرع)
 
 import os
 from apps import create_app
@@ -13,7 +13,7 @@ app = create_app()
 def auto_repair_db():
     """
     نظام الإصلاح التلقائي: يقوم بتجهيز الجداول، التأكد من الأعمدة، 
-    إنشاء حساب المدير، وزرع البيانات التجريبية لمرة واحدة فقط.
+    والتأكد من وجود حساب المدير فقط.
     """
     with app.app_context():
         try:
@@ -48,22 +48,6 @@ def auto_repair_db():
                 db.session.add(new_admin)
                 db.session.commit()
                 print("✅ تم التأكد من وجود الهوية السيادية (Admin).")
-            
-            # نظام الزرع التلقائي (Seed) لمرة واحدة فقط
-            if not os.path.exists("seed_done.txt"):
-                print("🌱 بدء عملية زراعة البيانات التلقائية...")
-                try:
-                    from db_reset import seed_data
-                    seed_data()
-                    with open("seed_done.txt", "w") as f:
-                        f.write("seeded")
-                    print("🏁 اكتملت عملية الزرع التلقائي بنجاح.")
-                except ImportError:
-                    print("⚠️ تحذير: لم يتم العثور على ملف db_reset.py.")
-                except Exception as e:
-                    print(f"🚨 خطأ أثناء الزرع: {e}")
-            else:
-                print("ℹ️ نظام الزرع: البيانات موجودة مسبقاً.")
             
         except Exception as e:
             print(f"🚨 خطأ في نظام الإصلاح التلقائي: {e}")
