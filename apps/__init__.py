@@ -46,32 +46,38 @@ def create_app():
             if Supplier.query.count() == 0:
                 print("⚠️ النظام: قاعدة البيانات فارغة، جاري زراعة 21 مورد تجريبي...")
                 for i in range(1, 22):
-                    # تم إزالة sovereign_id لأنه غير معرف في الموديل
-                    s = Supplier(
-                        username=f"supplier_{i:02d}",
-                        password_hash=generate_password_hash("password123"),
-                        sovereign_id_enc=f"SID-{i:03d}",     # الحقل الوحيد المعرف للمعرف السيادي
-                        search_name=f"مورد تجريبي {i:02d}",
-                        search_phone=f"05000000{i:02d}",
-                        trade_name_enc=f"مورد تجريبي {i:02d}",
-                        owner_name_enc=f"صاحب المورد {i:02d}",
-                        owner_phone_enc=f"05000000{i:02d}",
-                        shop_phone_enc=f"01000000{i:02d}",
-                        status="قيد المراجعة",
-                        rank_grade="ريادي"
-                    )
-                    db.session.add(s)
-                    db.session.flush() 
-                    
-                    w = SupplierWallet(
-                        supplier_id=s.id, 
-                        balance_sar=100.0 * i, 
-                        balance_yer=5000.0 * i, 
-                        balance_usd=10.0 * i
-                    )
-                    db.session.add(w)
-                db.session.commit()
-                print("✅ تم بنجاح زراعة 21 مورداً تجريبياً.")
+                    try:
+                        s = Supplier(
+                            username=f"supplier_{i:02d}",
+                            password_hash=generate_password_hash("password123"),
+                            sovereign_id_enc=f"SID-{i:03d}",
+                            search_name=f"مورد تجريبي {i:02d}",
+                            search_phone=f"05000000{i:02d}",
+                            trade_name_enc=f"مورد تجريبي {i:02d}",
+                            owner_name_enc=f"صاحب المورد {i:02d}",
+                            owner_phone_enc=f"05000000{i:02d}",
+                            shop_phone_enc=f"01000000{i:02d}",
+                            status="قيد المراجعة",
+                            rank_grade="ريادي"
+                        )
+                        # تعيين القيمة الإجبارية بعد الإنشاء لتجاوز قيد NotNull في قاعدة البيانات
+                        s.sovereign_id = f"SID-{i:03d}"
+                        
+                        db.session.add(s)
+                        db.session.flush() 
+                        
+                        w = SupplierWallet(
+                            supplier_id=s.id, 
+                            balance_sar=100.0 * i, 
+                            balance_yer=5000.0 * i, 
+                            balance_usd=10.0 * i
+                        )
+                        db.session.add(w)
+                        db.session.commit()
+                    except Exception as inner_e:
+                        print(f"⚠️ خطأ أثناء زراعة المورد {i}: {inner_e}")
+                        db.session.rollback()
+                print("✅ تم الانتهاء من محاولة زراعة البيانات.")
             
         except Exception as e:
             print(f"⚠️ Synchronization issue: {e}")
