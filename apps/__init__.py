@@ -110,3 +110,11 @@ def create_app():
         @app.after_request
         def add_security_headers(response):
             response.headers
+# 📂 run.py (يعمل فقط على جهازك الشخصي)
+from apps import create_app
+
+app = create_app()
+
+if __name__ == "__main__":
+    # هذا السطر يعمل فقط محلياً، السيرفر يتجاهله تماماً بفضل أمر Gunicorn
+    app.run(host='0.0.0.0', port=10000)
