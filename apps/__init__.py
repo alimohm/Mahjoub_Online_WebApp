@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 📂 apps/__init__.py - المصنع الاحترافي والمحصن (النسخة النهائية المصححة)
+# 📂 apps/__init__.py - المصنع الاحترافي والمحصن
 
 import os
 from datetime import timedelta
@@ -24,7 +24,7 @@ def create_app():
     app.config.from_object(Config)
 
     # 2. إعدادات الأمان
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
     app.config['SESSION_COOKIE_HTTPONLY'] = True  
     app.config['SESSION_COOKIE_SECURE'] = True    
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -39,7 +39,7 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # 5. استيراد النماذج لضمان تهيئتها (تجنب الحلقات)
+        # 5. استيراد النماذج (Models)
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
@@ -56,14 +56,14 @@ def create_app():
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
-        # 8. تسجيل المسارات (Blueprints) باستخدام المسارات المباشرة لضمان الاستقرار
+        # 8. تسجيل المسارات (Blueprints)
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
         safe_register(app, 'apps.admin_dashboard.routes', 'admin_dashboard', '/admin')
         safe_register(app, 'apps.api.search', 'api_search', '/api')
         
-        # تسجيل المحفظة بشكل صريح لضمان تطابق الـ Endpoint
+        # تسجيل المحفظة بشكل صريح
         try:
             from apps.wallet.routes import wallet_app
             app.register_blueprint(wallet_app, url_prefix='/wallet')
@@ -85,7 +85,7 @@ def create_app():
         def add_security_headers(response):
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                "default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
                 "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
                 "img-src 'self' https://cdn.qumra.cloud; frame-ancestors 'none';"
@@ -97,5 +97,5 @@ def create_app():
 
     return app
 
-# تعيين نقطة الدخول (Entry Point) التي سيستخدمها Gunicorn
+# تعيين نقطة الدخول (Entry Point)
 app = create_app()
