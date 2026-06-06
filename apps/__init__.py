@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع الاحترافي (نظام تشغيل محصن)
+# 📂 apps/__init__.py - المصنع الاحترافي (نظام تشغيل محصن وموحد)
 
 import os
 from datetime import timedelta
@@ -51,19 +51,15 @@ def create_app():
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
-        # تسجيل المسارات (Blueprints)
+        # تسجيل المسارات (Blueprints) باستخدام الدالة الموحدة
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
         safe_register(app, 'apps.admin_dashboard.routes', 'admin_dashboard', '/admin')
         safe_register(app, 'apps.api.search', 'api_search', '/api')
         
-        # تسجيل محفظة الموردين
-        try:
-            from apps.wallet.routes import wallet_app
-            app.register_blueprint(wallet_app, url_prefix='/wallet')
-        except Exception as e:
-            print(f"⚠️ Error registering wallet blueprint: {e}")
+        # تسجيل محفظة الموردين (موحد الآن)
+        safe_register(app, 'apps.wallet.routes', 'wallet_app', '/wallet')
 
         @app.route('/robots.txt')
         def robots_txt():
