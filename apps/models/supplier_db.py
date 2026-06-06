@@ -10,18 +10,18 @@ class Supplier(db.Model):
     __tablename__ = 'suppliers'
 
     # المعرف الرئيسي
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # --- حقول البحث السريع ---
-    search_name = db.Column(db.String(150), index=True, nullable=True) # تم التعديل لـ True
-    search_phone = db.Column(db.String(20), index=True, nullable=True) # تم التعديل لـ True
+    search_name = db.Column(db.String(150), index=True, nullable=True)
+    search_phone = db.Column(db.String(20), index=True, nullable=True)
 
     # --- حقول التشفير والبيانات ---
     sovereign_id = db.Column(db.String(100), nullable=True) 
     wallet_code = db.Column(db.String(50), nullable=True)
     
     # الحقول الفريدة والمهمة للتوثيق
-    sovereign_id_enc = db.Column(db.String(255), unique=True, nullable=True) # تم التعديل لـ True للزراعة
+    sovereign_id_enc = db.Column(db.String(255), unique=True, nullable=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     
