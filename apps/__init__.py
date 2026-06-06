@@ -7,6 +7,7 @@ from flask import Flask, redirect
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apps.extensions import db, login_manager, migrate
+from apps.run_seed import auto_repair_db  # استيراد نظام الإصلاح التلقائي الجديد
 
 def safe_register(app_instance, module_path, attr_name, prefix):
     """تسجيل المسارات (Blueprints) مع معالجة الأخطاء لضمان استمرار عمل المصنع."""
@@ -38,27 +39,25 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # استيراد النماذج لضمان تهيئة الجداول في قاعدة البيانات
+        # 1. تشغيل نظام الإصلاح والزرع التلقائي فور بدء التطبيق
+        auto_repair_db()
+        
+        # 2. استيراد النماذج (لضمان تعريفها)
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
         from apps.models.vault_db import AdminVault, VaultTransaction
         
-        # إنشاء الجداول (تلقائي وآمن)
-        db.create_all()
-
         @login_manager.user_loader
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
-        # تسجيل المسارات (Blueprints) باستخدام الدالة الموحدة
+        # 3. تسجيل المسارات (Blueprints)
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
         safe_register(app, 'apps.admin_dashboard.routes', 'admin_dashboard', '/admin')
         safe_register(app, 'apps.api.search', 'api_search', '/api')
-        
-        # تسجيل محفظة الموردين (موحد الآن)
         safe_register(app, 'apps.wallet.routes', 'wallet_app', '/wallet')
 
         @app.route('/robots.txt')
@@ -80,5 +79,3 @@ def create_app():
             return response
 
     return app
-
-app = create_app()
