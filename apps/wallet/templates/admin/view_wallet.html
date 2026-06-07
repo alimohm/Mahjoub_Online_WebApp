@@ -1,60 +1,77 @@
-<div class="mahjoub-card">
+<div class="mahjoub-card mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 style="color: var(--mahjoub-purple);"><i class="fas fa-file-invoice-dollar"></i> كشف حساب المورد: {{ wallet.supplier.trade_name }}</h5>
+        <button class="btn btn-sm btn-outline-danger" onclick="$('#walletDisplayArea').empty()">إغلاق</button>
+    </div>
+
+    <!-- بطاقات الأرصدة الحالية للمورد -->
     <div class="row mb-4">
-        <div class="col-md-12">
-            <h4 class="text-primary mb-3">كشف حساب المورد: {{ wallet.supplier.trade_name }}</h4>
-            <div class="d-flex gap-3">
-                <div class="p-3 bg-light rounded">رصيد SAR: <strong>{{ "{:,.2f}".format(wallet.balance_sar) }}</strong></div>
-                <div class="p-3 bg-light rounded">رصيد YER: <strong>{{ "{:,.2f}".format(wallet.balance_yer) }}</strong></div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded text-center border">
+                <small class="text-muted">الرصيد بالدولار</small>
+                <h6 class="text-primary">${{ "{:,.2f}".format(wallet.balance_usd) }}</h6>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded text-center border">
+                <small class="text-muted">الرصيد بالريال السعودي</small>
+                <h6 class="text-success">SAR {{ "{:,.2f}".format(wallet.balance_sar) }}</h6>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded text-center border">
+                <small class="text-muted">الرصيد بالريال اليمني</small>
+                <h6 class="text-warning">YER {{ "{:,.2f}".format(wallet.balance_yer) }}</h6>
             </div>
         </div>
     </div>
 
+    <!-- جدول العمليات -->
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
+        <table class="table table-hover">
+            <thead>
                 <tr>
                     <th>التاريخ</th>
                     <th>النوع</th>
-                    <th>الوصف</th>
                     <th>المبلغ</th>
+                    <th>العملة</th>
+                    <th>البيان</th>
                 </tr>
             </thead>
             <tbody>
-                {% for tx in transactions %}
+                {% for tx in transactions.items %}
                 <tr>
                     <td>{{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>
-                        <span class="badge {{ 'bg-success' if tx.transaction_type == 'deposit' else 'bg-danger' }}">
-                            {{ 'إيداع' if tx.transaction_type == 'deposit' else 'سحب' }}
+                        <span class="badge {{ 'bg-success' if tx.type == 'إيداع' else 'bg-danger' }}">
+                            {{ tx.type }}
                         </span>
                     </td>
+                    <td>{{ "{:,.2f}".format(tx.amount) }}</td>
+                    <td>{{ tx.currency }}</td>
                     <td>{{ tx.description }}</td>
-                    <td class="fw-bold">{{ "{:,.2f}".format(tx.amount) }} {{ tx.currency }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="text-center">لا توجد عمليات مالية مسجلة</td>
+                    <td colspan="5" class="text-center py-3 text-muted">لا توجد عمليات مالية مسجلة</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    {% if pagination %}
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <button class="btn btn-outline-primary" 
-                {% if not pagination.has_prev %}disabled{% endif %} 
-                onclick="loadWallet({{ pagination.prev_num }})">
-            <i class="fas fa-arrow-right"></i> السابق
-        </button>
-        
-        <span class="text-muted">صفحة {{ pagination.page }} من {{ pagination.pages }}</span>
-        
-        <button class="btn btn-outline-primary" 
-                {% if not pagination.has_next %}disabled{% endif %} 
-                onclick="loadWallet({{ pagination.next_num }})">
-            التالي <i class="fas fa-arrow-left"></i>
-        </button>
+    <!-- تصفح العمليات -->
+    <div class="d-flex justify-content-center mt-3">
+        <nav>
+            <ul class="pagination pagination-sm">
+                <li class="page-item {% if not transactions.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="#" onclick="loadWallet({{ transactions.prev_num }}); return false;">السابق</a>
+                </li>
+                <li class="page-item active"><span class="page-link">{{ transactions.page }}</span></li>
+                <li class="page-item {% if not transactions.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="#" onclick="loadWallet({{ transactions.next_num }}); return false;">التالي</a>
+                </li>
+            </ul>
+        </nav>
     </div>
-    {% endif %}
 </div>
