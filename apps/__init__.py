@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - النسخة النهائية المتكاملة والمصححة
+# 📂 apps/__init__.py - النسخة النهائية الآمنة للإنتاج
 
 import os
 import sys
@@ -32,42 +32,46 @@ def create_app():
         return AdminUser.query.get(int(user_id))
 
     with app.app_context():
+        # 1. التأكد من إنشاء الجداول
+        db.create_all()
+        
+        # 2. زرع البيانات التأسيسية فقط إذا كانت القاعدة فارغة (منطق آمن)
         try:
-            # ⚠️ تنظيف شامل للجداول (الترتيب مهم لتجنب تعارض المفاتيح الخارجية)
-            db.session.execute(db.text("TRUNCATE TABLE wallet_transactions, supplier_wallets, suppliers, admin_users RESTART IDENTITY CASCADE;"))
-            
-            # 1. المالك
-            admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
-            admin.set_password('123')
-            db.session.add(admin)
-            db.session.commit()
-
-            # 2. زرع 21 مورداً مع محافظهم
-            for i in range(1, 22):
-                # إدخال المورد
-                sql = db.text("""
-                    INSERT INTO suppliers (username, password_hash, status, rank_grade, trade_name, owner_name, wallet_code, owner_phone) 
-                    VALUES (:u, :p, :s, :r, :t, :o, :w, :ph) RETURNING id
-                """)
-                params = {
-                    'u': f'sup_{i}', 'p': generate_password_hash('sup_pass_123'),
-                    's': 'قيد المراجعة', 'r': 'ريادي', 't': f'مؤسسة المورد {i}',
-                    'o': f'المالك {i}', 'w': f'W-{i}-2026', 'ph': f'7700000{i:02d}'
-                }
-                result = db.session.execute(sql, params)
-                sup_id = result.fetchone()[0]
+            if AdminUser.query.first() is None:
+                print("⚙️ قاعدة بيانات فارغة مكتشفة... جاري الزرع التأسيسي.")
                 
-                # إدخال المحفظة المرتبطة
-                db.session.execute(
-                    db.text("INSERT INTO supplier_wallets (supplier_id, balance_sar, balance_yer, balance_usd) VALUES (:id, 0, 0, 0)"), 
-                    {'id': sup_id}
-                )
-            
-            db.session.commit()
-            print("✅ تم زرع البيانات بنجاح: 21 مورداً + 21 محفظة.")
+                # إنشاء المالك
+                admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
+                admin.set_password('123')
+                db.session.add(admin)
+                db.session.commit()
+
+                # زرع 21 مورداً ومحفظة
+                for i in range(1, 22):
+                    new_sup = Supplier(
+                        username=f'sup_{i}', 
+                        password_hash=generate_password_hash('sup_pass_123'),
+                        status='قيد المراجعة', 
+                        rank_grade='ريادي', 
+                        trade_name=f'مؤسسة المورد {i}',
+                        owner_name=f'المالك {i}', 
+                        wallet_code=f'W-{i}-2026', 
+                        owner_phone=f'7700000{i:02d}'
+                    )
+                    db.session.add(new_sup)
+                    db.session.flush() # الحصول على ID المورد
+                    
+                    # إنشاء المحفظة
+                    new_wallet = SupplierWallet(supplier_id=new_sup.id, balance_sar=0, balance_yer=0, balance_usd=0)
+                    db.session.add(new_wallet)
+                
+                db.session.commit()
+                print("✅ تم زرع 21 مورداً + 21 محفظة بنجاح.")
+            else:
+                print("ℹ️ النظام جاهز: تم العثور على بيانات مسبقة.")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ خطأ أثناء الزرع: {e}")
+            print(f"⚠️ خطأ أثناء تهيئة قاعدة البيانات: {e}")
 
         # تسجيل الـ Blueprints
         from apps.auth_portal.routes import auth_portal
