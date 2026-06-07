@@ -1,10 +1,7 @@
-# coding: utf-8
-# 📂 apps/__init__.py - النسخة النهائية الآمنة للإنتاج
-
+# 📂 apps/__init__.py - النسخة النهائية المستقرة
 import os
 import sys
 from flask import Flask
-from flask_login import login_user
 
 # إعداد المسارات
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,61 +28,47 @@ def create_app():
     def load_user(user_id):
         return AdminUser.query.get(int(user_id))
 
+    # تسجيل الـ Blueprints هنا داخل الدالة لمنع أي استيراد مبكر (Circular Import)
+    from apps.auth_portal.routes import auth_portal
+    from apps.add_supplier.routes import add_supplier_bp
+    from apps.financial_ops.routes import financial_blueprint
+    from apps.admin_dashboard.routes import admin_dashboard
+    from apps.api.search import api_search
+    from apps.wallet.routes import wallet_app
+
+    app.register_blueprint(auth_portal, url_prefix='')
+    app.register_blueprint(add_supplier_bp, url_prefix='/suppliers')
+    app.register_blueprint(financial_blueprint, url_prefix='/financial_ops')
+    app.register_blueprint(admin_dashboard, url_prefix='/admin')
+    app.register_blueprint(api_search, url_prefix='/api')
+    app.register_blueprint(wallet_app, url_prefix='/wallet')
+
     with app.app_context():
-        # 1. التأكد من إنشاء الجداول
         db.create_all()
         
-        # 2. زرع البيانات التأسيسية فقط إذا كانت القاعدة فارغة (منطق آمن)
+        # منطق زرع البيانات التأسيسية
         try:
             if AdminUser.query.first() is None:
-                print("⚙️ قاعدة بيانات فارغة مكتشفة... جاري الزرع التأسيسي.")
-                
-                # إنشاء المالك
                 admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
                 admin.set_password('123')
                 db.session.add(admin)
                 db.session.commit()
 
-                # زرع 21 مورداً ومحفظة
                 for i in range(1, 22):
                     new_sup = Supplier(
                         username=f'sup_{i}', 
                         password_hash=generate_password_hash('sup_pass_123'),
-                        status='قيد المراجعة', 
-                        rank_grade='ريادي', 
-                        trade_name=f'مؤسسة المورد {i}',
-                        owner_name=f'المالك {i}', 
-                        wallet_code=f'W-{i}-2026', 
-                        owner_phone=f'7700000{i:02d}'
+                        status='قيد المراجعة', rank_grade='ريادي', 
+                        trade_name=f'مؤسسة المورد {i}', owner_name=f'المالك {i}', 
+                        wallet_code=f'W-{i}-2026', owner_phone=f'7700000{i:02d}'
                     )
                     db.session.add(new_sup)
-                    db.session.flush() # الحصول على ID المورد
-                    
-                    # إنشاء المحفظة
+                    db.session.flush()
                     new_wallet = SupplierWallet(supplier_id=new_sup.id, balance_sar=0, balance_yer=0, balance_usd=0)
                     db.session.add(new_wallet)
-                
                 db.session.commit()
-                print("✅ تم زرع 21 مورداً + 21 محفظة بنجاح.")
-            else:
-                print("ℹ️ النظام جاهز: تم العثور على بيانات مسبقة.")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ أثناء تهيئة قاعدة البيانات: {e}")
-
-        # تسجيل الـ Blueprints
-        from apps.auth_portal.routes import auth_portal
-        from apps.add_supplier.routes import add_supplier_bp
-        from apps.financial_ops.routes import financial_blueprint
-        from apps.admin_dashboard.routes import admin_dashboard
-        from apps.api.search import api_search
-        from apps.wallet.routes import wallet_app
-
-        app.register_blueprint(auth_portal, url_prefix='')
-        app.register_blueprint(add_supplier_bp, url_prefix='/suppliers')
-        app.register_blueprint(financial_blueprint, url_prefix='/financial_ops')
-        app.register_blueprint(admin_dashboard, url_prefix='/admin')
-        app.register_blueprint(api_search, url_prefix='/api')
-        app.register_blueprint(wallet_app, url_prefix='/wallet')
 
     return app
