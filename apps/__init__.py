@@ -16,6 +16,7 @@ from apps.extensions import db, login_manager, migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 def safe_register(app_instance, module_path, attr_name, prefix):
+    """تسجيل المسارات مع معالجة الأخطاء."""
     try:
         module = __import__(module_path, fromlist=[attr_name])
         blueprint = getattr(module, attr_name)
@@ -33,6 +34,7 @@ def create_app():
     except:
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-123')
         app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
@@ -42,7 +44,7 @@ def create_app():
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # تسجيل النماذج والمسارات
+        # تسجيل النماذج
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
@@ -52,6 +54,7 @@ def create_app():
         def load_user(user_id):
             return AdminUser.query.get(int(user_id))
 
+        # تسجيل المسارات
         safe_register(app, 'apps.auth_portal.routes', 'auth_portal', '')
         safe_register(app, 'apps.add_supplier.routes', 'add_supplier_bp', '/suppliers')
         safe_register(app, 'apps.financial_ops.routes', 'financial_blueprint', '/financial_ops')
@@ -65,12 +68,14 @@ def create_app():
 
         @app.route('/')
         def root_redirect():
-            return redirect(url_for('auth_portal.login'))
+            # التوجيه للرابط الخاص بك بدلاً من login
+            return redirect('/m7jb_sovereign_hq_v2_99x')
 
         @app.after_request
         def add_security_headers(response):
-            response.headers["X-Content-Type-Options"] = "nosniff"
-            response.headers["X-Frame-Options"] = "DENY"
+            if response:
+                response.headers["X-Content-Type-Options"] = "nosniff"
+                response.headers["X-Frame-Options"] = "DENY"
             return response
 
     return app
