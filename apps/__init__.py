@@ -22,12 +22,14 @@ def safe_register(app_instance, module_path, attr_name, prefix):
     except Exception as e:
         print(f"⚠️ Failed to register {attr_name}: {e}")
 
-# إضافة *args و **kwargs هنا هو الحل الجذري لمشكلة الـ TypeError
 def create_app(*args, **kwargs):
-    # إنشاء التطبيق
-    app = Flask(__name__)
+    # إنشاء التطبيق وتحديد المسار الأساسي للقوالب
+    app = Flask(__name__, template_folder='templates')
     
-    # تحميل الإعدادات من config.py إذا وجد، وإلا من البيئة
+    # 💡 التعديل الجوهري: توسيع نطاق بحث Jinja2 ليشمل مسار القوالب الخاص بـ auth_portal
+    app.jinja_loader.searchpath.append(os.path.join(base_dir, 'apps', 'auth_portal', 'templates'))
+    
+    # تحميل الإعدادات
     try:
         from config import Config
         app.config.from_object(Config)
@@ -36,17 +38,15 @@ def create_app(*args, **kwargs):
         app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///mahjoub_online.db')
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # إعدادات الوكيل للتعامل مع HTTPS في Render
+    # إعدادات الوكيل
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
-    # تهيئة الإضافات
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'auth_portal.login' 
 
     with app.app_context():
-        # تسجيل النماذج
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
         from apps.models.wallet_db import SupplierWallet, WalletTransaction
@@ -70,7 +70,6 @@ def create_app(*args, **kwargs):
 
         @app.route('/')
         def root_redirect():
-            # التوجيه للرابط الإداري المطلوب
             return redirect('/m7jb_sovereign_hq_v2_99x')
 
         @app.after_request
