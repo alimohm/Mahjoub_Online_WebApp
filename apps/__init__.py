@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع النهائي المحصن (تم التعريب وتفعيل التنظيف الإجباري)
+# 📂 apps/__init__.py - المصنع النهائي المحصن (تم حل مشكلة الـ NotNull)
 
 import os
 import sys
@@ -46,7 +46,7 @@ def create_app():
 
             print("🌱 بدء زرع المالك والموردين...")
             
-            # 1. إضافة المالك (بالعربي كما طلبت)
+            # 1. إضافة المالك
             admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
             admin.set_password('123')
             db.session.add(admin)
@@ -54,14 +54,17 @@ def create_app():
 
             # 2. إضافة 21 مورداً
             for i in range(1, 22):
+                # نمرر قيم مؤقتة للأعمدة غير المشفرة لتجاوز الـ Constraint
                 sup = Supplier(
                     username=f'sup_{i}',
                     password_hash=generate_password_hash('sup_pass_123'),
                     status='قيد المراجعة',
-                    rank_grade='ريادي'
+                    rank_grade='ريادي',
+                    owner_name='مؤقت',
+                    trade_name='مؤقت'
                 )
                 
-                # استخدام الخصائص (Setters) للتشفير
+                # استخدام الخصائص (Setters) للتشفير وتحديث حقول البحث
                 sup.trade_name = f'مؤسسة المورد {i}'
                 sup.owner_name = f'المالك {i}'
                 sup.owner_phone = f'7700000{i:02d}'
