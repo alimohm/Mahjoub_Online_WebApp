@@ -1,8 +1,9 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع النهائي المحصن (Render-Ready & Gunicorn-Compatible)
+# 📂 apps/__init__.py - المصنع النهائي المحصن (الزرع محمي بـ Try-Except)
 
 import os
 import sys
+import traceback
 from flask import Flask, redirect
 
 # جعل مجلد الجذر مرئياً
@@ -34,44 +35,45 @@ def create_app():
         # استيراد النماذج
         from apps.models.admin_db import AdminUser
         from apps.models.supplier_db import Supplier
-        from apps.models.wallet_db import SupplierWallet, WalletTransaction
-        from apps.models.vault_db import AdminVault, VaultTransaction
+        from apps.models.wallet_db import SupplierWallet
         
-        # --- الزرع الذكي لمرة واحدة فقط ---
-        if not AdminUser.query.filter_by(username='ali_mahjoub').first():
-            print("🌱 بدء زرع المالك والموردين...")
-            
-            # 1. إضافة المالك
-            admin = AdminUser(username='ali_mahjoub', role='Owner', phone_number='0000000000')
-            admin.set_password('123')
-            db.session.add(admin)
-            db.session.flush()
+        # --- الزرع الذكي المحمي بـ Try-Except ---
+        try:
+            if not AdminUser.query.filter_by(username='ali_mahjoub').first():
+                print("🌱 بدء زرع المالك والموردين...")
+                
+                # 1. إضافة المالك
+                admin = AdminUser(username='ali_mahjoub', role='Owner', phone_number='0000000000')
+                admin.set_password('123')
+                db.session.add(admin)
+                db.session.flush()
 
-            # 2. إضافة 21 مورداً
-            for i in range(1, 22):
-                # ننشئ المورد بالبيانات الأساسية التي لا تتطلب تشفيراً فورياً في الـ Init
-                sup = Supplier(
-                    username=f'sup_{i}',
-                    password_hash=generate_password_hash('sup_pass_123'),
-                    status='قيد المراجعة',
-                    rank_grade='ريادي'
-                )
+                # 2. إضافة الموردين
+                for i in range(1, 22):
+                    sup = Supplier(
+                        username=f'sup_{i}',
+                        password_hash=generate_password_hash('sup_pass_123'),
+                        status='قيد المراجعة',
+                        rank_grade='ريادي'
+                    )
+                    sup.trade_name = f'مؤسسة المورد {i}'
+                    sup.owner_name = f'المالك {i}'
+                    sup.owner_phone = f'7700000{i:02d}'
+                    sup.wallet_code = f'W-{i}-2026'
+                    
+                    db.session.add(sup)
+                    db.session.flush()
+                    
+                    wallet = SupplierWallet(supplier_id=sup.id, balance_sar=0.0, balance_yer=0.0, balance_usd=0.0)
+                    db.session.add(wallet)
                 
-                # استخدام الخصائص (Setters) لتفعيل التشفير التلقائي
-                sup.trade_name = f'مؤسسة المورد {i}'
-                sup.owner_name = f'المالك {i}'
-                sup.owner_phone = f'7700000{i:02d}'
-                sup.wallet_code = f'W-{i}-2026'
-                
-                db.session.add(sup)
-                db.session.flush() # الحصول على الـ ID
-                
-                # 3. إنشاء المحفظة
-                wallet = SupplierWallet(supplier_id=sup.id, balance_sar=0.0, balance_yer=0.0, balance_usd=0.0)
-                db.session.add(wallet)
-            
-            db.session.commit()
-            print("✅ تم زرع المالك علي محجوب والـ 21 مورداً بنجاح.")
+                db.session.commit()
+                print("✅ تم زرع المالك والموردين بنجاح.")
+        except Exception as e:
+            # هنا نحمي السيرفر من الانهيار إذا فشل الزرع
+            print("⚠️ حدث خطأ أثناء الزرع (تم تجاهله للحفاظ على عمل السيرفر):")
+            print(traceback.format_exc())
+            db.session.rollback() # تراجع عن أي تغييرات جزئية لضمان سلامة القاعدة
 
         @login_manager.user_loader
         def load_user(user_id):
