@@ -1,0 +1,55 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>اسم المورد</th>
+                <th>رقم الهاتف</th>
+                <th>الرصيد (SAR)</th>
+                <th>إجراء</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in suppliers.items %}
+            <tr>
+                <td><strong>{{ s.trade_name }}</strong></td>
+                <td>{{ s.owner_phone }}</td>
+                <td>{{ "{:,.2f}".format(s.wallet.balance_sar if s.wallet else 0) }}</td>
+                <td>
+                    <button class="btn btn-sm btn-mahjoub" onclick="loadWalletFromTable({{ s.id }})">
+                        <i class="fas fa-wallet"></i> عرض
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center py-4 text-muted">لا يوجد موردون مسجلون حالياً</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <button class="btn btn-outline-secondary btn-sm" 
+            {% if not suppliers.has_prev %}disabled{% endif %} 
+            onclick="loadSuppliers({{ suppliers.prev_num }})">
+        السابق
+    </button>
+    
+    <span class="text-muted small">صفحة {{ suppliers.page }} من {{ suppliers.pages }}</span>
+    
+    <button class="btn btn-outline-secondary btn-sm" 
+            {% if not suppliers.has_next %}disabled{% endif %} 
+            onclick="loadSuppliers({{ suppliers.next_num }})">
+        التالي
+    </button>
+</div>
+
+<script>
+    // دالة إضافية لجعل الجدول يستدعي عرض المحفظة بسهولة
+    function loadWalletFromTable(id) {
+        // نضع القيمة في الـ Select2 ليتمكن كود عرض المحفظة من قراءتها
+        $('#supplierSearch').val(id).trigger('change');
+        loadWallet(); // استدعاء دالة عرض المحفظة الموجودة في الصفحة الرئيسية
+    }
+</script>
