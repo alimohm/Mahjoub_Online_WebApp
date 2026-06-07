@@ -1,9 +1,12 @@
 # coding: utf-8
+# 📂 apps/__init__.py - المصنع النهائي المحصن (تم ربط كل مورد بمحفظة)
+
 import os
 import sys
-from flask import Flask, redirect
+from flask import Flask
 from flask_login import login_user
 
+# إعداد المسارات
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if base_dir not in sys.path: sys.path.insert(0, base_dir)
 
@@ -20,6 +23,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     db.init_app(app)
+    migrate.init_app(app, db) # تفعيل الميجريشن
     login_manager.init_app(app)
     login_manager.login_view = 'auth_portal.login'
 
@@ -29,7 +33,7 @@ def create_app():
 
     with app.app_context():
         try:
-            # تنظيف وإعادة زرع (سيتم إيقافه لاحقاً)
+            # ⚠️ تنظيف الجداول لضمان النظافة (احذف هذا السطر بعد أول تشغيل ناجح)
             db.session.execute(db.text("TRUNCATE TABLE suppliers, admin_users, supplier_wallets RESTART IDENTITY CASCADE;"))
             
             # 1. المالك
@@ -38,8 +42,9 @@ def create_app():
             db.session.add(admin)
             db.session.commit()
 
-            # 2. الموردين (إضافة حقل owner_phone المفقود)
+            # 2. زرع 21 مورداً مع محافظهم
             for i in range(1, 22):
+                # إدخال المورد
                 sql = db.text("""
                     INSERT INTO suppliers (username, password_hash, status, rank_grade, trade_name, owner_name, wallet_code, owner_phone) 
                     VALUES (:u, :p, :s, :r, :t, :o, :w, :ph) RETURNING id
@@ -51,13 +56,18 @@ def create_app():
                 }
                 result = db.session.execute(sql, params)
                 sup_id = result.fetchone()[0]
-                db.session.execute(db.text("INSERT INTO supplier_wallets (supplier_id, balance_sar, balance_yer, balance_usd) VALUES (:id, 0, 0, 0)"), {'id': sup_id})
+                
+                # إدخال المحفظة المرتبطة فوراً
+                db.session.execute(
+                    db.text("INSERT INTO supplier_wallets (supplier_id, balance_sar, balance_yer, balance_usd) VALUES (:id, 0, 0, 0)"), 
+                    {'id': sup_id}
+                )
             
             db.session.commit()
-            print("✅ تم الزرع بنجاح!")
+            print("✅ تم زرع 21 مورداً مع 21 محفظة بنجاح.")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ خطأ في الزرع: {e}")
+            print(f"⚠️ خطأ أثناء الزرع: {e}")
 
         # تسجيل الـ Blueprints
         from apps.auth_portal.routes import auth_portal
