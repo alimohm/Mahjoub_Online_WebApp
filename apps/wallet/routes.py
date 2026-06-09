@@ -3,43 +3,47 @@ from flask import Blueprint, render_template, request, jsonify
 from apps.extensions import db
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
 from apps.models.supplier_db import Supplier
-from datetime import datetime
+from flask_login import login_required
 
+# تعريف الـ Blueprint باسم wallet_app ليطابق ما في __init__.py
 wallet_app = Blueprint('wallet_app', __name__)
 
-# متغير لتحديد فترة الحداد
-IS_MOURNING_PERIOD = True 
-
 @wallet_app.route('/dashboard')
+@login_required
 def dashboard():
-    # في حالة الحداد، نعيد الواجهة العامة دون بيانات أو برسالة حداد
-    return render_template('admin/wallet_app.html', 
-                           total_system_sar=0, 
-                           total_system_yer=0, 
-                           total_system_usd=0,
-                           is_mourning=IS_MOURNING_PERIOD)
+    search_query = request.args.get('search', '')
+    
+    # بناء الاستعلام لجلب المحافظ مع بيانات المورد المرتبطة بها
+    query = SupplierWallet.query.join(Supplier)
+    
+    if search_query:
+        query = query.filter(
+            (Supplier.trade_name.contains(search_query)) | 
+            (Supplier.owner_name.contains(search_query)) |
+            (Supplier.owner_phone.contains(search_query))
+        )
+    
+    wallets = query.all()
+    
+    return render_template('admin/wallet_app.html', wallets=wallets)
 
 @wallet_app.route('/view/<int:supplier_id>')
+@login_required
 def view_wallet(supplier_id):
-    if IS_MOURNING_PERIOD:
-        return render_template('admin/view_wallet.html', is_mourning_period=True)
-
-    page = request.args.get('page', 1, type=int)
+    # جلب المحفظة الخاصة بالمورد
     wallet = SupplierWallet.query.filter_by(supplier_id=supplier_id).first_or_404()
+    
+    # جلب العمليات الخاصة بهذه المحفظة
     transactions = WalletTransaction.query.filter_by(wallet_id=wallet.id)\
-        .order_by(WalletTransaction.created_at.desc())\
-        .paginate(page=page, per_page=10)
+        .order_by(WalletTransaction.created_at.desc()).all()
     
     return render_template('admin/view_wallet.html', 
                            wallet=wallet, 
-                           transactions=transactions,
-                           is_mourning_period=False)
+                           transactions=transactions)
 
 @wallet_app.route('/api/search')
+@login_required
 def search_suppliers():
-    if IS_MOURNING_PERIOD:
-        return jsonify({'results': []})
-        
     query = request.args.get('q', '')
     suppliers = Supplier.query.filter(
         (Supplier.trade_name.contains(query)) | 
