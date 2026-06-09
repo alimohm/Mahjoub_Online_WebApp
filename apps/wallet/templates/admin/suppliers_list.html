@@ -1,6 +1,3 @@
-{% extends "admin/admin_base.html" %}
-
-{% block content %}
 <div class="table-responsive">
     <table class="table table-hover align-middle">
         <thead class="table-light">
@@ -47,10 +44,11 @@
 </nav>
 
 <script>
+    // هذه الدالة تعمل داخل نطاق الـ div الذي سيتم تحديثه
     function selectAndLoad(id) {
+        // تحديث قيمة الـ Select2
         $('#supplierSearch').val(id).trigger('change');
+        // استدعاء دالة عرض المحفظة الموجودة في الصفحة الرئيسية
         loadWallet();
     }
 </script>
-
-{% endblock %}
