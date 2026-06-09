@@ -1,0 +1,31 @@
+<h5 class="mb-3">قائمة الموردين (صفحة {{ suppliers.page }})</h5>
+<table class="table table-hover align-middle">
+    <thead class="table-light">
+        <tr><th>المعرف</th><th>اسم المتجر</th><th>الرصيد ($)</th><th>الرصيد (SAR)</th><th>الإجراء</th></tr>
+    </thead>
+    <tbody>
+        {% for s in suppliers.items %}
+        <tr>
+            <td>#{{ s.id }}</td>
+            <td class="fw-bold">{{ s.trade_name }}</td>
+            <td class="text-primary">${{ "{:,.2f}".format(s.wallet.balance_usd if s.wallet else 0) }}</td>
+            <td class="text-success">SAR {{ "{:,.2f}".format(s.wallet.balance_sar if s.wallet else 0) }}</td>
+            <td><button class="btn btn-sm btn-outline-primary" onclick="loadWalletFromTable({{ s.id }})">استعراض</button></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-center mt-3">
+    <nav>
+        <ul class="pagination">
+            <li class="page-item {% if not suppliers.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="#" onclick="loadSuppliersTable({{ suppliers.prev_num }}); return false;">السابق</a>
+            </li>
+            <li class="page-item active"><span class="page-link">{{ suppliers.page }}</span></li>
+            <li class="page-item {% if not suppliers.has_next %}disabled{% endif %}">
+                <a class="page-link" href="#" onclick="loadSuppliersTable({{ suppliers.next_num }}); return false;">التالي</a>
+            </li>
+        </ul>
+    </nav>
+</div>
