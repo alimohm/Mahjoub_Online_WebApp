@@ -8,33 +8,33 @@
 
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card bg-primary text-white text-center p-3 shadow-sm">
+            <div class="card bg-primary text-white text-center p-3 shadow-sm border-0">
                 <h5>إجمالي المحافظ</h5>
-                <h3>{{ wallets|length }}</h3>
+                <h3 class="mt-2">{{ wallets|length }}</h3>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-success text-white text-center p-3 shadow-sm">
+            <div class="card bg-success text-white text-center p-3 shadow-sm border-0">
                 <h5>إجمالي SAR</h5>
-                <h3>{{ wallets|sum(attribute='balance_sar')|round(2) }}</h3>
+                <h3 class="mt-2">{{ wallets|sum(attribute='balance_sar')|round(2) }}</h3>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-warning text-dark text-center p-3 shadow-sm">
+            <div class="card bg-warning text-dark text-center p-3 shadow-sm border-0">
                 <h5>إجمالي YER</h5>
-                <h3>{{ wallets|sum(attribute='balance_yer')|round(2) }}</h3>
+                <h3 class="mt-2">{{ wallets|sum(attribute='balance_yer')|round(2) }}</h3>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white text-center p-3 shadow-sm">
+            <div class="card bg-info text-white text-center p-3 shadow-sm border-0">
                 <h5>إجمالي USD</h5>
-                <h3>{{ wallets|sum(attribute='balance_usd')|round(2) }}</h3>
+                <h3 class="mt-2">{{ wallets|sum(attribute='balance_usd')|round(2) }}</h3>
             </div>
         </div>
     </div>
 
-    <div class="card mb-4 p-3 shadow-sm">
-        <form method="GET" action="{{ url_for('wallet_app.dashboard') }}" class="row g-3">
+    <div class="card mb-4 p-3 shadow-sm border-0">
+        <form method="GET" action="{{ url_for('wallet_app.dashboard') }}" class="row g-3 align-items-center">
             <div class="col-md-10">
                 <input type="text" name="search" class="form-control" placeholder="ابحث بالاسم، المعرف، أو رقم الهاتف..." value="{{ request.args.get('search', '') }}">
             </div>
@@ -44,9 +44,9 @@
         </form>
     </div>
 
-    <div class="card p-3 shadow-sm">
+    <div class="card p-3 shadow-sm border-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th>المعرف</th>
@@ -54,18 +54,18 @@
                         <th>SAR</th>
                         <th>YER</th>
                         <th>USD</th>
-                        <th>إجراءات</th>
+                        <th class="text-center">إجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for wallet in wallets %}
                     <tr>
                         <td>{{ wallet.id }}</td>
-                        <td>{{ wallet.supplier.trade_name if wallet.supplier else 'غير معروف' }}</td>
-                        <td>{{ wallet.balance_sar }}</td>
-                        <td>{{ wallet.balance_yer }}</td>
-                        <td>{{ wallet.balance_usd }}</td>
-                        <td>
+                        <td class="fw-bold">{{ wallet.supplier.trade_name if wallet.supplier else 'غير معروف' }}</td>
+                        <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_sar) }}</td>
+                        <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_yer) }}</td>
+                        <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_usd) }}</td>
+                        <td class="text-center">
                             <a href="{{ url_for('wallet_app.view_wallet', supplier_id=wallet.supplier_id) }}" class="btn btn-sm btn-outline-warning">
                                 <i class="fas fa-eye"></i> إدارة
                             </a>
@@ -73,7 +73,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center">لا توجد محافظ لعرضها.</td>
+                        <td colspan="6" class="text-center py-4 text-muted">لا توجد محافظ لعرضها.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -81,4 +81,12 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* تحسين إضافي لتنسيق الجدول */
+    .card { border-radius: 12px; }
+    .table thead th { border-bottom: 2px solid #dee2e6; color: #1a0b2e; }
+    .btn-outline-warning { border-color: #D4AF37; color: #D4AF37; }
+    .btn-outline-warning:hover { background-color: #D4AF37; color: #fff; }
+</style>
 {% endblock %}
