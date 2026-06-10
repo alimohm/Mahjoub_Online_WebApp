@@ -30,7 +30,7 @@
                         <th class="text-center">إجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="walletBody">
                     {% for wallet in wallets %}
                     <tr>
                         <td>{{ wallet.id }}</td>
@@ -73,10 +73,11 @@ $(document).ready(function() {
             $.ajax({
                 url: "{{ url_for('wallet_app.dashboard') }}",
                 data: { 'search': query },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(response) {
-                    // تحديث الجدول والترقيم بناءً على الاستجابة
-                    $('#walletTable tbody').html($(response).find('#walletTable tbody').html());
-                    $('#paginationLinks').html($(response).find('#paginationLinks').html());
+                    // response هنا هو كود الـ HTML الخاص بـ partials/wallet_table_body.html
+                    $('#walletBody').html($(response).find('tr').parent().html());
+                    $('#paginationLinks').html($(response).find('.pagination').parent().html());
                 }
             });
         }, 300);
