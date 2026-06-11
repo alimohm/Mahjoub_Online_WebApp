@@ -1,22 +1,18 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية للإنتاج)
+# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية للإنتاج - مع إصلاح التنسيقات)
 
 import os
 import sys
 
-# التأكد من رؤية المجلد الرئيسي (Root) لاستيراد config.py
+# التأكد من رؤية المجلد الرئيسي
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask
 from flask_talisman import Talisman
-
-# استيراد الإعدادات من المجلد الرئيسي
 from config import Config
-
-# استيراد الإضافات
 from apps.extensions import db, login_manager, migrate
 
-# استيراد النماذج (تمت إضافتها جميعاً لضمان اكتشافها بواسطة db.create_all)
+# استيراد النماذج
 from apps.models.admin_db import AdminUser
 from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
@@ -24,11 +20,27 @@ from apps.models.financial_db import ExchangeRate
 from apps.models.vault_db import AdminVault, VaultTransaction
 
 def create_app():
-    app = Flask(__name__)
+    # 1. تعريف مسارات المجلدات بشكل صريح لضمان الوصول للملفات
+    app = Flask(__name__, 
+                template_folder='templates', 
+                static_folder='static')
+    
     app.config.from_object(Config)
 
-    # 🛡️ تحصين التطبيق
-    Talisman(app, force_https=True, frame_options='SAMEORIGIN', referrer_policy='strict-origin-when-cross-origin')
+    # 🛡️ تحصين التطبيق مع السماح بملفات الـ CSS والـ JS المحلية
+    # CSP: Content Security Policy تسمح بالملفات من نفس النطاق (self)
+    csp = {
+        'default-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'script-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", "data:"]
+    }
+    
+    Talisman(app, 
+             force_https=True, 
+             csp=csp,
+             frame_options='SAMEORIGIN', 
+             referrer_policy='strict-origin-when-cross-origin')
 
     # تهيئة الإضافات
     db.init_app(app)
@@ -53,31 +65,26 @@ def create_app():
     app.register_blueprint(wallet_app, url_prefix='/wallet')
     app.register_blueprint(vault_bp, url_prefix='/vault')
 
-    # تهيئة قاعدة البيانات الذكية
+    # تهيئة قاعدة البيانات
     with app.app_context():
         try:
-            # بناء الجداول
             db.create_all() 
             
-            # 1. إنشاء المدير التأسيسي
             if not AdminUser.query.filter_by(username='علي_محجوب').first():
                 admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
                 admin.set_password('123')
                 db.session.add(admin)
             
-            # 2. إنشاء الخزينة
             if not AdminVault.query.first():
                 db.session.add(AdminVault(name="الخزنة المركزية", balance_sar=0, balance_yer=0, balance_usd=0))
             
-            # 3. زرع أسعار الصرف
             if not ExchangeRate.query.first():
                 db.session.add(ExchangeRate(currency_code='USD', rate_to_sar=3.75))
                 db.session.add(ExchangeRate(currency_code='YER', rate_to_sar=0.004))
             
             db.session.commit()
-            print("✅ قاعدة البيانات تم بناؤها وتأسيسها بنجاح.")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ خطأ أثناء التأسيس الآمن: {e}")
+            print(f"⚠️ خطأ أثناء التأسيس: {e}")
 
     return app
