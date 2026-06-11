@@ -7,6 +7,9 @@ class Config:
     # 🛡️ مفتاح الأمان السيادي للمنصة
     SECRET_KEY = os.environ.get('SECRET_KEY', 'SOVEREIGN_KEY_2026')
     
+    # 🔐 مفتاح التشفير المركزي (لـ AES-256)
+    ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
+    
     # 🔒 إعدادات الحماية الأمنية للـ Cookies (لرفع تقييم الأمان)
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
