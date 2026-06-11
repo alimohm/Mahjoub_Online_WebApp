@@ -1,11 +1,11 @@
-# 📂 apps/__init__.py - المصنع المحصن بالكامل
+# 📂 apps/__init__.py - المصنع المحصن (النسخة السيادية المكتملة)
 import os
 import sys
 from flask import Flask
 from flask_migrate import Migrate
 from flask_talisman import Talisman
 
-# إعداد المسارات لضمان رؤية المجلدات
+# إعداد المسارات
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if base_dir not in sys.path: 
     sys.path.insert(0, base_dir)
@@ -14,47 +14,28 @@ from apps.extensions import db, login_manager, migrate
 from apps.models.admin_db import AdminUser
 from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
+from apps.models.financial_db import ExchangeRate # استيراد المرجع المالي الجديد
 from werkzeug.security import generate_password_hash
 
 def create_app():
     app = Flask(__name__)
     
-    # الإعدادات الأساسية
+    # الإعدادات
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-sovereign-key-2026')
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///mahjoub_online.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # 🛡️ تحصين التطبيق (Talisman) مع القائمة البيضاء للمكتبات
+    # 🛡️ تحصين التطبيق (Talisman)
     csp = {
         'default-src': ["'self'"],
-        'script-src': [
-            "'self'", 
-            "https://code.jquery.com", 
-            "https://cdn.jsdelivr.net", 
-            "https://cdnjs.cloudflare.com"
-        ],
-        'style-src': [
-            "'self'", 
-            "https://cdnjs.cloudflare.com", 
-            "https://cdn.jsdelivr.net", 
-            "https://fonts.googleapis.com", 
-            "'unsafe-inline'"
-        ],
-        'font-src': [
-            "'self'", 
-            "https://cdnjs.cloudflare.com", 
-            "https://fonts.gstatic.com"
-        ],
+        'script-src': ["'self'", "https://code.jquery.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+        'style-src': ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "'unsafe-inline'"],
+        'font-src': ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
         'img-src': ["'self'", "data:", "https:"],
         'connect-src': ["'self'"]
     }
     
-    Talisman(app, 
-             content_security_policy=csp,
-             force_https=True,              # فرض HTTPS (Strict-Transport-Security)
-             frame_options='DENY',          # منع Clickjacking
-             referrer_policy='no-referrer'  # حماية خصوصية المسارات
-    )
+    Talisman(app, content_security_policy=csp, force_https=True, frame_options='DENY', referrer_policy='no-referrer')
     
     # تهيئة الإضافات
     db.init_app(app)
@@ -72,42 +53,49 @@ def create_app():
     from apps.financial_ops.routes import financial_blueprint
     from apps.admin_dashboard.routes import admin_dashboard
     from apps.wallet.routes import wallet_app
+    from apps.vault.routes import vault_bp # تسجيل الخزينة
 
     app.register_blueprint(auth_portal, url_prefix='')
     app.register_blueprint(add_supplier_bp, url_prefix='/suppliers')
     app.register_blueprint(financial_blueprint, url_prefix='/financial_ops')
     app.register_blueprint(admin_dashboard, url_prefix='/admin')
     app.register_blueprint(wallet_app, url_prefix='/wallet')
+    app.register_blueprint(vault_bp, url_prefix='/vault')
 
     # تهيئة قاعدة البيانات والبيانات التأسيسية
     with app.app_context():
         db.create_all()
         
         try:
+            # 1. إنشاء المدير
             if not AdminUser.query.filter_by(username='علي_محجوب').first():
                 admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
                 admin.set_password('123')
                 db.session.add(admin)
+            
+            # 2. زرع أسعار الصرف الافتراضية (المرجع المالي)
+            if not ExchangeRate.query.first():
+                db.session.add(ExchangeRate(currency_code='USD', rate_to_sar=3.75))
+                db.session.add(ExchangeRate(currency_code='YER', rate_to_sar=0.004))
                 
-                if not Supplier.query.first():
-                    for i in range(1, 22):
-                        new_sup = Supplier(
-                            username=f'sup_{i}', 
-                            password_hash=generate_password_hash('sup_pass_123'),
-                            status='قيد المراجعة', rank_grade='ريادي', 
-                            trade_name=f'مؤسسة المورد {i}', owner_name=f'المالك {i}', 
-                            wallet_code=f'W-{i}-2026', owner_phone=f'7700000{i:02d}'
-                        )
-                        db.session.add(new_sup)
-                        db.session.flush() 
-                        
-                        new_wallet = SupplierWallet(supplier_id=new_sup.id, balance_sar=0, balance_yer=0, balance_usd=0)
-                        db.session.add(new_wallet)
+            # 3. زرع الموردين
+            if not Supplier.query.first():
+                for i in range(1, 22):
+                    new_sup = Supplier(
+                        username=f'sup_{i}', 
+                        password_hash=generate_password_hash('sup_pass_123'),
+                        status='قيد المراجعة', rank_grade='ريادي', 
+                        trade_name=f'مؤسسة المورد {i}', owner_name=f'المالك {i}', 
+                        wallet_code=f'W-{i}-2026', owner_phone=f'7700000{i:02d}'
+                    )
+                    db.session.add(new_sup)
+                    db.session.flush() 
+                    db.session.add(SupplierWallet(supplier_id=new_sup.id, balance_sar=0, balance_yer=0, balance_usd=0))
                 
                 db.session.commit()
-                print("✅ تم تحصين التطبيق وتأسيس البيانات بنجاح.")
+                print("✅ تم تحصين المصنع، تأسيس الأسعار المالية، وزرع الموردين.")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ خطأ أثناء تهيئة قاعدة البيانات: {e}")
+            print(f"⚠️ خطأ أثناء التأسيس: {e}")
 
     return app
