@@ -1,12 +1,10 @@
 # coding: utf-8
-# 📂 apps/models/admin_db.py - نظام الهوية المحصن (معدل للمسار الصحيح)
+# 📂 apps/models/admin_db.py - نظام الهوية المحصن (معدل للعمل التلقائي)
 
 from apps.extensions import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-
-# تأكد أن هذا هو المسار الوحيد الذي تستورد منه التشفير
 from apps.utils.security import AESCipher 
 
 class AdminUser(db.Model, UserMixin):
@@ -16,8 +14,8 @@ class AdminUser(db.Model, UserMixin):
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     
-    # 🔐 حقل رقم الهاتف مشفر لحماية الخصوصية
-    _phone_number_enc = db.Column(db.String(255), nullable=False)
+    # 🔐 حقل رقم الهاتف مشفر - تم ضبطه ليكون nullable=True لتجنب أخطاء قاعدة البيانات عند الإنشاء
+    _phone_number_enc = db.Column(db.String(255), nullable=True)
     
     role = db.Column(db.String(50), default='admin')
     is_active = db.Column(db.Boolean, default=True)
@@ -25,53 +23,41 @@ class AdminUser(db.Model, UserMixin):
     failed_attempts = db.Column(db.Integer, default=0)
     lock_until = db.Column(db.DateTime, nullable=True)
 
-    # 🛡️ بوابة التشفير لرقم الهاتف
+    # 🛡️ بوابة التشفير التلقائية (تشفير وفك تشفير تلقائي عند التعامل مع phone_number)
     @property
     def phone_number(self): 
-        # AESCipher الآن يتم استدعاؤه من security.py
-        return AESCipher.decrypt(self._phone_number_enc)
+        if self._phone_number_enc:
+            return AESCipher.decrypt(self._phone_number_enc)
+        return None
     
     @phone_number.setter
     def phone_number(self, value): 
-        self._phone_number_enc = AESCipher.encrypt(str(value))
+        if value:
+            self._phone_number_enc = AESCipher.encrypt(str(value))
+        else:
+            self._phone_number_enc = None
 
     def set_password(self, password):
-        try:
-            self.password_hash = generate_password_hash(password)
-        except Exception:
-            self.password_hash = "INVALID_HASH"
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        try:
-            if not self.password_hash or self.password_hash == "INVALID_HASH":
-                return False
-            return check_password_hash(self.password_hash, password)
-        except Exception as e:
-            print(f"⚠️ خطأ في التحقق من كلمة المرور: {e}")
+        if not self.password_hash:
             return False
+        return check_password_hash(self.password_hash, password)
 
     def is_locked(self):
-        try:
-            if self.lock_until and datetime.utcnow() < self.lock_until:
-                return True
-        except:
-            pass
+        if self.lock_until and datetime.utcnow() < self.lock_until:
+            return True
         return False
 
     def increment_failed_attempts(self):
-        try:
-            self.failed_attempts = (self.failed_attempts or 0) + 1
-            delay = (self.failed_attempts // 5) + 1 
-            self.lock_until = datetime.utcnow() + timedelta(minutes=delay)
-        except Exception as e:
-            print(f"⚠️ خطأ عند تسجيل فشل الدخول: {e}")
+        self.failed_attempts = (self.failed_attempts or 0) + 1
+        delay = (self.failed_attempts // 5) + 1 
+        self.lock_until = datetime.utcnow() + timedelta(minutes=delay)
 
     def reset_failed_attempts(self):
-        try:
-            self.failed_attempts = 0
-            self.lock_until = None
-        except Exception as e:
-            print(f"⚠️ خطأ عند إعادة ضبط العداد: {e}")
+        self.failed_attempts = 0
+        self.lock_until = None
 
     def __repr__(self):
         return f'<AdminUser {self.username}>'
