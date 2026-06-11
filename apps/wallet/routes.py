@@ -1,5 +1,5 @@
 # coding: utf-8
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, abort
 from apps.models.wallet_db import SupplierWallet
 from apps.models.supplier_db import Supplier
 from sqlalchemy import or_
@@ -10,30 +10,35 @@ wallet_app = Blueprint('wallet_app', __name__, template_folder='templates')
 
 @wallet_app.route('/wallet', methods=['GET'])
 def dashboard():
+    # حماية: التأكد أن الطلبات القادمة عبر AJAX هي من موقعك فقط
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if not request.referrer or "mahjoub.online" not in request.referrer:
+            abort(403)
+
     # 1. إعداد متغيرات الترقيم
     page = request.args.get(get_page_parameter(), type=int, default=1)
     per_page = 15
     search = request.args.get('search', '')
     
-    # 2. بناء الاستعلام مع ربط جدول الموردين للوصول للحقول المشفرة
-    # نستخدم join لضمان إمكانية الفلترة باسم المورد (المشفر)
+    # 2. بناء الاستعلام مع ربط جدول الموردين
     query = SupplierWallet.query.join(Supplier)
     
     if search:
+        # البحث في الحقول المفهرسة
         query = query.filter(or_(
-            Supplier.search_name.contains(search),      # البحث في حقل البحث السريع (المفكوك)
-            Supplier.search_phone.contains(search),     # البحث في رقم الهاتف السريع
+            Supplier.search_name.contains(search),
+            Supplier.search_phone.contains(search),
             SupplierWallet.id.contains(search)
         ))
     
-    # 3. حساب الإجمالي وجلب البيانات للصفحة الحالية
+    # 3. حساب الإجمالي وجلب البيانات
     total = query.count()
     wallets = query.offset((page - 1) * per_page).limit(per_page).all()
     
     # 4. تهيئة الترقيم
     pagination = Pagination(page=page, total=total, per_page=per_page, css_framework='bootstrap5')
     
-    # 5. التحديث الذكي: إذا كان الطلب قادماً عبر AJAX، نعيد فقط الجزء المحدث
+    # 5. التحديث الذكي: إذا كان الطلب AJAX نعيد فقط الجدول
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render_template('admin/partials/wallet_table_body.html', 
                                wallets=wallets, 
