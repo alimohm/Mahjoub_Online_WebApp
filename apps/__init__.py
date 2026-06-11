@@ -1,4 +1,4 @@
-# 📂 apps/__init__.py - المصنع المحصن
+# 📂 apps/__init__.py - المصنع المحصن بالكامل
 import os
 import sys
 from flask import Flask
@@ -19,19 +19,33 @@ from werkzeug.security import generate_password_hash
 def create_app():
     app = Flask(__name__)
     
-    # الإعدادات
+    # الإعدادات الأساسية
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-sovereign-key-2026')
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///mahjoub_online.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # 🛡️ تحصين التطبيق ضد الهجمات (Talisman)
-    # هذه الإعدادات ترفع تصنيف الأمان إلى A في SecurityHeaders
+    # 🛡️ تحصين التطبيق (Talisman) مع القائمة البيضاء للمكتبات
     csp = {
         'default-src': ["'self'"],
-        'script-src': ["'self'", "https://code.jquery.com", "https://cdn.jsdelivr.net"],
-        'style-src': ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
-        'font-src': ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
-        'img-src': ["'self'", "data:"],
+        'script-src': [
+            "'self'", 
+            "https://code.jquery.com", 
+            "https://cdn.jsdelivr.net", 
+            "https://cdnjs.cloudflare.com"
+        ],
+        'style-src': [
+            "'self'", 
+            "https://cdnjs.cloudflare.com", 
+            "https://cdn.jsdelivr.net", 
+            "https://fonts.googleapis.com", 
+            "'unsafe-inline'"
+        ],
+        'font-src': [
+            "'self'", 
+            "https://cdnjs.cloudflare.com", 
+            "https://fonts.gstatic.com"
+        ],
+        'img-src': ["'self'", "data:", "https:"],
         'connect-src': ["'self'"]
     }
     
@@ -91,7 +105,7 @@ def create_app():
                         db.session.add(new_wallet)
                 
                 db.session.commit()
-                print("✅ تم تحصين التطبيق وإنشاء البيانات بنجاح.")
+                print("✅ تم تحصين التطبيق وتأسيس البيانات بنجاح.")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ أثناء تهيئة قاعدة البيانات: {e}")
