@@ -1,4 +1,4 @@
-# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية مع تهيئة الخزينة)
+# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية المحدثة)
 import os
 import sys
 from flask import Flask
@@ -51,14 +51,12 @@ def create_app():
     # تسجيل الـ Blueprints
     from apps.auth_portal.routes import auth_portal
     from apps.add_supplier.routes import add_supplier_bp
-    from apps.financial_ops.routes import financial_blueprint
     from apps.admin_dashboard.routes import admin_dashboard
     from apps.wallet.routes import wallet_app
     from apps.vault.routes import vault_bp
 
     app.register_blueprint(auth_portal, url_prefix='')
     app.register_blueprint(add_supplier_bp, url_prefix='/suppliers')
-    app.register_blueprint(financial_blueprint, url_prefix='/financial_ops')
     app.register_blueprint(admin_dashboard, url_prefix='/admin')
     app.register_blueprint(wallet_app, url_prefix='/wallet')
     app.register_blueprint(vault_bp, url_prefix='/vault')
@@ -69,8 +67,7 @@ def create_app():
         db.create_all()
         
         try:
-            # إعادة تهيئة جداول الخزينة فقط عند الحاجة لتنظيفها
-            # ملاحظة: هذا الإجراء يضمن أن جداول الخزينة نظيفة تماماً
+            # إعادة تهيئة جداول الخزينة فقط
             AdminVault.__table__.drop(db.engine, checkfirst=True)
             VaultTransaction.__table__.drop(db.engine, checkfirst=True)
             db.create_all()
@@ -82,7 +79,8 @@ def create_app():
                 db.session.add(admin)
             
             # 2. إنشاء الخزينة المركزية
-            db.session.add(AdminVault(balance_sar=0, balance_yer=0, balance_usd=0))
+            if not AdminVault.query.first():
+                db.session.add(AdminVault(balance_sar=0, balance_yer=0, balance_usd=0))
             
             # 3. زرع أسعار الصرف
             if not ExchangeRate.query.first():
@@ -104,7 +102,7 @@ def create_app():
                     db.session.add(SupplierWallet(supplier_id=new_sup.id, balance_sar=0, balance_yer=0, balance_usd=0))
                 
             db.session.commit()
-            print("✅ تم تحصين المصنع وإعادة تهيئة الخزينة بنجاح.")
+            print("✅ تم تحديث المصنع وإعادة تهيئة الخزينة بنجاح.")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ أثناء التأسيس: {e}")
