@@ -26,36 +26,43 @@
 </div>
 
 <div class="card p-3 shadow-sm border-0">
-    <table class="table table-hover align-middle mb-0" id="walletTable">
-        <thead class="table-light">
-            <tr>
-                <th>المعرف</th>
-                <th>اسم المورد</th>
-                <th>SAR</th>
-                <th>YER</th>
-                <th>USD</th>
-                <th class="text-center">إجراءات</th>
-            </tr>
-        </thead>
-        <tbody id="walletBody">
-            {% for wallet in wallets %}
-            <tr>
-                <td>{{ wallet.id }}</td>
-                <td class="fw-bold">{{ wallet.supplier.trade_name if wallet.supplier else 'غير معرف' }}</td>
-                <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_sar|float) }}</td>
-                <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_yer|float) }}</td>
-                <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_usd|float) }}</td>
-                <td class="text-center">
-                    <a href="{{ url_for('wallet_app.manage_wallet', supplier_id=wallet.supplier_id) }}" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-list-ul"></i> حركة المحفظة
-                    </a>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" class="text-center py-4 text-muted">لا توجد نتائج مطابقة.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="walletTable">
+            <thead class="table-light">
+                <tr>
+                    <th>المعرف</th>
+                    <th>اسم المورد</th>
+                    <th>SAR</th>
+                    <th>YER</th>
+                    <th>USD</th>
+                    <th class="text-center">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="walletBody">
+                {% for wallet in wallets %}
+                <tr>
+                    <td>{{ wallet.id }}</td>
+                    <td class="fw-bold">{{ wallet.supplier.trade_name if wallet.supplier else 'غير معرف' }}</td>
+                    <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_sar|float) }}</td>
+                    <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_yer|float) }}</td>
+                    <td class="font-monospace">{{ "{:,.2f}".format(wallet.balance_usd|float) }}</td>
+                    <td class="text-center">
+                        <a href="{{ url_for('wallet_app.manage_wallet', supplier_id=wallet.supplier_id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-list-ul"></i> حركة المحفظة
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        <i class="fas fa-search-minus fa-2x mb-2"></i><br>
+                        لا توجد نتائج مطابقة للبحث.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="d-flex justify-content-center mt-4" id="paginationLinks">
