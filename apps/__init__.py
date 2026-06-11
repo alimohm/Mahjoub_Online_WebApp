@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية للإنتاج - مع إصلاح التنسيقات)
+# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية للإنتاج - مُصححة)
 
 import os
 import sys
@@ -20,16 +20,15 @@ from apps.models.financial_db import ExchangeRate
 from apps.models.vault_db import AdminVault, VaultTransaction
 
 def create_app():
-    # 1. تعريف مسارات المجلدات بشكل صريح لضمان الوصول للملفات
+    # 1. تعريف مسارات المجلدات بشكل صريح
     app = Flask(__name__, 
                 template_folder='templates', 
                 static_folder='static')
     
     app.config.from_object(Config)
 
-    # 🛡️ تحصين التطبيق مع السماح بملفات الـ CSS والـ JS المحلية
-    # CSP: Content Security Policy تسمح بالملفات من نفس النطاق (self)
-    csp = {
+    # 🛡️ تحصين التطبيق مع تصحيح المعامل ليقبل السياسة (content_security_policy)
+    csp_policy = {
         'default-src': ["'self'"],
         'style-src': ["'self'", "'unsafe-inline'"],
         'script-src': ["'self'", "'unsafe-inline'"],
@@ -38,7 +37,7 @@ def create_app():
     
     Talisman(app, 
              force_https=True, 
-             csp=csp,
+             content_security_policy=csp_policy,
              frame_options='SAMEORIGIN', 
              referrer_policy='strict-origin-when-cross-origin')
 
