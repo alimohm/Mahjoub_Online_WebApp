@@ -4,6 +4,7 @@
 import os
 import sys
 import random
+from werkzeug.security import generate_password_hash
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -56,7 +57,7 @@ def create_app():
         try:
             db.create_all() 
             
-            # 1. إنشاء المدير
+            # 1. إنشاء المدير التأسيسي
             if not AdminUser.query.filter_by(username='علي_محجوب').first():
                 admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
                 admin.set_password('123')
@@ -67,18 +68,18 @@ def create_app():
             if not Supplier.query.first():
                 for i in range(1, 22):
                     s = Supplier(username=f'supplier_{i}', trade_name=f'متجر رقم {i}', owner_name=f'المالك {i}')
-                    s.password_hash = 'pbkdf2:sha256:...' # كلمة مرور وهمية
+                    s.password_hash = generate_password_hash('123') # تشفير آمن للموردين
                     db.session.add(s)
                     db.session.commit()
                     
                     # إنشاء محفظة لكل متجر
                     w = SupplierWallet(supplier_id=s.id)
-                    w.balance_sar = random.uniform(100, 5000)
+                    w.balance_sar = float(random.randint(100, 5000))
                     db.session.add(w)
                     db.session.commit()
                     
                     # إنشاء حركة مالية لكل محفظة
-                    w.add_transaction(amount=random.uniform(10, 500), currency='SAR', 
+                    w.add_transaction(amount=float(random.randint(10, 500)), currency='SAR', 
                                       transaction_type='credit', description='إيداع افتتاحي')
             
             # 3. الخزينة وأسعار الصرف
@@ -90,7 +91,7 @@ def create_app():
                 db.session.add(ExchangeRate(currency_code='YER', rate_to_sar=0.004))
             
             db.session.commit()
-            print("✅ تم زرع 21 متجر بنجاح.")
+            print("✅ تم زرع البيانات التأسيسية (المدير + 21 متجر) بنجاح.")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ أثناء التأسيس: {e}")
