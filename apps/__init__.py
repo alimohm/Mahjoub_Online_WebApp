@@ -1,12 +1,20 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية المستقرة)
+# 📂 apps/__init__.py - المصنع المحصن (معدل للإنتاج)
 
 import os
+import sys
+
+# 💡 حل مشكلة الاستيراد: إضافة المجلد الحالي للمسارات
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
 from flask import Flask
 from flask_migrate import Migrate
 from flask_talisman import Talisman
 from werkzeug.security import generate_password_hash
+
+# استيراد الإعدادات (تأكد أن الملف باسم config.py داخل مجلد apps)
 from apps.config import Config
+
 from apps.extensions import db, login_manager, migrate
 from apps.models.admin_db import AdminUser
 from apps.models.supplier_db import Supplier
@@ -43,28 +51,24 @@ def create_app():
     app.register_blueprint(wallet_app, url_prefix='/wallet')
     app.register_blueprint(vault_bp, url_prefix='/vault')
 
-    # تهيئة قاعدة البيانات الذكية (بدون حذف البيانات)
+    # تهيئة قاعدة البيانات الذكية
     with app.app_context():
         db.create_all() 
         
         try:
-            # 1. إنشاء المدير فقط إذا كان الجدول فارغاً
             if not AdminUser.query.first():
                 admin = AdminUser(username='علي_محجوب', role='Owner', phone_number='0000000000')
                 admin.set_password('123')
                 db.session.add(admin)
             
-            # 2. إنشاء الخزينة إذا لم توجد
             if not AdminVault.query.first():
                 db.session.add(AdminVault(balance_sar=0, balance_yer=0, balance_usd=0))
             
-            # 3. زرع أسعار الصرف إذا كانت فارغة
             if not ExchangeRate.query.first():
                 db.session.add(ExchangeRate(currency_code='USD', rate_to_sar=3.75))
                 db.session.add(ExchangeRate(currency_code='YER', rate_to_sar=0.004))
             
             db.session.commit()
-            print("✅ قاعدة البيانات جاهزة ومستقرة.")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ أثناء التأسيس الآمن: {e}")
