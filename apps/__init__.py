@@ -1,19 +1,19 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية)
+# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية للإنتاج)
 
 import os
 import sys
 
-# إضافة المجلد الرئيسي (Root) إلى مسار البحث ليتمكن التطبيق من رؤية config.py في الجذر
+# التأكد من رؤية المجلد الرئيسي (Root) لاستيراد config.py
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask
 from flask_talisman import Talisman
 
-# استيراد من المجلد الرئيسي مباشرة (بما أن الجذر أصبح في المسار)
+# استيراد الإعدادات من المجلد الرئيسي
 from config import Config
 
-# استيراد الإضافات والنماذج من داخل مجلد apps
+# استيراد الإضافات والنماذج
 from apps.extensions import db, login_manager, migrate
 from apps.models.admin_db import AdminUser
 from apps.models.supplier_db import Supplier
@@ -38,12 +38,12 @@ def create_app():
     def load_user(user_id):
         return AdminUser.query.get(int(user_id))
 
-    # تسجيل الـ Blueprints (استيراد نسبي)
-    from .auth_portal.routes import auth_portal
-    from .add_supplier.routes import add_supplier_bp
-    from .admin_dashboard.routes import admin_dashboard
-    from .wallet.routes import wallet_app
-    from .vault.routes import vault_bp
+    # تسجيل الـ Blueprints (باستخدام المسارات النسبية داخل المجلد)
+    from apps.auth_portal.routes import auth_portal
+    from apps.add_supplier.routes import add_supplier_bp
+    from apps.admin_dashboard.routes import admin_dashboard
+    from apps.wallet.routes import wallet_app
+    from apps.vault.routes import vault_bp
 
     app.register_blueprint(auth_portal, url_prefix='')
     app.register_blueprint(add_supplier_bp, url_prefix='/suppliers')
