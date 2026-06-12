@@ -18,7 +18,7 @@ def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
     app.config.from_object(Config)
 
-    # 🛡️ سياسة أمان المحتوى (CSP) - تم تحديثها لتشمل كامل الموارد الضرورية
+    # 🛡️ سياسة أمان المحتوى (CSP) - تم تحديثها للسماح بالموارد الخارجية الضرورية لتجنب مشكلة الـ CSS
     csp_policy = {
         'default-src': ["'self'"],
         'style-src': [
@@ -38,6 +38,7 @@ def create_app():
         'img-src': ["'self'", "data:", "https://*"]
     }
     
+    # تفعيل Talisman مع السياسات المحدثة
     Talisman(app, force_https=True, content_security_policy=csp_policy,
              frame_options='SAMEORIGIN', referrer_policy='strict-origin-when-cross-origin')
 
@@ -50,7 +51,7 @@ def create_app():
     def load_user(user_id):
         return AdminUser.query.get(int(user_id))
 
-    # تسجيل المسارات
+    # تسجيل المسارات (Blueprints)
     from apps.auth_portal.routes import auth_portal
     from apps.add_supplier.routes import add_supplier_bp
     from apps.admin_dashboard.routes import admin_dashboard
