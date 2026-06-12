@@ -5,9 +5,15 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <h4 class="font-weight-bold text-dark">
-            <i class="fas fa-network-wired text-warning me-2"></i>إدارة المنتجات (الجسر السيادي)
-        </h4>
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('admin_dashboard.dashboard') }}" class="btn btn-outline-secondary me-3" title="الرجوع للوحة التحكم">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+            <h4 class="font-weight-bold text-dark m-0">
+                <i class="fas fa-network-wired text-warning me-2"></i>إدارة المنتجات (الجسر السيادي)
+            </h4>
+        </div>
+        
         <div class="d-flex gap-2">
             <div class="position-relative">
                 <input type="text" id="liveSearch" class="form-control" placeholder="بحث لحظي..." style="width: 250px; border-radius: 20px;">
@@ -16,10 +22,6 @@
             <a href="{{ url_for('mahjoub_bridge.add_product_page') }}" class="btn btn-dark text-warning">
                 <i class="fas fa-plus"></i> إضافة منتج
             </a>
-            
-            <button class="btn btn-outline-secondary" disabled title="قريباً">
-                <i class="fas fa-upload"></i> استيراد
-            </button>
             
             <button class="btn btn-success" onclick="syncNow()">
                 <i class="fas fa-sync"></i> مزامنة
@@ -59,7 +61,7 @@
                         <a class="page-link" href="{{ url_for('mahjoub_bridge.dashboard', page=page-1) }}">السابق</a>
                     </li>
                     <li class="page-item active">
-                        <span class="page-link bg-warning border-0">صفحة {{ page }}</span>
+                        <span class="page-link bg-warning border-0 text-dark">صفحة {{ page }}</span>
                     </li>
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for('mahjoub_bridge.dashboard', page=page+1) }}">التالي</a>
@@ -76,6 +78,7 @@
 </style>
 
 <script>
+// بحث لحظي
 document.getElementById('liveSearch').addEventListener('keyup', function() {
     let filter = this.value.toUpperCase();
     let cards = document.getElementsByClassName('product-card');
@@ -85,6 +88,7 @@ document.getElementById('liveSearch').addEventListener('keyup', function() {
     }
 });
 
+// وظيفة المزامنة
 function syncNow() {
     Swal.fire({
         title: 'جاري المزامنة...',
@@ -94,14 +98,21 @@ function syncNow() {
         allowOutsideClick: false
     });
 
-    fetch('/bridge/sync-now', { method: 'POST' })
+    fetch('{{ url_for("mahjoub_bridge.sync_now") }}', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
     .then(response => response.json())
     .then(data => {
-        Swal.fire('تم بنجاح!', 'تم تحديث البيانات من الجسر.', 'success');
-        setTimeout(() => location.reload(), 2000);
+        if(data.status === 'success') {
+            Swal.fire('تم بنجاح!', data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            Swal.fire('تنبيه!', data.message, 'warning');
+        }
     })
     .catch(error => {
-        Swal.fire('خطأ!', 'حدثت مشكلة أثناء الاتصال.', 'error');
+        Swal.fire('خطأ!', 'حدثت مشكلة أثناء الاتصال بالسيرفر.', 'error');
     });
 }
 </script>
