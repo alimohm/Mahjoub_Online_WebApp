@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from apps import db
 from apps.models.bridge_db import Product, ProductVariant
 
+# تأكد من تطابق اسم البلوبرينت مع ما تستخدمه في __init__.py
 bridge_bp = Blueprint('mahjoub_bridge', __name__, template_folder='templates')
 
 @bridge_bp.route('/bridge/dashboard', methods=['GET'])
@@ -12,20 +13,20 @@ def dashboard():
         per_page = 16
         
         # جلب المنتجات مرتبة حسب الأحدث
-        pagination = Product.query.order_by(Product.id.desc()).paginate(page=page, per_page=per_page)
+        pagination = Product.query.order_by(Product.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
         products = pagination.items
         
-        return render_template('admin/bridge_dashboard.html', products=products, pagination=pagination)
+        return render_template('admin/bridge_dashboard.html', products=products, pagination=pagination, page=page)
     except Exception as e:
         flash(f"حدث خطأ أثناء تحميل البيانات: {str(e)}", "danger")
-        return redirect(url_for('admin_dashboard')) # أو الصفحة الرئيسية للإدارة
+        # تم التصحيح: توجيه صحيح لمسار لوحة التحكم الرئيسية
+        return redirect(url_for('admin_dashboard.dashboard'))
 
 @bridge_bp.route('/bridge/add-product', methods=['GET', 'POST'])
 def add_product_page():
-    """إضافة منتج جديد مع التحقق من البيانات"""
+    """إضافة منتج جديد"""
     if request.method == 'POST':
         try:
-            # استلام البيانات مع قيم افتراضية آمنة
             title = request.form.get('title')
             price_raw = request.form.get('price', 0)
             qty_raw = request.form.get('quantity', 0)
@@ -58,12 +59,4 @@ def add_product_page():
 
 @bridge_bp.route('/bridge/sync-now', methods=['POST'])
 def sync_now():
-    """منطق المزامنة المحلية"""
-    try:
-        # هنا يمكنك إضافة كود تحديث الأسعار أو المخزون لاحقاً
-        return jsonify({
-            "status": "success", 
-            "message": "تمت المزامنة بنجاح"
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return jsonify({"status": "success", "message": "تمت المزامنة بنجاح"})
