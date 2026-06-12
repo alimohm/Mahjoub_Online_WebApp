@@ -1,5 +1,5 @@
 # coding: utf-8
-# 📂 apps/models/wallet_db.py - نظام المحافظ (مُشفر بالكامل بـ AES-256)
+# 📂 apps/models/wallet_db.py - نظام المحافظ (مُشفر بالكامل بـ AES-256 - نسخة محسنة)
 
 from apps.extensions import db
 from apps.utils.security import AESCipher
@@ -13,16 +13,17 @@ class SupplierWallet(db.Model):
     supplier = db.relationship('Supplier', back_populates='wallet')
     
     # حقول مشفرة (تخزن كـ String في قاعدة البيانات)
-    _balance_sar = db.Column(db.String(255), default="0.0")
-    _balance_yer = db.Column(db.String(255), default="0.0")
-    _balance_usd = db.Column(db.String(255), default="0.0")
+    _balance_sar = db.Column(db.String(255), default=lambda: AESCipher.encrypt("0.0"))
+    _balance_yer = db.Column(db.String(255), default=lambda: AESCipher.encrypt("0.0"))
+    _balance_usd = db.Column(db.String(255), default=lambda: AESCipher.encrypt("0.0"))
     
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # خصائص التشفير التلقائي (Properties)
+    # خصائص التشفير التلقائي (Properties) مع معالجة الأخطاء
     @property
     def balance_sar(self): 
-        return float(AESCipher.decrypt(self._balance_sar))
+        val = AESCipher.decrypt(self._balance_sar)
+        return float(val) if val else 0.0
     
     @balance_sar.setter
     def balance_sar(self, value): 
@@ -30,7 +31,8 @@ class SupplierWallet(db.Model):
 
     @property
     def balance_yer(self): 
-        return float(AESCipher.decrypt(self._balance_yer))
+        val = AESCipher.decrypt(self._balance_yer)
+        return float(val) if val else 0.0
     
     @balance_yer.setter
     def balance_yer(self, value): 
@@ -38,7 +40,8 @@ class SupplierWallet(db.Model):
 
     @property
     def balance_usd(self): 
-        return float(AESCipher.decrypt(self._balance_usd))
+        val = AESCipher.decrypt(self._balance_usd)
+        return float(val) if val else 0.0
     
     @balance_usd.setter
     def balance_usd(self, value): 
@@ -49,7 +52,7 @@ class SupplierWallet(db.Model):
     def add_transaction(self, amount, currency, transaction_type, description=None):
         transaction = WalletTransaction(
             wallet_id=self.id,
-            amount=amount, # يتم التشفير تلقائياً عبر الـ setter في الكلاس أدناه
+            amount=amount, 
             currency=currency.upper(),
             transaction_type=transaction_type,
             description=description
@@ -57,7 +60,7 @@ class SupplierWallet(db.Model):
         
         multiplier = 1 if transaction_type == 'credit' else -1
         
-        # تحديث الأرصدة (تستخدم الـ setter التي تشفر القيمة)
+        # تحديث الأرصدة
         if currency.upper() == 'SAR': self.balance_sar += (amount * multiplier)
         elif currency.upper() == 'YER': self.balance_yer += (amount * multiplier)
         elif currency.upper() == 'USD': self.balance_usd += (amount * multiplier)
@@ -73,7 +76,6 @@ class WalletTransaction(db.Model):
     wallet_id = db.Column(db.Integer, db.ForeignKey('supplier_wallets.id'), nullable=False)
     wallet = db.relationship('SupplierWallet', back_populates='transactions')
     
-    # حقل مشفر
     _amount = db.Column(db.String(255), nullable=False)
     currency = db.Column(db.String(3), nullable=False)
     transaction_type = db.Column(db.String(20), nullable=False)
@@ -83,7 +85,8 @@ class WalletTransaction(db.Model):
 
     @property
     def amount(self): 
-        return float(AESCipher.decrypt(self._amount))
+        val = AESCipher.decrypt(self._amount)
+        return float(val) if val else 0.0
     
     @amount.setter
     def amount(self, value): 
