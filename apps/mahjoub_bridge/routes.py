@@ -64,36 +64,42 @@ def add_product_page():
 
 @bridge_bp.route('/sync-now', methods=['POST'])
 def sync_now():
-    """المزامنة اللحظية مع تنظيف صارم للبيانات"""
+    """المزامنة اللحظية مع حماية قصوى ضد البيانات الفارغة أو المعطوبة"""
     try:
         engine = QumraBridgeEngine()
         raw_products = engine.fetch_latest_products(limit=20)
         
-        if not raw_products:
-            return jsonify({"status": "warning", "message": "لا توجد منتجات جديدة"})
+        # التأكد من أن النتيجة قائمة صالحة
+        if raw_products is None or not isinstance(raw_products, list):
+            return jsonify({"status": "warning", "message": "لم يتم العثور على بيانات صالحة من المصدر"})
 
         count = 0
         for item in raw_products:
-            # حماية قصوى: التأكد أن العنوان ليس None
+            # صمام أمان: تخطي أي عنصر ليس قاموساً أو فارغاً
+            if item is None or not isinstance(item, dict):
+                continue
+            
+            # التأكد من وجود العنوان
             title_raw = item.get('title')
             if title_raw is None: continue
             title = str(title_raw).strip()
             if not title: continue 
             
+            # التحقق من عدم التكرار
             if not Product.query.filter_by(title=title).first():
-                # تنظيف السعر
-                pricing = item.get('pricing') or {}
-                raw_price = pricing.get('price') or "0"
+                # تنظيف السعر (التعامل مع التسلسل الهرمي للبيانات)
+                pricing = item.get('pricing')
+                raw_price = pricing.get('price') if isinstance(pricing, dict) else "0"
                 
                 # تنظيف الكمية
-                raw_qty = item.get('quantity') or 0
+                raw_qty = item.get('quantity')
+                safe_qty = int(raw_qty) if str(raw_qty or "").isdigit() else 0
                 
-                # التخزين
                 new_product = Product(
                     title=title,
-                    description="تمت المزامنة",
-                    price=encrypt(str(raw_price)),
-                    quantity=int(raw_qty),
+                    description="تمت المزامنة تلقائياً",
+                    price=encrypt(str(raw_price or "0")),
+                    quantity=safe_qty,
                     supplier_id="QUMRA_SYNC"
                 )
                 db.session.add(new_product)
@@ -105,4 +111,4 @@ def sync_now():
     except Exception as e:
         db.session.rollback()
         print(f"CRITICAL SYNC ERROR: {str(e)}")
-        return jsonify({"status": "error", "message": "حدث خطأ في المزامنة"}), 500
+        return jsonify({"status": "error", "message": "حدث خطأ تقني في معالجة بيانات المزامنة"}), 500
