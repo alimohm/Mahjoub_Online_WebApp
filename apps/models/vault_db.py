@@ -1,9 +1,9 @@
 # coding: utf-8
-# 📂 apps/models/vault_db.py - الخزنة المركزية (مُحصنة ومُشفرة بـ AES-256)
+# 📂 apps/models/vault_db.py - الخزنة المركزية (مُحصنة ومُشفرة بـ AES-256 - نسخة محسنة)
 
 from apps.extensions import db
 from datetime import datetime
-from apps.utils.security import AESCipher  # استيراد المصدر الموحد للتشفير
+from apps.utils.security import AESCipher
 import hashlib
 
 class AdminVault(db.Model):
@@ -12,31 +12,43 @@ class AdminVault(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), default="الخزنة المركزية")
     
-    # حقول مشفرة (تخزن كـ String)
-    _balance_sar = db.Column(db.String(255), default="0.0")
-    _balance_yer = db.Column(db.String(255), default="0.0")
-    _balance_usd = db.Column(db.String(255), default="0.0")
+    # حقول مشفرة مع قيم افتراضية مشفرة لـ "0.0"
+    _balance_sar = db.Column(db.String(255), default=lambda: AESCipher.encrypt("0.0"))
+    _balance_yer = db.Column(db.String(255), default=lambda: AESCipher.encrypt("0.0"))
+    _balance_usd = db.Column(db.String(255), default=lambda: AESCipher.encrypt("0.0"))
     
     integrity_hash = db.Column(db.String(64), nullable=True)
 
-    # استخدام AESCipher الموحد
+    # خصائص الوصول الآمن (Properties) مع معالجة NoneType
     @property
-    def balance_sar(self): return float(AESCipher.decrypt(self._balance_sar))
+    def balance_sar(self): 
+        val = AESCipher.decrypt(self._balance_sar)
+        return float(val) if val else 0.0
+    
     @balance_sar.setter
-    def balance_sar(self, value): self._balance_sar = AESCipher.encrypt(str(value))
+    def balance_sar(self, value): 
+        self._balance_sar = AESCipher.encrypt(str(value))
 
     @property
-    def balance_yer(self): return float(AESCipher.decrypt(self._balance_yer))
+    def balance_yer(self): 
+        val = AESCipher.decrypt(self._balance_yer)
+        return float(val) if val else 0.0
+    
     @balance_yer.setter
-    def balance_yer(self, value): self._balance_yer = AESCipher.encrypt(str(value))
+    def balance_yer(self, value): 
+        self._balance_yer = AESCipher.encrypt(str(value))
 
     @property
-    def balance_usd(self): return float(AESCipher.decrypt(self._balance_usd))
+    def balance_usd(self): 
+        val = AESCipher.decrypt(self._balance_usd)
+        return float(val) if val else 0.0
+    
     @balance_usd.setter
-    def balance_usd(self, value): self._balance_usd = AESCipher.encrypt(str(value))
+    def balance_usd(self, value): 
+        self._balance_usd = AESCipher.encrypt(str(value))
 
     def generate_integrity_hash(self):
-        # ملاحظة: التحويل يتم هنا بالقيم المفكوكة
+        # التحويل يستخدم الخصائص الآمنة التي تعيد أرقاماً دائماً
         data = f"{self.balance_sar}{self.balance_yer}{self.balance_usd}"
         return hashlib.sha256(data.encode()).hexdigest()
 
@@ -56,11 +68,14 @@ class VaultTransaction(db.Model):
     description = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # تم التصحيح: الربط الآن مع admin_users.id بدلاً من admin_user.id
     admin_id = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=True)
     reference_id = db.Column(db.String(100), nullable=True)
 
     @property
-    def amount(self): return float(AESCipher.decrypt(self._amount))
+    def amount(self): 
+        val = AESCipher.decrypt(self._amount)
+        return float(val) if val else 0.0
+    
     @amount.setter
-    def amount(self, value): self._amount = AESCipher.encrypt(str(value))
+    def amount(self, value): 
+        self._amount = AESCipher.encrypt(str(value))
