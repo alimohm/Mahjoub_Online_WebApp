@@ -12,12 +12,15 @@
             <div class="position-relative">
                 <input type="text" id="liveSearch" class="form-control" placeholder="بحث لحظي..." style="width: 250px; border-radius: 20px;">
             </div>
+            
             <a href="{{ url_for('mahjoub_bridge.add_product_page') }}" class="btn btn-dark text-warning">
                 <i class="fas fa-plus"></i> إضافة منتج
             </a>
-            <a href="{{ url_for('mahjoub_bridge.upload_page') }}" class="btn btn-outline-primary">
+            
+            <button class="btn btn-outline-secondary" disabled title="قريباً">
                 <i class="fas fa-upload"></i> استيراد
-            </a>
+            </button>
+            
             <button class="btn btn-success" onclick="syncNow()">
                 <i class="fas fa-sync"></i> مزامنة
             </button>
@@ -73,7 +76,6 @@
 </style>
 
 <script>
-// وظيفة البحث اللحظي
 document.getElementById('liveSearch').addEventListener('keyup', function() {
     let filter = this.value.toUpperCase();
     let cards = document.getElementsByClassName('product-card');
