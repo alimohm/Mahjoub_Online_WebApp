@@ -69,10 +69,10 @@ def sync_now():
         engine = QumraBridgeEngine()
         raw_products = engine.fetch_latest_products(limit=20)
         
-        # حماية: إذا عاد الـ Engine بـ None، نخرج فوراً ونطبع رسالة للتشخيص
+        # حماية: إذا عاد الـ Engine بـ None، نخرج فوراً لتفادي أي خطأ
         if raw_products is None:
             print("SYNC ERROR: fetch_latest_products returned None")
-            return jsonify({"status": "error", "message": "فشل الاتصال بمحرك المزامنة"})
+            return jsonify({"status": "error", "message": "فشل الاتصال بمحرك المزامنة - البيانات فارغة"})
 
         if not isinstance(raw_products, list):
             return jsonify({"status": "warning", "message": "بيانات المصدر غير صالحة"})
@@ -80,7 +80,7 @@ def sync_now():
         count = 0
         for item in raw_products:
             # حماية: تخطي أي عنصر ليس قاموساً أو فارغاً
-            if item is None or not isinstance(item, dict):
+            if not isinstance(item, dict):
                 continue
             
             # التأكد من وجود العنوان
@@ -91,9 +91,11 @@ def sync_now():
             
             # التحقق من عدم التكرار
             if not Product.query.filter_by(title=title).first():
-                # تنظيف السعر
+                # تنظيف السعر: التأكد من وجود pricing كقاموس أولاً
                 pricing = item.get('pricing')
-                raw_price = pricing.get('price') if isinstance(pricing, dict) else "0"
+                raw_price = "0"
+                if isinstance(pricing, dict):
+                    raw_price = pricing.get('price') or "0"
                 
                 # تنظيف الكمية
                 raw_qty = item.get('quantity')
@@ -102,7 +104,7 @@ def sync_now():
                 new_product = Product(
                     title=title,
                     description="تمت المزامنة تلقائياً",
-                    price=encrypt(str(raw_price or "0")),
+                    price=encrypt(str(raw_price)),
                     quantity=safe_qty,
                     supplier_id="QUMRA_SYNC"
                 )
@@ -114,5 +116,6 @@ def sync_now():
         
     except Exception as e:
         db.session.rollback()
-        print(f"CRITICAL SYNC ERROR: {str(e)}")
+        # طباعة الخطأ مع تفاصيل نوع الخطأ لتسهيل التشخيص
+        print(f"CRITICAL SYNC ERROR: {type(e).__name__}: {str(e)}")
         return jsonify({"status": "error", "message": "حدث خطأ تقني في معالجة بيانات المزامنة"}), 500
