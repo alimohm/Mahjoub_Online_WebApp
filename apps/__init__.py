@@ -12,7 +12,7 @@ from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
 from apps.models.financial_db import ExchangeRate
 from apps.models.vault_db import AdminVault
-from apps.models.bridge_db import Product, ProductVariant # تم استيراد موديلات الجسر
+from apps.models.bridge_db import Product, ProductVariant # يجب أن يكون ملف bridge_db.py يحتوي على هذه الكلاسات
 from apps.utils.security import AESCipher
 
 def create_app():
@@ -64,7 +64,7 @@ def create_app():
     # إعداد البيانات التأسيسية
     with app.app_context():
         try:
-            # التأكد من إنشاء الجداول المحدثة
+            # التأكد من إنشاء الجداول
             db.create_all() 
             
             # 1. إنشاء المدير
