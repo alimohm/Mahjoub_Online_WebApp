@@ -12,10 +12,11 @@ def dashboard():
     try:
         page = request.args.get('page', 1, type=int)
         per_page = 16
+        # تأكد أن جدول products يحتوي على عمود price كما أصلحناه
         pagination = Product.query.order_by(Product.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
         products = pagination.items
         
-        # دالة آمنة لفحص فك التشفير
+        # دالة آمنة لفحص فك التشفير تمنع انهيار الصفحة في حال تلف البيانات
         def safe_decrypt(value):
             try:
                 return decrypt(value)
@@ -39,7 +40,7 @@ def add_product_page():
     if request.method == 'POST':
         try:
             title = request.form.get('title')
-            raw_price = request.form.get('price', 0)
+            raw_price = request.form.get('price', '0')
             encrypted_price = encrypt(raw_price)
             qty_raw = request.form.get('quantity', 0)
             
@@ -67,33 +68,43 @@ def add_product_page():
 
 @bridge_bp.route('/sync-now', methods=['POST'])
 def sync_now():
-    """المزامنة اللحظية: جلب البيانات وتخزينها مشفرة"""
+    """المزامنة اللحظية مع معالجة آمنة للبيانات القادمة من الـ API"""
     try:
         engine = QumraBridgeEngine()
         raw_products = engine.fetch_latest_products(limit=20)
         
         if not raw_products:
-            return jsonify({"status": "warning", "message": "لم يتم العثور على منتجات جديدة أو فشل الاتصال بالـ API"})
+            return jsonify({"status": "warning", "message": "لم يتم العثور على منتجات جديدة"})
 
         count = 0
         for item in raw_products:
-            existing = Product.query.filter_by(title=item.get('title')).first()
+            title = item.get('title')
+            if not title: continue 
+            
+            existing = Product.query.filter_by(title=title).first()
             if not existing:
-                raw_price = item.get('pricing', {}).get('price', 0)
+                # معالجة آمنة للسعر لضمان عدم تمرير None لـ encrypt
+                raw_price = item.get('pricing', {}).get('price')
+                safe_price = str(raw_price) if raw_price is not None else "0"
+                
+                # معالجة الكمية
+                raw_qty = item.get('quantity', 0)
+                safe_qty = int(raw_qty) if raw_qty is not None else 0
                 
                 new_product = Product(
-                    title=item.get('title'),
+                    title=title,
                     description="تمت المزامنة تلقائياً",
-                    price=encrypt(raw_price),
-                    quantity=int(item.get('quantity', 0)),
+                    price=encrypt(safe_price),
+                    quantity=safe_qty,
                     supplier_id="QUMRA_SYNC"
                 )
                 db.session.add(new_product)
                 count += 1
         
         db.session.commit()
-        return jsonify({"status": "success", "message": f"تمت المزامنة بنجاح وجلب {count} منتج جديد مشفر"})
+        return jsonify({"status": "success", "message": f"تمت المزامنة بنجاح وجلب {count} منتج"})
         
     except Exception as e:
         db.session.rollback()
+        print(f"Sync error details: {str(e)}")
         return jsonify({"status": "error", "message": f"فشل المزامنة: {str(e)}"}), 500
