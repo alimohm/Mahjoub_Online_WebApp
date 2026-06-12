@@ -1,13 +1,10 @@
 # coding: utf-8
-# 📂 apps/__init__.py - المصنع المحصن (النسخة النهائية - مع بيانات وهمية مكثفة)
+# 📂 apps/__init__.py - المصنع المحصن (نسخة التشفير والسياسات الآمنة)
 
 import os
 import sys
 import random
 from werkzeug.security import generate_password_hash
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from flask import Flask
 from flask_talisman import Talisman
 from config import Config
@@ -16,16 +13,19 @@ from apps.models.admin_db import AdminUser
 from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
 from apps.models.financial_db import ExchangeRate
-from apps.models.vault_db import AdminVault, VaultTransaction
+from apps.models.vault_db import AdminVault
+from apps.utils.security import AESCipher # استيراد مشفر البيانات
 
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
     app.config.from_object(Config)
 
+    # تحديث سياسة الأمان للسماح بملفات التنسيق (CSS/JS) من مصادر موثوقة
     csp_policy = {
         'default-src': ["'self'"],
-        'style-src': ["'self'", "'unsafe-inline'"],
-        'script-src': ["'self'", "'unsafe-inline'"],
+        'style-src': ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+        'script-src': ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+        'font-src': ["'self'", "https://fonts.gstatic.com"],
         'img-src': ["'self'", "data:"]
     }
     
@@ -64,23 +64,23 @@ def create_app():
                 db.session.add(admin)
                 db.session.commit()
             
-            # 2. زرع 21 متجر وهمي
+            # 2. زرع المتاجر والمحافظ مع التشفير
             if not Supplier.query.first():
                 for i in range(1, 22):
                     s = Supplier(username=f'supplier_{i}', trade_name=f'متجر رقم {i}', owner_name=f'المالك {i}')
-                    s.password_hash = generate_password_hash('123') # تشفير آمن للموردين
+                    s.password_hash = generate_password_hash('123')
                     db.session.add(s)
                     db.session.commit()
                     
-                    # إنشاء محفظة لكل متجر
-                    w = SupplierWallet(supplier_id=s.id)
-                    w.balance_sar = float(random.randint(100, 5000))
+                    # إنشاء محفظة مشفرة
+                    w = SupplierWallet(
+                        supplier_id=s.id,
+                        _balance_sar=AESCipher.encrypt("500.0"),
+                        _balance_yer=AESCipher.encrypt("0.0"),
+                        _balance_usd=AESCipher.encrypt("0.0")
+                    )
                     db.session.add(w)
-                    db.session.commit()
-                    
-                    # إنشاء حركة مالية لكل محفظة
-                    w.add_transaction(amount=float(random.randint(10, 500)), currency='SAR', 
-                                      transaction_type='credit', description='إيداع افتتاحي')
+                db.session.commit()
             
             # 3. الخزينة وأسعار الصرف
             if not AdminVault.query.first():
