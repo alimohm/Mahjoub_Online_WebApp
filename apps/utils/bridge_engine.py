@@ -1,21 +1,13 @@
 # coding: utf-8
-# 📂 apps/utils/bridge_engine.py - محرك المزامنة السيادي
+# 📂 apps/utils/bridge_engine.py - محرك المزامنة السيادي (مطور)
 
 import requests
 from config import Config
 
 class QumraBridgeEngine:
-    """
-    محرك المزامنة المسؤول عن الاتصال بـ GraphQL API الخاص بمتجر محجوب.
-    يستخدم Authorization: Bearer للمصادقة ويوفر دوال لجلب المنتجات.
-    """
-    
     def __init__(self):
         self.endpoint = "https://mahjoub.online/admin/graphql"
-        # جلب المفتاح الجديد من ملف الإعدادات (Config)
         api_token = getattr(Config, 'QUMRA_API_KEY', '') or ""
-        
-        # التعديل: استخدام Authorization Bearer للتوثيق مع الصلاحيات الكاملة
         self.headers = {
             "Authorization": f"Bearer {api_token.strip()}",
             "Content-Type": "application/json",
@@ -23,40 +15,26 @@ class QumraBridgeEngine:
         }
 
     def execute_query(self, query, variables=None):
-        """
-        تنفيذ أي استعلام GraphQL بشكل عام ومعالجة الأخطاء.
-        """
         payload = {"query": query, "variables": variables or {}}
         try:
             response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
-            # رفع استثناء إذا كان هناك خطأ في الاتصال أو صلاحيات (مثل 403)
             response.raise_for_status()
             data = response.json()
-            
-            # فحص وجود أخطاء في استجابة GraphQL نفسها
-            if "errors" in data:
-                print(f"❌ GraphQL Errors: {data['errors']}")
-                return {}
-            
             return data if isinstance(data, dict) else {}
-            
-        except requests.exceptions.HTTPError as http_err:
-            print(f"HTTP error occurred: {http_err}")
-            return {}
         except Exception as e:
             print(f"⚠️ Bridge Engine Error: {e}")
             return {}
 
     def fetch_latest_products(self, limit=10, page=1):
-        """
-        جلب قائمة المنتجات من النظام الخارجي.
-        """
+        # تم إضافة image_url و description لجلب البيانات كاملة
         query = """
         query GetProducts($limit: Int, $page: Int) {
             findAllProducts(input: { limit: $limit, page: $page }) {
                 data {
                     title
                     quantity
+                    image_url
+                    description
                     pricing {
                         price
                     }
@@ -67,17 +45,26 @@ class QumraBridgeEngine:
         variables = {"limit": limit, "page": page}
         result = self.execute_query(query, variables)
         
-        # تحليل البيانات بأمان لتجنب ظهور أخطاء NoneType
-        if not result or 'data' not in result:
-            return []
+        if not result or 'data' not in result: return []
             
-        data_wrapper = result.get('data')
-        if not isinstance(data_wrapper, dict):
-            return []
+        data_wrapper = result.get('data', {})
+        find_all = data_wrapper.get('findAllProducts', {})
+        products = find_all.get('data', [])
+        
+        # إضافة "القالب التلقائي" لكل منتج هنا
+        for p in products:
+            p['auto_template'] = self.generate_product_html(p)
             
-        find_all = data_wrapper.get('findAllProducts')
-        if not isinstance(find_all, dict):
-            return []
-            
-        products = find_all.get('data')
         return products if isinstance(products, list) else []
+
+    def generate_product_html(self, product):
+        """توليد قالب HTML مصغر للمنتج تلقائياً عند المزامنة"""
+        price = product.get('pricing', {}).get('price', 0)
+        img = product.get('image_url') or 'https://via.placeholder.com/200'
+        return f"""
+        <div class="product-snippet">
+            <img src="{img}" style="width:50px; height:50px;">
+            <h6>{product.get('title')}</h6>
+            <span>السعر: {price} ر.س</span>
+        </div>
+        """
