@@ -1,21 +1,23 @@
 # coding: utf-8
-# 📂 apps/utils/bridge_engine.py - محرك المزامنة السيادي (معدل للمصادقة)
+# 📂 apps/utils/bridge_engine.py
 
 import requests
 from config import Config
 
 class QumraBridgeEngine:
     def __init__(self):
-        # الاحتمال الأكبر للخطأ 400 هو المسار. جرب إزالة /admin إذا كان الـ API عاماً
-        self.endpoint = "https://mahjoub.online/graphql" 
+        # سنعتمد المسار الذي يظهر في إعدادات الـ Sandbox لديك
+        self.endpoint = "https://mahjoub.online/admin/graphql"
         
         api_token = getattr(Config, 'QUMRA_API_KEY', '').strip()
         
-        # تحسين الـ Headers لتكون أكثر توافقاً مع سيرفرات Apollo/GraphQL
+        # إضافة Headers إضافية ضرورية لبعض سيرفرات GraphQL للحماية
         self.headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "Origin": "https://mahjoub.online",
+            "Referer": "https://mahjoub.online/admin/"
         }
 
     def execute_query(self, query, variables=None):
@@ -23,9 +25,9 @@ class QumraBridgeEngine:
         try:
             response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
             
-            # إذا استمر الخطأ 400، سيطبع لنا السيرفر السبب الحقيقي هنا
+            # طباعة معلومات كاملة في حال الخطأ
             if response.status_code != 200:
-                print(f"DEBUG: Server rejected with Status {response.status_code}: {response.text}")
+                print(f"DEBUG: Status {response.status_code} | Response: {response.text}")
             
             response.raise_for_status()
             result = response.json()
@@ -34,11 +36,11 @@ class QumraBridgeEngine:
                 print(f"⚠️ GraphQL Errors: {result['errors']}")
             return result.get('data', {})
         except Exception as e:
-            print(f"⚠️ Bridge Engine Connection Error: {e}")
+            print(f"⚠️ Connection Error: {e}")
             return {}
 
     def fetch_latest_products(self, limit=10, page=1):
-        # استعلام مبسط جداً للاتصال
+        # سنستخدم هذا الاستعلام لأنه مطابق للـ Schema التي يتعامل معها الـ Sandbox
         query = """
         query GetProducts($limit: Int, $page: Int) {
             findAllProducts(input: { limit: $limit, page: $page }) {
@@ -60,8 +62,4 @@ class QumraBridgeEngine:
         return products if isinstance(products, list) else []
 
     def generate_product_html(self, product):
-        return f"""
-        <div class="product-snippet">
-            <strong>{product.get('title', 'منتج')}</strong>
-        </div>
-        """
+        return f"""<div class="product-snippet"><strong>{product.get('title', 'منتج')}</strong></div>"""
