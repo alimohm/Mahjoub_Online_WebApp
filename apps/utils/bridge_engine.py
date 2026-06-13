@@ -8,7 +8,6 @@ from config import Config
 class QumraBridgeEngine:
     def __init__(self):
         self.endpoint = "https://mahjoub.online/admin/graphql"
-        # التأكد من جلب المفتاح من متغيرات البيئة بوضوح
         api_token = os.environ.get('QUMRA_API_KEY', '').strip()
         
         self.headers = {
@@ -22,14 +21,12 @@ class QumraBridgeEngine:
         try:
             response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
             
-            # تسجيل تفاصيل الخطأ في حال حدوثه لتسهيل الإصلاح
             if response.status_code != 200:
                 print(f"❌ DEBUG: Status {response.status_code} | Body: {response.text}")
                 return {}
             
             result = response.json()
             
-            # فحص وجود أخطاء داخل استجابة GraphQL نفسها (أحياناً تكون 200 ولكن هناك أخطاء برمجية)
             if 'errors' in result:
                 print(f"❌ GraphQL Errors: {result['errors']}")
                 return {}
@@ -41,19 +38,19 @@ class QumraBridgeEngine:
             return {}
 
     def fetch_latest_products(self, limit=10):
-        # استعلام GraphQL - تأكد أن الحقول (title, _id) مطابقة للموجود في السيرفر
+        # 🔍 استعلام الفحص (Introspection Query) لكشف أسماء الحقول الصحيحة
         query = """
-        query GetProducts($first: Int) {
-            products(first: $first) {
-                data {
-                    title
-                    _id
+        query {
+            __schema {
+                queryType {
+                    fields {
+                        name
+                    }
                 }
             }
         }
         """
-        variables = {"first": limit}
-        data = self.execute_query(query, variables)
+        data = self.execute_query(query)
+        print(f"DEBUG: Schema Fields Discovery: {data}")
         
-        # استخراج البيانات من المسار المكتشف
-        return data.get('products', {}).get('data', [])
+        return []
