@@ -6,12 +6,9 @@ from config import Config
 
 class QumraBridgeEngine:
     def __init__(self):
-        # سنعتمد المسار الذي يظهر في إعدادات الـ Sandbox لديك
         self.endpoint = "https://mahjoub.online/admin/graphql"
-        
         api_token = getattr(Config, 'QUMRA_API_KEY', '').strip()
         
-        # إضافة Headers إضافية ضرورية لبعض سيرفرات GraphQL للحماية
         self.headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
@@ -24,8 +21,6 @@ class QumraBridgeEngine:
         payload = {"query": query, "variables": variables or {}}
         try:
             response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
-            
-            # طباعة معلومات كاملة في حال الخطأ
             if response.status_code != 200:
                 print(f"DEBUG: Status {response.status_code} | Response: {response.text}")
             
@@ -40,13 +35,17 @@ class QumraBridgeEngine:
             return {}
 
     def fetch_latest_products(self, limit=10, page=1):
-        # سنستخدم هذا الاستعلام لأنه مطابق للـ Schema التي يتعامل معها الـ Sandbox
+        # تم إضافة الحقول: pricing { price } و image_url
         query = """
         query GetProducts($limit: Int, $page: Int) {
             findAllProducts(input: { limit: $limit, page: $page }) {
                 data {
                     title
                     quantity
+                    image_url
+                    pricing {
+                        price
+                    }
                 }
             }
         }
@@ -56,10 +55,9 @@ class QumraBridgeEngine:
         
         products = data.get('findAllProducts', {}).get('data', [])
         
-        for p in products:
-            p['auto_template'] = self.generate_product_html(p)
-            
+        # لا نحتاج إلى generate_product_html إذا كنا سنعتمد على الحقول المباشرة في القالب
         return products if isinstance(products, list) else []
 
     def generate_product_html(self, product):
+        # هذا القالب يستخدم فقط في حال عدم توفر بيانات، يمكنك تركه كإجراء احتياطي
         return f"""<div class="product-snippet"><strong>{product.get('title', 'منتج')}</strong></div>"""
