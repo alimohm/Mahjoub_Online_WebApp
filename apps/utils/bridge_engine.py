@@ -17,17 +17,20 @@ class QumraBridgeEngine:
     def execute_query(self, query, variables=None):
         payload = {"query": query, "variables": variables or {}}
         try:
-            response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
+            response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=20)
             return response.json()
         except Exception as e:
             print(f"⚠️ Connection Error: {e}")
             return {}
 
-    def fetch_latest_products(self):
-        # الاستعلام الصحيح الآن باستخدام الحقل المكتشف: fileUrl
+    def fetch_products(self, search_term="", page=1):
+        """
+        محرك بحث لحظي: يرسل نص البحث مباشرة إلى قمرة.
+        """
+        # الاستعلام يدعم المتغيرات للبحث والترقيم
         query = """
-        query {
-            findAllProducts {
+        query($q: String, $page: Int) {
+            findAllProducts(search: $q, page: $page) {
                 data {
                     title
                     pricing { price }
@@ -40,9 +43,9 @@ class QumraBridgeEngine:
             }
         }
         """
-        result = self.execute_query(query)
+        variables = {"q": search_term, "page": page}
+        result = self.execute_query(query, variables=variables)
         
-        # استخراج البيانات
         products = result.get('data', {}).get('findAllProducts', {}).get('data', [])
         
         processed_products = []
@@ -50,7 +53,6 @@ class QumraBridgeEngine:
             pricing = p.get('pricing') or {}
             images = p.get('images') or []
             
-            # استخراج الرابط الصحيح باستخدام الحقل المكتشف fileUrl
             img_url = None
             if isinstance(images, list) and len(images) > 0:
                 img_url = images[0].get('fileUrl')
