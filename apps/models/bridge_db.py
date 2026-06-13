@@ -40,6 +40,8 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
+    # الحقل الجديد لإضافة رابط الصورة
+    image_url = db.Column(db.String(500)) 
     # الحقل المخزن في قاعدة البيانات
     _price = db.Column(db.Text, nullable=False) 
     quantity = db.Column(db.Integer, default=0)
