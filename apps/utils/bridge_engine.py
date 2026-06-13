@@ -7,17 +7,19 @@ from config import Config
 class QumraBridgeEngine:
     """
     محرك المزامنة المسؤول عن الاتصال بـ GraphQL API الخاص بمتجر محجوب.
-    يستخدم x-api-key للمصادقة ويوفر دوال لجلب المنتجات وبيانات المزامنة.
+    يستخدم Authorization: Bearer للمصادقة ويوفر دوال لجلب المنتجات.
     """
     
     def __init__(self):
         self.endpoint = "https://mahjoub.online/admin/graphql"
-        # تأكد أن المفتاح المستخدم في Config يملك صلاحية 'products:read'
-        api_key = getattr(Config, 'QUMRA_API_KEY', '') or ""
+        # جلب المفتاح الجديد من ملف الإعدادات (Config)
+        api_token = getattr(Config, 'QUMRA_API_KEY', '') or ""
+        
+        # التعديل: استخدام Authorization Bearer للتوثيق مع الصلاحيات الكاملة
         self.headers = {
-            "x-api-key": str(api_key).strip(), 
+            "Authorization": f"Bearer {api_token.strip()}",
             "Content-Type": "application/json",
-            "apollo-require-preflight": "true" # تمت الإضافة لتجاوز حماية CSRF
+            "apollo-require-preflight": "true" 
         }
 
     def execute_query(self, query, variables=None):
@@ -27,7 +29,7 @@ class QumraBridgeEngine:
         payload = {"query": query, "variables": variables or {}}
         try:
             response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
-            # رفع استثناء إذا كان هناك خطأ في الاتصال (مثل 401, 403, 404, 500)
+            # رفع استثناء إذا كان هناك خطأ في الاتصال أو صلاحيات (مثل 403)
             response.raise_for_status()
             data = response.json()
             
@@ -48,7 +50,6 @@ class QumraBridgeEngine:
     def fetch_latest_products(self, limit=10, page=1):
         """
         جلب قائمة المنتجات من النظام الخارجي.
-        الاستعلام يعتمد على وجود صلاحية products:read في مفتاح الـ API.
         """
         query = """
         query GetProducts($limit: Int, $page: Int) {
