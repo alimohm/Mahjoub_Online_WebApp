@@ -55,7 +55,8 @@ class Product(db.Model):
 
 class ProductVariant(db.Model):
     __tablename__ = 'product_variants'
-    id = db.Integer, primary_key=True
+    # تم التصحيح: استخدام db.Column بدلاً من db.Integer مباشرة
+    id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     sku = db.Column(db.String(100))
     _price = db.Column(db.Text) 
