@@ -15,14 +15,10 @@
         </div>
         
         <div class="d-flex gap-2">
-            <div class="position-relative">
-                <input type="text" id="liveSearch" class="form-control" placeholder="بحث لحظي..." style="width: 250px; border-radius: 20px;">
-            </div>
-            
+            <input type="text" id="liveSearch" class="form-control" placeholder="بحث لحظي..." style="width: 250px; border-radius: 20px;">
             <a href="{{ url_for('mahjoub_bridge.add_product_page') }}" class="btn btn-dark text-warning">
                 <i class="fas fa-plus"></i> إضافة منتج
             </a>
-            
             <button class="btn btn-success" onclick="syncNow()">
                 <i class="fas fa-sync"></i> مزامنة
             </button>
@@ -33,16 +29,17 @@
         {% for p in products %}
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4 product-card">
             <div class="card h-100 shadow-sm border-0 transition-all hover-shadow">
-                <div class="position-relative overflow-hidden" style="height: 180px;">
-                    <img src="{{ p.image_url if p.image_url and p.image_url.startswith('http') else 'https://via.placeholder.com/200' }}" 
-                         class="card-img-top p-2" 
-                         style="height: 100%; width: 100%; object-fit: contain;"
-                         loading="lazy"
-                         onerror="this.src='https://via.placeholder.com/200'">
+                <div class="p-3 text-center" style="height: 180px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                    {% if p.auto_template %}
+                        {{ p.auto_template | safe }}
+                    {% else %}
+                        <img src="https://via.placeholder.com/200" class="img-fluid" style="max-height: 150px;">
+                    {% endif %}
                 </div>
+                
                 <div class="card-body">
                     <h6 class="card-title font-weight-bold text-truncate" title="{{ p.title }}">{{ p.title }}</h6>
-                    <p class="text-muted small mb-2"><i class="fas fa-store me-1"></i> {{ p.supplier_id or 'غير محدد' }}</p>
+                    <p class="text-muted small mb-2"><i class="fas fa-store me-1"></i> {{ p.supplier_id or 'QUMRA_SYNC' }}</p>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="text-dark font-weight-bold">{{ p.price }} ر.س</span>
                         <span class="badge bg-light text-success border">مُزامَن</span>
@@ -52,7 +49,7 @@
         </div>
         {% else %}
         <div class="col-12 text-center py-5">
-            <h5 class="text-muted">لا توجد منتجات حالياً في الجسر</h5>
+            <h5 class="text-muted">لا توجد منتجات حالياً. اضغط على "مزامنة" للبدء.</h5>
         </div>
         {% endfor %}
     </div>
@@ -79,40 +76,41 @@
 <style>
     .transition-all { transition: all 0.3s ease; }
     .hover-shadow:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .product-snippet img { max-width: 100%; height: auto !important; }
 </style>
 
 <script>
-const allProductTitles = {{ all_titles | tojson | default([]) }};
-
+// تفعيل البحث اللحظي
 document.getElementById('liveSearch').addEventListener('keyup', function() {
     let filter = this.value.toUpperCase();
     let cards = document.getElementsByClassName('product-card');
-    let found = false;
-
-    for (let i = 0; i < cards.length; i++) {
-        let title = cards[i].getElementsByClassName('card-title')[0].textContent.toUpperCase();
-        if (title.indexOf(filter) > -1) {
-            cards[i].style.display = "";
-            found = true;
-        } else {
-            cards[i].style.display = "none";
-        }
+    
+    for (let card of cards) {
+        let title = card.querySelector('.card-title').textContent.toUpperCase();
+        card.style.display = title.includes(filter) ? "" : "none";
     }
 });
 
+// دالة المزامنة
 function syncNow() {
-    Swal.fire({ title: 'جاري المزامنة...', text: 'قد تستغرق العملية بضع ثوانٍ.', icon: 'info', showConfirmButton: false, allowOutsideClick: false });
+    Swal.fire({ 
+        title: 'جاري جلب البيانات...', 
+        text: 'يرجى عدم إغلاق الصفحة.', 
+        icon: 'info', 
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading() 
+    });
+
     fetch('{{ url_for("mahjoub_bridge.sync_now") }}', { method: 'POST' })
     .then(response => response.json())
     .then(data => {
         if(data.status === 'success') {
-            Swal.fire('تم بنجاح!', data.message, 'success');
-            setTimeout(() => location.reload(), 1500);
+            Swal.fire('تم بنجاح!', data.message, 'success').then(() => location.reload());
         } else {
             Swal.fire('تنبيه!', data.message, 'warning');
         }
     })
-    .catch(() => Swal.fire('خطأ!', 'حدثت مشكلة أثناء الاتصال بالسيرفر.', 'error'));
+    .catch(err => Swal.fire('خطأ!', 'فشل الاتصال بالسيرفر.', 'error'));
 }
 </script>
 {% endblock %}
