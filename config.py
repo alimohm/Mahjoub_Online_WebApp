@@ -8,7 +8,6 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'SOVEREIGN_KEY_2026')
     
     # 🔐 مفتاح التشفير المركزي (لـ AES-256) 
-    # تم إسناد المفتاح الطويل الذي ولدناه لضمان العمل التلقائي
     ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', 'w1Kk9P7zY5mZg4tE8Lp2nJvR6cXsA9qB0xU3jH5oI8Vq=')
     
     # 🔒 إعدادات الحماية الأمنية للـ Cookies
@@ -43,8 +42,9 @@ class Config:
     }
     
     # 6. إعدادات البنية التحتية السحابية (Qomra Cloud API)
-    QUMRA_API_KEY = os.environ.get('QUMRA_API_KEY')
-    QUMRA_API_URL = os.environ.get('QUMRA_API_URL')
+    # تم تحديث المفتاح هنا لضمان المزامنة
+    QUMRA_API_KEY = os.environ.get('QUMRA_API_KEY', 'qmr_120d9c09-562f-4839-aba8-97ab40a83cd3')
+    QUMRA_API_URL = os.environ.get('QUMRA_API_URL', 'https://mahjoub.online/admin/graphql')
 
     # 7. إعدادات WhatsApp Cloud API
     WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '1190456080809834')
