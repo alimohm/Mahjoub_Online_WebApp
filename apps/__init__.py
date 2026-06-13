@@ -12,7 +12,7 @@ from apps.models.supplier_db import Supplier
 from apps.models.wallet_db import SupplierWallet, WalletTransaction
 from apps.models.financial_db import ExchangeRate
 from apps.models.vault_db import AdminVault
-from apps.models.bridge_db import Product, ProductVariant # يجب أن يكون ملف bridge_db.py يحتوي على هذه الكلاسات
+from apps.models.bridge_db import Product, ProductVariant
 from apps.utils.security import AESCipher
 
 def create_app():
@@ -52,7 +52,7 @@ def create_app():
     from apps.admin_dashboard.routes import admin_dashboard
     from apps.wallet.routes import wallet_app
     from apps.vault.routes import vault_bp
-    from apps.mahjoub_bridge.routes import bridge_bp # استيراد مسارات الجسر
+    from apps.mahjoub_bridge.routes import bridge_bp
 
     app.register_blueprint(auth_portal, url_prefix='/')
     app.register_blueprint(add_supplier_bp, url_prefix='/suppliers')
