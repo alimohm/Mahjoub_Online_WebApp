@@ -9,10 +9,11 @@ bridge_bp = Blueprint('mahjoub_bridge', __name__, template_folder='templates')
 
 @bridge_bp.route('/dashboard', methods=['GET'])
 def dashboard():
-    """عرض لوحة التحكم (الموديل يفك التشفير تلقائياً عند قراءة .price)"""
+    """عرض لوحة التحكم مع نظام الترقيم (Pagination) لتخفيف الحمل على السيرفر."""
     try:
         page = request.args.get('page', 1, type=int)
         per_page = 16
+        # تحميل المنتجات بترقيم صفحات لضمان عدم انهيار الذاكرة
         pagination = Product.query.order_by(Product.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
         products = pagination.items
         
@@ -28,6 +29,7 @@ def dashboard():
 
 @bridge_bp.route('/add-product', methods=['GET', 'POST'])
 def add_product_page():
+    """إضافة منتج جديد يدوياً مع التشفير التلقائي للسعر."""
     if request.method == 'POST':
         try:
             title = request.form.get('title')
@@ -44,7 +46,7 @@ def add_product_page():
                 quantity=qty,
                 supplier_id=request.form.get('supplier_id')
             )
-            # التشفير يحدث تلقائياً هنا عبر الـ setter في الموديل
+            # التشفير يحدث تلقائياً عبر הـ setter في الموديل
             new_product.price = str(raw_price) 
             
             db.session.add(new_product)
@@ -58,9 +60,10 @@ def add_product_page():
 
 @bridge_bp.route('/sync-now', methods=['POST'])
 def sync_now():
-    """المزامنة اللحظية مع الاعتماد على الموديل للتشفير التلقائي"""
+    """المزامنة اللحظية مع الاعتماد على الموديل للتشفير التلقائي عند الحفظ."""
     try:
         engine = QumraBridgeEngine()
+        # جلب أحدث المنتجات من المحرك
         raw_products = engine.fetch_latest_products(limit=20)
         
         if not raw_products or not isinstance(raw_products, list):
@@ -71,6 +74,7 @@ def sync_now():
             if not isinstance(item, dict): continue
             
             title = str(item.get('title') or "").strip()
+            # منع التكرار
             if not title or Product.query.filter_by(title=title).first():
                 continue
             
