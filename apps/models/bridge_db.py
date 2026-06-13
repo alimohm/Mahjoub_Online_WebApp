@@ -17,7 +17,7 @@ def get_cipher_suite():
             print(f"❌ خطأ في مفتاح التشفير: {e}")
             raise ValueError("ENCRYPTION_KEY غير صالح. يجب أن يكون 32-byte url-safe base64.")
     
-    # في حال عدم وجود مفتاح، نولد مفتاحاً (يُنصح دائماً بوضع مفتاح في Render)
+    # في حال عدم وجود مفتاح، نولد مفتاحاً
     return Fernet(Fernet.generate_key())
 
 # تهيئة التشفير
@@ -40,14 +40,33 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
-    price = db.Column(db.Text, nullable=False) # مشفر
+    # الحقل المخزن في قاعدة البيانات
+    _price = db.Column(db.Text, nullable=False) 
     quantity = db.Column(db.Integer, default=0)
     supplier_id = db.Column(db.String(100))
+    sku = db.Column(db.String(100)) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def price(self):
+        return decrypt(self._price)
+
+    @price.setter
+    def price(self, value):
+        self._price = encrypt(value)
 
 class ProductVariant(db.Model):
     __tablename__ = 'product_variants'
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     sku = db.Column(db.String(100))
-    price = db.Column(db.Text) # مشفر
+    # الحقل المخزن في قاعدة البيانات
+    _price = db.Column(db.Text) 
+
+    @property
+    def price(self):
+        return decrypt(self._price)
+
+    @price.setter
+    def price(self, value):
+        self._price = encrypt(value)
