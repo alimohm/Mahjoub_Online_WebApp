@@ -5,6 +5,7 @@ from config import Config
 class QumraBridgeEngine:
     def __init__(self):
         self.endpoint = "https://mahjoub.online/admin/graphql"
+        # تأكد أن المفتاح المستخدم في Config يملك صلاحية 'products:read'
         api_key = getattr(Config, 'QUMRA_API_KEY', '') or ""
         self.headers = {
             "x-api-key": str(api_key).strip(), 
@@ -15,12 +16,7 @@ class QumraBridgeEngine:
         payload = {"query": query, "variables": variables or {}}
         try:
             response = requests.post(self.endpoint, json=payload, headers=self.headers, timeout=15)
-            
-            # --- أداة تشخيص: لطباعة الاستجابة الحقيقية من السيرفر ---
-            print(f"DEBUG: Status Code: {response.status_code}")
-            print(f"DEBUG: Response Body: {response.text[:1000]}") # طباعة أول 1000 حرف
-            # ----------------------------------------------------
-            
+            # رفع استثناء إذا كان هناك خطأ في الاتصال أو صلاحيات (مثل 403)
             response.raise_for_status()
             data = response.json()
             return data if isinstance(data, dict) else {}
@@ -29,6 +25,7 @@ class QumraBridgeEngine:
             return {}
 
     def fetch_latest_products(self, limit=10, page=1):
+        # الاستعلام يعتمد على وجود صلاحية products:read في مفتاح الـ API
         query = """
         query GetProducts($limit: Int, $page: Int) {
             findAllProducts(input: { limit: $limit, page: $page }) {
@@ -45,7 +42,7 @@ class QumraBridgeEngine:
         variables = {"limit": limit, "page": page}
         result = self.execute_query(query, variables)
         
-        # استخدام .get() بأمان تام في كل خطوة
+        # تحليل البيانات بأمان
         data_wrapper = result.get('data')
         if not isinstance(data_wrapper, dict):
             return []
@@ -55,5 +52,4 @@ class QumraBridgeEngine:
             return []
             
         products = find_all.get('data')
-        
         return products if isinstance(products, list) else []
